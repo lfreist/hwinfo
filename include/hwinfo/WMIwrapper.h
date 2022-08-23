@@ -22,8 +22,8 @@
 namespace hwinfo::wmi {
 
 template<typename T>
-bool queryWMI(const string& WMIClass, string field, vector<T> &value, const string& serverName = "ROOT\\CIMV2") {
-  string query("SELECT " + field + " FROM " + WMIClass);
+bool queryWMI(const std::string& WMIClass, std::string field, std::vector<T> &value, const std::string& serverName = "ROOT\\CIMV2") {
+  std::string query("SELECT " + field + " FROM " + WMIClass);
 
   HRESULT hres;
   hres = CoInitializeEx(nullptr, COINIT_MULTITHREADED);

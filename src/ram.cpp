@@ -9,8 +9,7 @@
 #elif defined(__APPLE__)
 #elif defined(_WIN32) || defined(_WIN64)
 #include <Windows.h>
-#include <memory>
-#include "WMIwrapper.h"
+#include "hwinfo/WMIwrapper.h"
 #endif
 #include "hwinfo/ram.h"
 
@@ -31,11 +30,11 @@ RAM::~RAM() = default;
 // _____________________________________________________________________________________________________________________
 std::string RAM::getManufacturer() {
 #if defined(_WIN32) || defined(_WIN64)
-  vector<const wchar_t*> names{};
+  std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_PhysicalMemory", "Manufacturer", names);
   auto ret = names[0];
   std::wstring tmp(ret);
-  return string(tmp.begin(), tmp.end());
+  return std::string(tmp.begin(), tmp.end());
 #else
   return "<unknown>";
 #endif
@@ -44,11 +43,11 @@ std::string RAM::getManufacturer() {
 // _____________________________________________________________________________________________________________________
 std::string RAM::getName() {
 #if defined(_WIN32) || defined(_WIN64)
-  vector<const wchar_t*> names{};
+  std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_PhysicalMemory", "Name", names);
   auto ret = names[0];
   std::wstring tmp(ret);
-  return string(tmp.begin(), tmp.end());
+  return std::string(tmp.begin(), tmp.end());
 #else
   return "<unknown>";
 #endif
@@ -57,11 +56,11 @@ std::string RAM::getName() {
 // _____________________________________________________________________________________________________________________
 std::string RAM::getModel() {
 #if defined(_WIN32) || defined(_WIN64)
-  vector<const wchar_t*> names{};
+  std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_PhysicalMemory", "PartNumber", names);
   auto ret = names[0];
   std::wstring tmp(ret);
-  return string(tmp.begin(), tmp.end());
+  return std::string(tmp.begin(), tmp.end());
 #else
   return "<unknown>";
 #endif
@@ -70,11 +69,11 @@ std::string RAM::getModel() {
 // _____________________________________________________________________________________________________________________
 std::string RAM::getSerialNumber() {
 #if defined(_WIN32) || defined(_WIN64)
-  vector<const wchar_t*> names{};
+  std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_PhysicalMemory", "SerialNumber", names);
   auto ret = names[0];
   std::wstring tmp(ret);
-  return string(tmp.begin(), tmp.end());
+  return std::string(tmp.begin(), tmp.end());
 #else
   return "<unknown>";
 #endif
@@ -100,7 +99,7 @@ int64_t RAM::getTotalSizeMiB() {
   MEMORYSTATUSEX status;
   status.dwLength = sizeof(status);
   GlobalMemoryStatusEx(&status);
-  return status.ullTotalPhys / 1024 / 1024;
+  return status.ullTotalPhys;
 #else
 #error Unsupported Platform
 #endif

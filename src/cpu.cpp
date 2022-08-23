@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #if defined(unix) || defined(__unix) || defined(__unix__)
 #include <regex>

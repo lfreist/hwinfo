@@ -9,7 +9,7 @@
 #include <Windows.h>
 #include <comdef.h>
 #include <WbemIdl.h>
-#include "WMIwrapper.h"
+#include "hwinfo/WMIwrapper.h"
 #pragma comment(lib, "wbemuuid.lib")
 
 #endif
@@ -34,10 +34,10 @@ std::string GPU::getName() {
   return "<unknown>";
 #elif defined(__APPLE__)
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-  vector<const wchar_t*> names{};
+  std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_VideoController", "Name", names);
   auto ret = names[0];
-  std::wstd::string tmp(ret);
+  std::wstring tmp(ret);
   return std::string(tmp.begin(), tmp.end());
 #else
 #error "unsupported platform"
@@ -50,10 +50,10 @@ std::string GPU::getDriverVersion() {
   return "<unknown>";
 #elif defined(__APPLE__)
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-  vector<const wchar_t*> driverVersion{};
+  std::vector<const wchar_t*> driverVersion{};
   wmi::queryWMI("WIN32_VideoController", "DriverVersion", driverVersion);
   auto ret = driverVersion[0];
-  std::wstd::string tmp(ret);
+  std::wstring tmp(ret);
   return std::string(tmp.begin(), tmp.end());
 #else
 #error "unsupported platform"
@@ -66,7 +66,7 @@ int64_t GPU::getMemoryMiB() {
   return -1;
 #elif defined(__APPLE__)
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-  vector<unsigned long long> memory{};
+  std::vector<unsigned long long> memory{};
   wmi::queryWMI("WIN32_VideoController", "AdapterRam", memory);
   return static_cast<int>(memory[0] * 2 / (1024 * 1024));
 #else
