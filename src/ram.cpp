@@ -7,6 +7,7 @@
 #if defined(unix) || defined(__unix) || defined(__unix__)
 #include <unistd.h>
 #elif defined(__APPLE__)
+#include <sys/sysctl.h>
 #elif defined(_WIN32) || defined(_WIN64)
 #include <Windows.h>
 #include "hwinfo/WMIwrapper.h"
