@@ -90,8 +90,8 @@ int64_t RAM::getTotalSizeMiB() {
   }
   return -1;
 #elif defined(__APPLE__)
-  long memsize = 0;
-  long size = sizeof(memsize);
+  int64_t memsize = 0;
+  size_t size = sizeof(memsize);
   if (sysctlbyname("hw.memsize", &memsize, &size, nullptr, 0) == 0) {
     return memsize;
   }
