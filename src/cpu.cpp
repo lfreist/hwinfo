@@ -215,7 +215,7 @@ int CPU::getMaxClockSpeedMHz() {
   getline(stream, line);
   stream.close();
   try {
-    return std::stoi(line);
+    return std::stoi(line) / 1000;
   } catch (std::invalid_argument &e) {
     return -1;
   }
@@ -245,7 +245,7 @@ int CPU::getRegularClockSpeedMHz() {
     if (line.starts_with("cpu MHz")) {
       try {
         stream.close();
-        return static_cast<int>(std::stof(line.substr(line.find(": ")+2, line.length()))) * 1000;
+        return static_cast<int>(std::stof(line.substr(line.find(": ")+2, line.length())));
       } catch (std::invalid_argument &e) {
         return -1;
       }
