@@ -7,6 +7,7 @@
 #if defined(unix) || defined(__unix) || defined(__unix__)
 #include <regex>
 #include <fstream>
+#include <unistd.h>
 #elif defined(__APPLE__)
 #include <mach/mach.h>
 #include <mach/mach_time.h>
@@ -183,6 +184,9 @@ int CPU::getNumLogicalCores() {
   }
   // fallback method:
 #if defined(unix) || defined(__unix) || defined(__unix__)
+#ifndef _SC_NPROCESSORS_ONLN
+  return -1;
+#endif
   return static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
 #elif defined(__APPLE__)
   int logical = 0;
