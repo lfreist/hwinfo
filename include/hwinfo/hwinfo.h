@@ -6,10 +6,14 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "hwinfo/cpu.h"
 #include "hwinfo/ram.h"
 #include "hwinfo/os.h"
 #include "hwinfo/mainboard.h"
 #include "hwinfo/gpu.h"
+
 
 #endif //HWINFO_HWINFO_H_

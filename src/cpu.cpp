@@ -93,7 +93,7 @@ int CPU::currentClockSpeedMHz(short coreId) {
 
 // _____________________________________________________________________________________________________________________
 std::string CPU::getVendor() {
-#if defined(HWINFO_CPUID_H_)
+#if !defined(HWINFO_CPUID_H_)
   std::string vendor;
   uint32_t regs[4] {0};
   cpuid::cpuid(0, 0, regs);
