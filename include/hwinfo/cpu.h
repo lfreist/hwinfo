@@ -7,54 +7,9 @@
 #ifndef HWINFO_CPU_H_
 #define HWINFO_CPU_H_
 
-
 namespace hwinfo {
 
-class CPU {
- public:
-  CPU();
-  ~CPU();
-
-  std::string modelName() { return _modelName; }
-  std::string vendor() { return _vendor; }
-  [[nodiscard]] int cacheSizeBytes() const { return _cacheSizeBytes; }
-  [[nodiscard]] int numPhysicalCores() const { return _numPhysicalCores; }
-  [[nodiscard]] int numLogicalCores() const { return _numLogicalCores; }
-  [[nodiscard]] int maxClockSpeedMHz() const { return _maxClockSpeedMHz; }
-  [[nodiscard]] int regularClockSpeedMHz() const { return _regularClockSpeedMHz; }
-  [[nodiscard]] int minClockSpeedMHz() const { return _minClockSpeedMHz; }
-  [[nodiscard]] bool isHHT() const { return _isHTT; }
-  [[nodiscard]] bool isSSE() const { return _isSSE; }
-  [[nodiscard]] bool isSSE2() const { return _isSSE2; }
-  [[nodiscard]] bool isSSE3() const { return _isSSE3; }
-  [[nodiscard]] bool isSSE41() const { return _isSSE41; }
-  [[nodiscard]] bool isSSE42() const {return _isSSE42; }
-  [[nodiscard]] bool isAVX() const { return _isAVX; }
-  [[nodiscard]] bool isAVX2() const { return _isAVX2; }
-
-  [[nodiscard]] std::vector<int> currentClockSpeedMHz() const;
-
-  static int currentClockSpeedMHz(short coreId);
-
-  static std::string getModelName();
-  static std::string getVendor();
-  static int getNumPhysicalCores();
-  static int getNumLogicalCores();
-  static int getMaxClockSpeedMHz();
-  static int getRegularClockSpeedMHz();
-  static int getMinClockSpeedMHz();
-  static int getCacheSizeBytes();
- private:
-
-  std::string _modelName;
-  int _numPhysicalCores = -1;
-  int _numLogicalCores = -1;
-  int _maxClockSpeedMHz = -1;
-  int _regularClockSpeedMHz = -1;
-  int _minClockSpeedMHz = -1;
-  std::string _vendor;
-  int _cacheSizeBytes = -1;
-  int _numSMT = -1;
+struct InstructionSet {
   bool _isHTT = false;
   bool _isSSE = false;
   bool _isSSE2 = false;
@@ -63,6 +18,50 @@ class CPU {
   bool _isSSE42 = false;
   bool _isAVX = false;
   bool _isAVX2 = false;
+
+  bool _init_ = false;
+};
+
+class CPU {
+ public:
+  CPU() = default;
+  CPU(std::string& model,
+      std::string& vendor,
+      int cacheSize_Bytes,
+      int numPhysicalCores,
+      int numLogicalCores,
+      int maxClockSpeed_kHz,
+      int regularClockSpeed_kHz);
+  ~CPU();
+
+  std::string& modelName();
+  std::string& vendor();
+  int cacheSize_Bytes();
+  int numPhysicalCores();
+  int numLogicalCores();
+  int maxClockSpeed_kHz();
+  int regularClockSpeed_kHz();
+  InstructionSet& instructionSet();
+
+  static int currentClockSpeed_kHz();
+
+  static std::string getModelName();
+  static std::string getVendor();
+  static int getNumPhysicalCores();
+  static int getNumLogicalCores();
+  static int getMaxClockSpeed_kHz();
+  static int getRegularClockSpeed_kHz();
+  static int getCacheSize_Bytes();
+
+ private:
+  std::string _modelName;
+  std::string _vendor;
+  int _numPhysicalCores = -1;
+  int _numLogicalCores = -1;
+  int _maxClockSpeed_kHz = -1;
+  int _regularClockSpeed_kHz = -1;
+  int _cacheSize_Bytes = -1;
+  InstructionSet _instructionSet;
 };
 
 }  // namespace hwinfo

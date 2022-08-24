@@ -16,9 +16,6 @@
 #include <math.h>
 #include <pthread.h>
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-#include <Windows.h>
-#include <sysinfoapi.h>
-#include <memory>
 #include "hwinfo/WMIwrapper.h"
 #endif
 
@@ -29,45 +26,27 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-CPU::CPU() {
-  _numPhysicalCores = getNumPhysicalCores();
-  _numLogicalCores = getNumLogicalCores();
-  _maxClockSpeedMHz = getMaxClockSpeedMHz();
-  _minClockSpeedMHz = getMinClockSpeedMHz();
-  _modelName = getModelName();
-  _vendor = getVendor();
-  _cacheSizeBytes = getCacheSizeBytes();
-  _regularClockSpeedMHz = getRegularClockSpeedMHz();
-
-#if defined(HWINFO_CPUID_H_)
-  uint32_t regs[4] {};
-  cpuid::cpuid(1, 0, regs);
-  _isHTT = static_cast<bool>(regs[3] & AVX_POS);
-  _isSSE = static_cast<bool>(regs[3] & SSE_POS);
-  _isSSE2 = static_cast<bool>(regs[3] & SSE2_POS);
-  _isSSE3 = static_cast<bool>(regs[2] & SSE3_POS);
-  _isSSE41 = static_cast<bool>(regs[2] & SSE41_POS);
-  _isSSE42 = static_cast<bool>(regs[2] & SSE42_POS);
-  _isAVX = static_cast<bool>(regs[2] & AVX_POS);
-  cpuid::cpuid(7, 0, regs);
-  _isAVX2 = static_cast<bool>(regs[1] & AVX2_POS);
-#endif
+CPU::CPU(std::string& model,
+         std::string& vendor,
+         int cacheSize_Bytes,
+         int numPhysicalCores,
+         int numLogicalCores,
+         int maxClockSpeed_kHz,
+         int regularClockSpeed_kHz) {
+  _modelName = model;
+  _vendor = vendor;
+  _cacheSize_Bytes = cacheSize_Bytes;
+  _numPhysicalCores = numPhysicalCores;
+  _numLogicalCores = numLogicalCores;
+  _maxClockSpeed_kHz = maxClockSpeed_kHz;
+  _regularClockSpeed_kHz = regularClockSpeed_kHz;
 }
 
 // _____________________________________________________________________________________________________________________
 CPU::~CPU() = default;
 
 // _____________________________________________________________________________________________________________________
-std::vector<int> CPU::currentClockSpeedMHz() const {
-  std::vector<int> clockSpeeds(_numLogicalCores);
-  for (short coreId = 0; coreId < _numLogicalCores; ++coreId) {
-    clockSpeeds[coreId] = currentClockSpeedMHz(coreId);
-  }
-  return clockSpeeds;
-}
-
-// _____________________________________________________________________________________________________________________
-int CPU::currentClockSpeedMHz(short coreId) {
+int CPU::currentClockSpeed_kHz() {
 #if defined(unix) || defined(__unix) || defined(__unix__)
   std::string line;
   std::ifstream stream("/sys/devices/system/cpu/cpu" + std::to_string(coreId) + "/cpufreq/scaling_cur_freq");
@@ -84,7 +63,10 @@ int CPU::currentClockSpeedMHz(short coreId) {
 #elif defined(__APPLE__)
   return -1;
 #elif defined(_WIN32) || defined(_WIN64)
-  return -1;
+  std::vector<int> speed {};
+  wmi::queryWMI("Win32_Processor", "CurrentClockSpeed", speed);
+  if (speed.empty()) { return -1; }
+  return speed[0];
 #else
 #error Unsupported Platform
 #endif
@@ -92,8 +74,91 @@ int CPU::currentClockSpeedMHz(short coreId) {
 }
 
 // _____________________________________________________________________________________________________________________
+std::string& CPU::modelName() {
+  if (_modelName.empty()) {
+    _modelName = std::move(getModelName());
+  }
+  return _modelName;
+}
+
+// _____________________________________________________________________________________________________________________
+std::string& CPU::vendor() {
+  if (_vendor.empty()) {
+    _vendor = std::move(getVendor());
+  }
+  return _vendor;
+}
+
+// _____________________________________________________________________________________________________________________
+int CPU::cacheSize_Bytes() {
+  if (_cacheSize_Bytes == -1) {
+    _cacheSize_Bytes = getCacheSize_Bytes();
+  }
+  return _cacheSize_Bytes;
+}
+
+// _____________________________________________________________________________________________________________________
+int CPU::numPhysicalCores() {
+  if (_numPhysicalCores == -1) {
+    _numPhysicalCores = getNumPhysicalCores();
+  }
+  return _numPhysicalCores;
+}
+
+// _____________________________________________________________________________________________________________________
+int CPU::numLogicalCores() {
+  if (_numLogicalCores == -1) {
+    _numLogicalCores = getNumLogicalCores();
+  }
+  return _numLogicalCores;
+}
+
+// _____________________________________________________________________________________________________________________
+int CPU::maxClockSpeed_kHz() {
+  if (_maxClockSpeed_kHz == -1) {
+    _maxClockSpeed_kHz = getMaxClockSpeed_kHz();
+  }
+  return _maxClockSpeed_kHz;
+}
+
+// _____________________________________________________________________________________________________________________
+int CPU::regularClockSpeed_kHz() {
+  if (_regularClockSpeed_kHz == -1) {
+    _regularClockSpeed_kHz = getRegularClockSpeed_kHz();
+  }
+  return _regularClockSpeed_kHz;
+}
+
+// _____________________________________________________________________________________________________________________
+InstructionSet &CPU::instructionSet() {
+  if (!_instructionSet._init_) {
+#if defined(HWINFO_CPUID_H_)
+    uint32_t regs[4] {};
+    cpuid::cpuid(1, 0, regs);
+    _instructionSet = InstructionSet {
+      static_cast<bool>(regs[3] & AVX_POS),
+      static_cast<bool>(regs[3] & SSE_POS),
+      static_cast<bool>(regs[3] & SSE2_POS),
+      static_cast<bool>(regs[2] & SSE3_POS),
+      static_cast<bool>(regs[2] & SSE41_POS),
+      static_cast<bool>(regs[2] & SSE42_POS),
+      static_cast<bool>(regs[2] & AVX_POS),
+      false,
+      true
+    };
+    cpuid::cpuid(7, 0, regs);
+    _instructionSet._isAVX2 = static_cast<bool>(regs[1] & AVX2_POS);
+#else
+    _instructionSet = InstructionSet();
+    _instructionSet._init_ = true;
+#endif
+  }
+  return _instructionSet;
+}
+
+// _____________________________________________________________________________________________________________________
 std::string CPU::getVendor() {
-#if !defined(HWINFO_CPUID_H_)
+#if defined(HWINFO_CPUID_H_)
   std::string vendor;
   uint32_t regs[4] {0};
   cpuid::cpuid(0, 0, regs);
@@ -101,7 +166,7 @@ std::string CPU::getVendor() {
   vendor += std::string((const char *) &regs[3], 4);
   vendor += std::string((const char *) &regs[2], 4);
   return vendor;
-#endif
+#else
 #if defined(unix) || defined(__unix) || defined(__unix__)
   std::string line;
   std::ifstream stream("/proc/cpuinfo");
@@ -120,25 +185,14 @@ std::string CPU::getVendor() {
   // TODO: implement
   return "not implemented yet...";
 #elif defined(_WIN32) || defined(_WIN64)
-  HKEY hKeyProcessor;
-  LONG lError = RegOpenKeyExA(HKEY_LOCAL_MACHINE, R"(HARDWARE\DESCRIPTION\System\CentralProcessor\0)", 0, KEY_READ, &hKeyProcessor);
-  if (lError != ERROR_SUCCESS)
-    return "<unknown>";
-
-  // Smart resource cleaner pattern
-  auto clearer = [](HKEY hKey) { RegCloseKey(hKey); };
-  auto key = std::unique_ptr<std::remove_pointer<HKEY>::type, decltype(clearer)>(hKeyProcessor, clearer);
-
-  CHAR pBuffer[_MAX_PATH] = { 0 };
-  DWORD dwBufferSize = sizeof(pBuffer);
-  lError = RegQueryValueExA(key.get(), "VendorIdentifier", nullptr, nullptr, (LPBYTE)pBuffer, &dwBufferSize);
-  if (lError != ERROR_SUCCESS) {
-    return "<unknown>";
-  }
-
-  return pBuffer;
+  std::vector<const wchar_t*> vendor {};
+  wmi::queryWMI("Win32_Processor", "Manufacturer", vendor);
+  if (vendor.empty()) { return "<unknown>"; }
+  std::wstring tmp(vendor[0]);
+  return {tmp.begin(), tmp.end()};
 #endif
   return "<unknown>";
+#endif
 }
 
 // _____________________________________________________________________________________________________________________
@@ -170,7 +224,7 @@ std::string CPU::getModelName() {
     }
   }
   return model;
-#endif
+#else
 #if defined(unix) || defined(__unix) || defined(__unix__)
   std::string line;
   std::ifstream stream("/proc/cpuinfo");
@@ -193,25 +247,14 @@ std::string CPU::getModelName() {
   }
   return std::string(model);
 #elif defined(_WIN32) || defined(_WIN64)
-  HKEY hKeyProcessor;
-  LONG lError = RegOpenKeyExA(HKEY_LOCAL_MACHINE, R"(HARDWARE\DESCRIPTION\System\CentralProcessor\0)", 0, KEY_READ, &hKeyProcessor);
-  if (lError != ERROR_SUCCESS)
-    return "<unknown>";
-
-  // Smart resource cleaner pattern
-  auto clearer = [](HKEY hKey) { RegCloseKey(hKey); };
-  auto key = std::unique_ptr<std::remove_pointer<HKEY>::type, decltype(clearer)>(hKeyProcessor, clearer);
-
-  CHAR pBuffer[_MAX_PATH] = { 0 };
-  DWORD dwBufferSize = sizeof(pBuffer);
-  lError = RegQueryValueExA(key.get(), "ProcessorNameString", nullptr, nullptr, (LPBYTE)pBuffer, &dwBufferSize);
-  if (lError != ERROR_SUCCESS) {
-    return "<unknown>";
-  }
-
-  return pBuffer;
+  std::vector<const wchar_t*> vendor {};
+  wmi::queryWMI("Win32_Processor", "Name", vendor);
+  if (vendor.empty()) { return "<unknown>"; }
+  std::wstring tmp(vendor[0]);
+  return {tmp.begin(), tmp.end()};
 #endif
   return "<unknown>";
+#endif
 }
 
 // _____________________________________________________________________________________________________________________
@@ -257,7 +300,8 @@ int CPU::getNumPhysicalCores() {
       }
     }
   }
-#endif
+  return -1;
+#else
 #if defined(unix) || defined(__unix) || defined(__unix__)
 #if defined(_SC_NPROCESSORS_ONLN)
   // TODO: returns number of logical cores... fix this!
@@ -273,19 +317,15 @@ int CPU::getNumPhysicalCores() {
     }
     return physical;
 #elif defined(_WIN32) || defined(_WIN64)
-  int count = 0;
-  for (wmi::EnumLogicalProcessorInformation enumInfo(RelationProcessorCore); auto pinfo = enumInfo.Current(); enumInfo.MoveNext()) {
-    int tmp = 0;
-    while (tmp < pinfo->Processor.GroupCount) {
-      count++;
-      tmp++;
-    }
-  }
-  return count;
+  std::vector<int> cores {};
+  wmi::queryWMI("Win32_Processor", "NumberOfCores", cores);
+  if (cores.empty()) { return -1; }
+  return cores[0];
 #else
 #error Unsupported Platform
 #endif
   return -1;
+#endif
 }
 
 // _____________________________________________________________________________________________________________________
@@ -314,7 +354,8 @@ int CPU::getNumLogicalCores() {
     }
     return 1;
   }
-#endif
+  return -1;
+#else
   // fallback method:
 #if defined(unix) || defined(__unix) || defined(__unix__)
 #if defined(_SC_NPROCESSORS_ONLN)
@@ -330,101 +371,22 @@ int CPU::getNumLogicalCores() {
   }
   return logical;
 #elif defined(_WIN32) || defined(_WIN64)
-  SYSTEM_INFO sysinfo;
-  GetSystemInfo(&sysinfo);
-  return static_cast<int>(sysinfo.dwNumberOfProcessors);
+  std::vector<int> cores {};
+  wmi::queryWMI("Win32_Processor", "NumberOfThreads", cores);
+  if (cores.empty()) { return -1; }
+  return cores[0];
 #else
 #error Unsupported Platform
 #endif
   return -1;
+#endif
 }
 
 // _____________________________________________________________________________________________________________________
-int CPU::getMaxClockSpeedMHz() {
+int CPU::getMaxClockSpeed_kHz() {
 #if defined(unix) || defined(__unix) || defined(__unix__)
   std::string line;
   std::ifstream stream("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq");
-  if (!stream) {
-    return -1;
-  }
-  getline(stream, line);
-  stream.close();
-  try {
-    return std::stoi(line) / 1000;
-  } catch (std::invalid_argument &e) {
-    return -1;
-  }
-#elif defined(__APPLE__)
-  long speed = 0;
-  size_t speed_size = sizeof(speed);
-  if (sysctlbyname("hw.cpufrequency", &speed, &speed_size, nullptr, 0) != 0) {
-    speed = -1;
-  }
-  return static_cast<int>(speed / 1000 / 1000);
-#elif defined(_WIN32) || defined(_WIN64)
-  return -1;
-#else
-#error Unsupported Platform
-#endif
-  return -1;
-}
-
-// _____________________________________________________________________________________________________________________
-int CPU::getRegularClockSpeedMHz() {
-#if defined(unix) || defined(__unix) || defined(__unix__)
-  std::string line;
-  std::ifstream stream("/proc/cpuinfo");
-  if (!stream) {
-    return -1;
-  }
-  while (getline(stream, line)) {
-    if (line.starts_with("cpu MHz")) {
-      try {
-        stream.close();
-        return static_cast<int>(std::stof(line.substr(line.find(": ")+2, line.length())));
-      } catch (std::invalid_argument &e) {
-        return -1;
-      }
-    }
-  }
-  stream.close();
-  return -1;
-#elif defined(__APPLE__)
-  uint64_t frequency = 0;
-  size_t size = sizeof(frequency);
-  if (sysctlbyname("hw.cpufrequency", &frequency, &size, nullptr, 0) == 0) {
-    return static_cast<int>(frequency / 1000 / 1000);
-  }
-  return -1;
-#elif defined(_WIN32) || defined(_WIN64)
-  HKEY hKeyProcessor;
-  long lError =
-    RegOpenKeyExA(HKEY_LOCAL_MACHINE, R"(HARDWARE\DESCRIPTION\SYSTEM\CentralProcessor\0)", 0, KEY_READ, &hKeyProcessor);
-  if (lError != ERROR_SUCCESS) {
-    return -1;
-  }
-  auto clearer = [](HKEY hKey) {
-    RegCloseKey(hKey);
-  };
-  auto key = std::unique_ptr<std::remove_pointer<HKEY>::type, decltype(clearer)>(hKeyProcessor, clearer);
-  DWORD dwMHz = 0;
-  DWORD dwBufferSize = sizeof(DWORD);
-  lError = RegQueryValueExA(key.get(), "~MHz", nullptr, nullptr, (LPBYTE) &dwMHz, &dwBufferSize);
-  if (lError != ERROR_SUCCESS) {
-    return -1;
-  }
-  return static_cast<int>(dwMHz * 1000);
-#else
-#error Unsupported Platform
-#endif
-  return -1;
-}
-
-// _____________________________________________________________________________________________________________________
-int CPU::getMinClockSpeedMHz() {
-#if defined(unix) || defined(__unix) || defined(__unix__)
-  std::string line;
-  std::ifstream stream("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq");
   if (!stream) {
     return -1;
   }
@@ -436,15 +398,62 @@ int CPU::getMinClockSpeedMHz() {
     return -1;
   }
 #elif defined(__APPLE__)
-  return -1;
+  long speed = 0;
+  size_t speed_size = sizeof(speed);
+  if (sysctlbyname("hw.cpufrequency", &speed, &speed_size, nullptr, 0) != 0) {
+    speed = -1;
+  }
+  return static_cast<int>(speed);
 #elif defined(_WIN32) || defined(_WIN64)
-  return -1;
+  std::vector<int> speed {};
+  wmi::queryWMI("Win32_Processor", "MaxClockSpeed", speed);
+  if (speed.empty()) { return -1; }
+  return speed[0] * 1000;
 #else
 #error Unsupported Platform
 #endif
+  return -1;
 }
 
-int CPU::getCacheSizeBytes() {
+// _____________________________________________________________________________________________________________________
+int CPU::getRegularClockSpeed_kHz() {
+#if defined(unix) || defined(__unix) || defined(__unix__)
+  std::string line;
+  std::ifstream stream("/proc/cpuinfo");
+  if (!stream) {
+    return -1;
+  }
+  while (getline(stream, line)) {
+    if (line.starts_with("cpu MHz")) {
+      try {
+        stream.close();
+        return static_cast<int>(std::stof(line.substr(line.find(": ")+2, line.length()))) * 1000;
+      } catch (std::invalid_argument &e) {
+        return -1;
+      }
+    }
+  }
+  stream.close();
+  return -1;
+#elif defined(__APPLE__)
+  uint64_t frequency = 0;
+  size_t size = sizeof(frequency);
+  if (sysctlbyname("hw.cpufrequency", &frequency, &size, nullptr, 0) == 0) {
+    return static_cast<int>(frequency);
+  }
+  return -1;
+#elif defined(_WIN32) || defined(_WIN64)
+  std::vector<int> speed {};
+  wmi::queryWMI("Win32_Processor", "MaxClockSpeed", speed);
+  if (speed.empty()) { return -1; }
+  return speed[0] * 1000;
+#else
+#error Unsupported Platform
+#endif
+  return -1;
+}
+
+int CPU::getCacheSize_Bytes() {
 #if defined(unix) || defined(__unix) || defined(__unix__)
   std::string line;
   std::ifstream stream("/proc/cpuinfo");
@@ -466,7 +475,10 @@ int CPU::getCacheSizeBytes() {
 #elif defined(__APPLE__)
   return -1;
 #elif defined(_WIN32) || defined(_WIN64)
-  return -1;
+  std::vector<int> cacheSize {};
+  wmi::queryWMI("Win32_Processor", "L3CacheSize", cacheSize);
+  if (cacheSize.empty()) { return -1; }
+  return cacheSize[0];
 #else
 #error Unsupported Platform
 #endif
