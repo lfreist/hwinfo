@@ -11,11 +11,11 @@ int main(int argc, char** argv) {
   std::cout << "----------------------------------- CPU -----------------------------------" << std::endl;
   std::cout << "CPU model:\t\t\t" << cpu.modelName() << std::endl;
   std::cout << "CPU vendor:\t\t\t" << cpu.vendor() << std::endl;
-  std::cout << "CPU physical cores:\t" << cpu.numCores() << std::endl;
+  std::cout << "CPU physical cores:\t" << cpu.numPhysicalCores() << std::endl;
   std::cout << "CPU logical cores:\t" << cpu.numLogicalCores() << std::endl;
   std::cout << "CPU max clock s.:\t" << cpu.maxClockSpeedMHz() << std::endl;
   std::cout << "CPU clock speed:\t"<< cpu.regularClockSpeedMHz() << std::endl;
-  std::cout << "CPU cache size:\t\t" << cpu.cacheSize() << std::endl;
+  std::cout << "CPU cache size:\t\t" << cpu.cacheSizeBytes() << std::endl;
 
   hwinfo::OS os;
   std::cout << "----------------------------------- OS ------------------------------------" << std::endl;
