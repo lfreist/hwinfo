@@ -1,7 +1,7 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#if defined(__x86_64__) || defined(__x86_64)
+#if defined(__x86_64__) || defined(__x86_64) || defined(_M_IX86)
 
 #ifndef HWINFO_CPUID_H_
 #define HWINFO_CPUID_H_
@@ -33,7 +33,7 @@ namespace hwinfo::cpuid {
  */
 void cpuid(unsigned func_id, unsigned sub_func_id, uint32_t regs[4]) {
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-  __cpuidex((int*) _regs, (int) 1, (int) 0);
+  __cpuidex((int*) regs, static_cast<int>(func_id), static_cast<int>(sub_func_id));
 #else
   asm volatile ("cpuid" :"=a" (regs[0]), "=b" (regs[1]), "=c" (regs[2]), "=d" (regs[3]) : "a" (func_id), "c" (sub_func_id));
 #endif

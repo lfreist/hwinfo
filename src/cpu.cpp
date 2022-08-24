@@ -19,6 +19,7 @@
 #include <Windows.h>
 #include <sysinfoapi.h>
 #include <memory>
+#include "hwinfo/WMIwrapper.h"
 #endif
 
 #include "hwinfo/cpu.h"
@@ -215,7 +216,7 @@ std::string CPU::getModelName() {
 
 // _____________________________________________________________________________________________________________________
 int CPU::getNumPhysicalCores() {
-#if defined(HWINFO_CPUID_H_)
+#if !defined(HWINFO_CPUID_H_)
   uint32_t regs[4] {};
   std::string vendorId = getVendor();
   std::for_each(vendorId.begin(), vendorId.end(), [](char &in) { in = ::toupper(in); } );
@@ -272,11 +273,15 @@ int CPU::getNumPhysicalCores() {
     }
     return physical;
 #elif defined(_WIN32) || defined(_WIN64)
-  // TODO: implement: https://devblogs.microsoft.com/oldnewthing/20131028-00/?p=2823
-  //DWORD cb = 0;
-  //if (GetLogicalPocessorInformationEx(RelationProcessorPackage, nullptr, &cb)) {
-  //}
-  return -1;
+  int count = 0;
+  for (wmi::EnumLogicalProcessorInformation enumInfo(RelationProcessorCore); auto pinfo = enumInfo.Current(); enumInfo.MoveNext()) {
+    int tmp = 0;
+    while (tmp < pinfo->Processor.GroupCount) {
+      count++;
+      tmp++;
+    }
+  }
+  return count;
 #else
 #error Unsupported Platform
 #endif
