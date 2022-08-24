@@ -186,12 +186,12 @@ std::string CPU::getModelName() {
   return "<unknown>";
   stream.close();
 #elif defined(__APPLE__)
-  std::string model_2(1024);
-    size_t size=model_2.size();
-    if (sysctlbyname("machdep.cpu.brand_string", &model_2.c_str(), &size, NULL, 0) < 0) {
-        perror("sysctl");
-    }
-    return model;
+  char* model_2[1024];
+  size_t size=model_2.size();
+  if (sysctlbyname("machdep.cpu.brand_string", model_2, &size, NULL, 0) < 0) {
+      perror("sysctl");
+  }
+  return std::string(model);
 #elif defined(_WIN32) || defined(_WIN64)
   HKEY hKeyProcessor;
   LONG lError = RegOpenKeyExA(HKEY_LOCAL_MACHINE, R"(HARDWARE\DESCRIPTION\System\CentralProcessor\0)", 0, KEY_READ, &hKeyProcessor);
