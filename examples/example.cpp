@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
   std::cout << "----------------------------------- GPU -----------------------------------" << std::endl;
   std::cout << "GPU model:\t\t\t" << gpu.name() << std::endl;
   std::cout << "GPU driverVersion:\t" << gpu.driverVersion() << std::endl;
-  std::cout << "GPU memory [MiB]:\t" << gpu.memoryMiB() << std::endl;
+  std::cout << "GPU memory [MiB]:\t" << gpu.memory_Bytes() / 1024.0 / 1024.0 << std::endl;
 
   hwinfo::RAM ram;
   std::cout << "----------------------------------- RAM -----------------------------------" << std::endl;
@@ -39,6 +39,6 @@ int main(int argc, char** argv) {
   std::cout << "RAM model:\t\t\t" << ram.model() << std::endl;
   std::cout << "RAM name:\t\t\t" << ram.name() << std::endl;
   std::cout << "RAM serial-number:\t" << ram.serialNumber() << std::endl;
-  std::cout << "RAM memory [MiB]:\t" << static_cast<double>(ram.totalSizeBytes()) / 1000.0 / 1000.0 << std::endl;
+  std::cout << "RAM memory [MiB]:\t" << static_cast<double>(ram.totalSize_Bytes()) / 1024.0 / 1024.0 << std::endl;
   std::cout << "---------------------------------------------------------------------------" << std::endl;
 }
