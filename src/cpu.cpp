@@ -186,9 +186,9 @@ std::string CPU::getModelName() {
   return "<unknown>";
   stream.close();
 #elif defined(__APPLE__)
-  std::string model(1024);
-    size_t size=model.size();
-    if (sysctlbyname("machdep.cpu.brand_string", &model.c_str(), &size, NULL, 0) < 0) {
+  std::string model_2(1024);
+    size_t size=model_2.size();
+    if (sysctlbyname("machdep.cpu.brand_string", &model_2.c_str(), &size, NULL, 0) < 0) {
         perror("sysctl");
     }
     return model;
