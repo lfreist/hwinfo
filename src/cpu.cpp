@@ -216,7 +216,7 @@ std::string CPU::getModelName() {
 
 // _____________________________________________________________________________________________________________________
 int CPU::getNumPhysicalCores() {
-#if !defined(HWINFO_CPUID_H_)
+#if defined(HWINFO_CPUID_H_)
   uint32_t regs[4] {};
   std::string vendorId = getVendor();
   std::for_each(vendorId.begin(), vendorId.end(), [](char &in) { in = ::toupper(in); } );
