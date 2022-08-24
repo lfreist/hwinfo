@@ -17,6 +17,7 @@
 #include <pthread.h>
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #include <Windows.h>
+#include <sysinfoapi.h>
 #include <memory>
 #endif
 
@@ -28,26 +29,28 @@ namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 CPU::CPU() {
-  _numCores = getNumCores();
+  _numPhysicalCores = getNumPhysicalCores();
   _numLogicalCores = getNumLogicalCores();
   _maxClockSpeedMHz = getMaxClockSpeedMHz();
   _minClockSpeedMHz = getMinClockSpeedMHz();
   _modelName = getModelName();
   _vendor = getVendor();
-  _cacheSize = getCacheSize();
+  _cacheSizeBytes = getCacheSizeBytes();
   _regularClockSpeedMHz = getRegularClockSpeedMHz();
 
-  CPUID cpuid(1, 0);
-  _isHTT = cpuid.EDX() & AVX_POS;
-  _isSSE = cpuid.EDX() & SSE_POS;
-  _isSSE2 = cpuid.EDX() & SSE2_POS;
-  _isSSE3 = cpuid.ECX() & SSE3_POS;
-  _isSSE41 = cpuid.ECX() & SSE41_POS;
-  _isSSE42 = cpuid.ECX() & SSE42_POS;
-  _isAVX = cpuid.ECX() & AVX_POS;
-  cpuid = CPUID(7, 0);
-  _isAVX2 = cpuid.EBX() & AVX2_POS;
-
+#if defined(HWINFO_CPUID_H_)
+  uint32_t regs[4] {};
+  cpuid::cpuid(1, 0, regs);
+  _isHTT = static_cast<bool>(regs[3] & AVX_POS);
+  _isSSE = static_cast<bool>(regs[3] & SSE_POS);
+  _isSSE2 = static_cast<bool>(regs[3] & SSE2_POS);
+  _isSSE3 = static_cast<bool>(regs[2] & SSE3_POS);
+  _isSSE41 = static_cast<bool>(regs[2] & SSE41_POS);
+  _isSSE42 = static_cast<bool>(regs[2] & SSE42_POS);
+  _isAVX = static_cast<bool>(regs[2] & AVX_POS);
+  cpuid::cpuid(7, 0, regs);
+  _isAVX2 = static_cast<bool>(regs[1] & AVX2_POS);
+#endif
 }
 
 // _____________________________________________________________________________________________________________________
@@ -84,116 +87,241 @@ int CPU::currentClockSpeedMHz(short coreId) {
 #else
 #error Unsupported Platform
 #endif
+  return -1;
 }
 
 // _____________________________________________________________________________________________________________________
 std::string CPU::getVendor() {
+#if defined(HWINFO_CPUID_H_)
   std::string vendor;
-  CPUID cpuid(0, 0);
-  uint32_t HFS = cpuid.EAX();
-  vendor += std::string((const char *) &cpuid.EBX(), 4);
-  vendor += std::string((const char *) &cpuid.EDX(), 4);
-  vendor += std::string((const char *) &cpuid.ECX(), 4);
+  uint32_t regs[4] {0};
+  cpuid::cpuid(0, 0, regs);
+  vendor += std::string((const char *) &regs[1], 4);
+  vendor += std::string((const char *) &regs[3], 4);
+  vendor += std::string((const char *) &regs[2], 4);
   return vendor;
+#endif
+#if defined(unix) || defined(__unix) || defined(__unix__)
+  std::string line;
+  std::ifstream stream("/proc/cpuinfo");
+  if (!stream) {
+    return "<unknown>";
+  }
+  while (getline(stream, line)) {
+    if (line.starts_with("vendor_id")) {
+      stream.close();
+      return line.substr(line.find(": ")+2, line.length());
+    }
+  }
+  return "<unknown>";
+  stream.close();
+#elif defined(__APPLE__)
+  // TODO: implement
+  return "not implemented yet...";
+#elif defined(_WIN32) || defined(_WIN64)
+  HKEY hKeyProcessor;
+  LONG lError = RegOpenKeyExA(HKEY_LOCAL_MACHINE, R"(HARDWARE\DESCRIPTION\System\CentralProcessor\0)", 0, KEY_READ, &hKeyProcessor);
+  if (lError != ERROR_SUCCESS)
+    return "<unknown>";
+
+  // Smart resource cleaner pattern
+  auto clearer = [](HKEY hKey) { RegCloseKey(hKey); };
+  auto key = std::unique_ptr<std::remove_pointer<HKEY>::type, decltype(clearer)>(hKeyProcessor, clearer);
+
+  CHAR pBuffer[_MAX_PATH] = { 0 };
+  DWORD dwBufferSize = sizeof(pBuffer);
+  lError = RegQueryValueExA(key.get(), "VendorIdentifier", nullptr, nullptr, (LPBYTE)pBuffer, &dwBufferSize);
+  if (lError != ERROR_SUCCESS) {
+    return "<unknown>";
+  }
+
+  return pBuffer;
+#endif
+  return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
 std::string CPU::getModelName() {
+#if defined(HWINFO_CPUID_H_)
   std::string model;
+  uint32_t regs[4] {};
   for (unsigned i = 0x80000002; i < 0x80000005; ++i) {
-    CPUID cpuid(i, 0);
-    for(auto c : std::string((const char*)&cpuid.EAX(), 4)) {
+    cpuid::cpuid(i, 0, regs);
+    for(auto c : std::string((const char*)&regs[0], 4)) {
       if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
         model += c;
       }
     }
-    for(auto c : std::string((const char*)&cpuid.EBX(), 4)) {
+    for(auto c : std::string((const char*)&regs[1], 4)) {
       if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
         model += c;
       }
     }
-    for(auto c : std::string((const char*)&cpuid.ECX(), 4)) {
+    for(auto c : std::string((const char*)&regs[2], 4)) {
       if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
         model += c;
       }
     }
-    for(auto c : std::string((const char*)&cpuid.EDX(), 4)) {
+    for(auto c : std::string((const char*)&regs[3], 4)) {
       if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
         model += c;
       }
     }
   }
   return model;
+#endif
+#if defined(unix) || defined(__unix) || defined(__unix__)
+  std::string line;
+  std::ifstream stream("/proc/cpuinfo");
+  if (!stream) {
+    return "<unknown>";
+  }
+  while (getline(stream, line)) {
+    if (line.starts_with("model name")) {
+      stream.close();
+      return line.substr(line.find(": ")+2, line.length());
+    }
+  }
+  return "<unknown>";
+  stream.close();
+#elif defined(__APPLE__)
+  std::string model(1024);
+    size_t size=model.size();
+    if (sysctlbyname("machdep.cpu.brand_string", &model.c_str(), &size, NULL, 0) < 0) {
+        perror("sysctl");
+    }
+    return model;
+#elif defined(_WIN32) || defined(_WIN64)
+  HKEY hKeyProcessor;
+  LONG lError = RegOpenKeyExA(HKEY_LOCAL_MACHINE, R"(HARDWARE\DESCRIPTION\System\CentralProcessor\0)", 0, KEY_READ, &hKeyProcessor);
+  if (lError != ERROR_SUCCESS)
+    return "<unknown>";
+
+  // Smart resource cleaner pattern
+  auto clearer = [](HKEY hKey) { RegCloseKey(hKey); };
+  auto key = std::unique_ptr<std::remove_pointer<HKEY>::type, decltype(clearer)>(hKeyProcessor, clearer);
+
+  CHAR pBuffer[_MAX_PATH] = { 0 };
+  DWORD dwBufferSize = sizeof(pBuffer);
+  lError = RegQueryValueExA(key.get(), "ProcessorNameString", nullptr, nullptr, (LPBYTE)pBuffer, &dwBufferSize);
+  if (lError != ERROR_SUCCESS) {
+    return "<unknown>";
+  }
+
+  return pBuffer;
+#endif
+  return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
-int CPU::getNumCores() {
+int CPU::getNumPhysicalCores() {
+#if defined(HWINFO_CPUID_H_)
+  uint32_t regs[4] {};
   std::string vendorId = getVendor();
   std::for_each(vendorId.begin(), vendorId.end(), [](char &in) { in = ::toupper(in); } );
-  CPUID cpuid(0, 0);
-  uint32_t HFS = cpuid.EAX();
+  cpuid::cpuid(0, 0, regs);
+  uint32_t HFS = regs[0];
   if (vendorId.find("INTEL") != std::string::npos) {
     if (HFS >= 11) {
       for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-        CPUID cpuid4(0x0b, lvl);
-        uint32_t currLevel = (LVL_TYPE & cpuid4.ECX()) >> 8;
+        uint32_t regs_2[4] {};
+        cpuid::cpuid(0x0b, lvl, regs_2);
+        uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
         if (currLevel == 0x01) {
-          int numCores = getNumLogicalCores()/static_cast<int>(LVL_CORES & cpuid4.EBX());
-          return numCores > 0 ? numCores : 1;
+          int numCores = getNumLogicalCores()/static_cast<int>(LVL_CORES & regs_2[1]);
+          if (numCores > 0) {
+            return numCores;
+          }
         }
       }
     } else {
       if (HFS >= 4) {
-        int numCores = getNumLogicalCores()/static_cast<int>(1 + (CPUID(4, 0).EAX() >> 26) & 0x3f);
-        return numCores > 0 ? numCores : 1;
+        uint32_t regs_3[4] {};
+        cpuid::cpuid(4, 0, regs_3);
+        int numCores = getNumLogicalCores()/static_cast<int>(1 + (regs_3[0] >> 26) & 0x3f);
+        if (numCores > 0) {
+          return numCores;
+        }
       }
     }
-    return 1;
   } else if (vendorId.find("AMD") != std::string::npos) {
     if (HFS > 0) {
-      if (CPUID(0x80000000, 0).EAX() >= 8) {
-        int numCores = 1 + (CPUID(0x80000008, 0).ECX() & 0xff);
-        return numCores > 0 ? numCores : 1;
+      uint32_t regs_4[4] {};
+      cpuid::cpuid(0x80000000, 0, regs_4);
+      if (regs_4[0] >= 8) {
+        int numCores = 1 + (regs_4[2] & 0xff);
+        if (numCores > 0) {
+          return numCores;
+        }
       }
     }
-    return 1;
   }
+#endif
+#if defined(unix) || defined(__unix) || defined(__unix__)
+#if defined(_SC_NPROCESSORS_ONLN)
+  // TODO: returns number of logical cores... fix this!
+  return static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
+#else
+  return -1;
+#endif
+#elif defined(__APPLE__)
+  int physical = 0;
+    size_t physical_size = sizeof(physical);
+    if (sysctlbyname("hw.physicalcpu", &physical, &physical_size, nullptr, 0) != 0) {
+      return -1;
+    }
+    return physical;
+#elif defined(_WIN32) || defined(_WIN64)
+  // TODO: implement: https://devblogs.microsoft.com/oldnewthing/20131028-00/?p=2823
+  //DWORD cb = 0;
+  //if (GetLogicalPocessorInformationEx(RelationProcessorPackage, nullptr, &cb)) {
+  //}
+  return -1;
+#else
+#error Unsupported Platform
+#endif
   return -1;
 }
 
 // _____________________________________________________________________________________________________________________
 int CPU::getNumLogicalCores() {
+#if defined(HWINFO_CPUID_H_)
   std::string vendorId = getVendor();
   std::for_each(vendorId.begin(), vendorId.end(), [](char &in) { in = ::toupper(in); } );
-  CPUID cpuid(0, 0);
-  uint32_t HFS = cpuid.EAX();
+  uint32_t regs[4] {};
+  cpuid::cpuid(0, 0, regs);
+  uint32_t HFS = regs[0];
   if (vendorId.find("INTEL") != std::string::npos) {
     if (HFS >= 0xb) {
       for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-        CPUID cpuid4(0x0b, lvl);
-        uint32_t currLevel = (LVL_TYPE & cpuid4.ECX()) >> 8;
+        uint32_t regs_2[4] {};
+        cpuid::cpuid(0x0b, lvl, regs_2);
+        uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
         if (currLevel == 0x02) {
-          return static_cast<int>(LVL_CORES & cpuid4.EBX());
+          return static_cast<int>(LVL_CORES & regs_2[1]);
         }
       }
     }
   } else if (vendorId.find("AMD") != std::string::npos) {
     if (HFS > 0) {
-      return static_cast<int>(CPUID(1, 0).EBX() >> 16) & 0xff;
+      cpuid::cpuid(1, 0, regs);
+      return static_cast<int>(regs[1] >> 16) & 0xff;
     }
     return 1;
   }
+#endif
   // fallback method:
 #if defined(unix) || defined(__unix) || defined(__unix__)
-#ifndef _SC_NPROCESSORS_ONLN
+#if defined(_SC_NPROCESSORS_ONLN)
+  return static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
+#else
   return -1;
 #endif
-  return static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
 #elif defined(__APPLE__)
   int logical = 0;
   size_t logical_size = sizeof(logical);
   if (sysctlbyname("hw.logicalcpu", &logical, &logical_size, nullptr, 0) != 0) {
-    logical = -1;
+    return -1;
   }
   return logical;
 #elif defined(_WIN32) || defined(_WIN64)
@@ -203,6 +331,7 @@ int CPU::getNumLogicalCores() {
 #else
 #error Unsupported Platform
 #endif
+  return -1;
 }
 
 // _____________________________________________________________________________________________________________________
@@ -232,6 +361,7 @@ int CPU::getMaxClockSpeedMHz() {
 #else
 #error Unsupported Platform
 #endif
+  return -1;
 }
 
 // _____________________________________________________________________________________________________________________
@@ -282,6 +412,7 @@ int CPU::getRegularClockSpeedMHz() {
 #else
 #error Unsupported Platform
 #endif
+  return -1;
 }
 
 // _____________________________________________________________________________________________________________________
@@ -308,7 +439,7 @@ int CPU::getMinClockSpeedMHz() {
 #endif
 }
 
-int CPU::getCacheSize() {
+int CPU::getCacheSizeBytes() {
 #if defined(unix) || defined(__unix) || defined(__unix__)
   std::string line;
   std::ifstream stream("/proc/cpuinfo");
