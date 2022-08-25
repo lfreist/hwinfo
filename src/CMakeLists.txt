@@ -4,6 +4,7 @@ add_library(HWinfo
         ram.cpp
         os.cpp
         mainboard.cpp
+        disk.cpp
         )
 
 add_library(${PROJECT_NAME}::HWinfo ALIAS HWinfo)

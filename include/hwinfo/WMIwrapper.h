@@ -16,9 +16,6 @@
 #include <ntddscsi.h>
 #pragma comment(lib, "wbemuuid.lib")
 
-#ifndef HWINFO_WMIWRAPPER_H_
-#define HWINFO_WMIWRAPPER_H_
-
 namespace hwinfo::wmi {
 
 template<typename T>
@@ -131,8 +128,4 @@ bool queryWMI(const std::string &WMIClass,
 
 }  // namespace hwinfo::wmi
 
-#else
-#error "This part of the software is Windows specific"
 #endif
-
-#endif //HWINFO_WMIWRAPPER_H_

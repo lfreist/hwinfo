@@ -1,9 +1,6 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#ifndef HWINFO_SYSTEM_H_
-#define HWINFO_SYSTEM_H_
-
 #pragma once
 
 #include <string>
@@ -33,6 +30,3 @@ class System {
 };
 
 }  // namespace hwinfo
-
-
-#endif //HWINFO_SYSTEM_H_

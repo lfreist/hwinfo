@@ -1,11 +1,10 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
+#pragma once
+
 #include <string>
 #include <vector>
-
-#ifndef HWINFO_CPU_H_
-#define HWINFO_CPU_H_
 
 namespace hwinfo {
 
@@ -65,5 +64,3 @@ class CPU {
 };
 
 }  // namespace hwinfo
-
-#endif //HWINFO_CPU_H_
