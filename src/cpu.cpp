@@ -282,7 +282,7 @@ int CPU::getNumPhysicalCores() {
       if (HFS >= 4) {
         uint32_t regs_3[4] {};
         cpuid::cpuid(4, 0, regs_3);
-        int numCores = getNumLogicalCores()/static_cast<int>(1 + (regs_3[0] >> 26) & 0x3f);
+        int numCores = getNumLogicalCores()/static_cast<int>(1 + ((regs_3[0] >> 26) & 0x3f));
         if (numCores > 0) {
           return numCores;
         }

@@ -41,4 +41,12 @@ int main(int argc, char** argv) {
   std::cout << "RAM serial-number:\t" << ram.serialNumber() << std::endl;
   std::cout << "RAM memory [MiB]:\t" << static_cast<double>(ram.totalSize_Bytes()) / 1024.0 / 1024.0 << std::endl;
   std::cout << "---------------------------------------------------------------------------" << std::endl;
+
+  hwinfo::MainBoard main_board;
+  std::cout << "------------------------------- Main Board --------------------------------" << std::endl;
+  std::cout << "Board manufacturer:\t" << main_board.manufacturer() << std::endl;
+  std::cout << "Board name:\t\t\t" << main_board.name() << std::endl;
+  std::cout << "Board version:\t\t\t" << main_board.version() << std::endl;
+  std::cout << "Board serial-number:\t" << ram.serialNumber() << std::endl;
+  std::cout << "---------------------------------------------------------------------------" << std::endl;
 }
