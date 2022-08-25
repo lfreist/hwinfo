@@ -11,6 +11,15 @@
 # hwinfo
 cross-platform C++ API for hardware information (CPU, RAM, GPU, ...)
 
+Checkout [dev](https://github.com/lfreist/hwinfo/tree/dev) to access latest features like:
+  – Motherboard information
+  – GPU information
+  – Harddrive information
+  – ...
+  
+> **Warning**
+> [dev](https://github.com/lfreist/hwinfo/tree/dev) is not production ready!
+
 ## Content
 
 * [Build hwinfo](#build-hwinfo)
