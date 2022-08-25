@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
 namespace hwinfo {
 
 class MainBoard {
@@ -29,6 +32,10 @@ class MainBoard {
   std::string _name;
   std::string _version;
   std::string _serialNumber;
+
+#if defined(unix) || defined(__unix) || defined(__unix__)
+  static std::vector<std::string> _candidates;
+#endif
 };
 
 }  // namespace hwinfo

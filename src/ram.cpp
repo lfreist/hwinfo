@@ -143,7 +143,7 @@ int64_t RAM::getTotalSize_Bytes() {
   GlobalMemoryStatusEx(&status);
   return static_cast<int64_t>(status.ullTotalPhys);
 #else
-#error Unsupported Platform
+  return -1;
 #endif
 }
 

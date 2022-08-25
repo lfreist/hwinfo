@@ -49,7 +49,7 @@ CPU::~CPU() = default;
 int CPU::currentClockSpeed_kHz() {
 #if defined(unix) || defined(__unix) || defined(__unix__)
   std::string line;
-  std::ifstream stream("/sys/devices/system/cpu/cpu" + std::to_string(coreId) + "/cpufreq/scaling_cur_freq");
+  std::ifstream stream("/sys/devices/system/cpu/cpu" + std::to_string(0) + "/cpufreq/scaling_cur_freq");
   if (!stream) {
     return -1;
   }
@@ -68,7 +68,7 @@ int CPU::currentClockSpeed_kHz() {
   if (speed.empty()) { return -1; }
   return speed[0];
 #else
-#error Unsupported Platform
+  return -1;
 #endif
   return -1;
 }
@@ -150,7 +150,6 @@ InstructionSet &CPU::instructionSet() {
     _instructionSet._isAVX2 = static_cast<bool>(regs[1] & AVX2_POS);
 #else
     _instructionSet = InstructionSet();
-    _instructionSet._init_ = true;
 #endif
   }
   return _instructionSet;
@@ -322,7 +321,7 @@ int CPU::getNumPhysicalCores() {
   if (cores.empty()) { return -1; }
   return cores[0];
 #else
-#error Unsupported Platform
+  return -1;
 #endif
   return -1;
 #endif
@@ -376,7 +375,7 @@ int CPU::getNumLogicalCores() {
   if (cores.empty()) { return -1; }
   return cores[0];
 #else
-#error Unsupported Platform
+  return -1;
 #endif
   return -1;
 #endif
@@ -410,7 +409,7 @@ int CPU::getMaxClockSpeed_kHz() {
   if (speed.empty()) { return -1; }
   return speed[0] * 1000;
 #else
-#error Unsupported Platform
+  return -1;
 #endif
   return -1;
 }
@@ -448,7 +447,7 @@ int CPU::getRegularClockSpeed_kHz() {
   if (speed.empty()) { return -1; }
   return speed[0] * 1000;
 #else
-#error Unsupported Platform
+  return -1;
 #endif
   return -1;
 }
@@ -480,7 +479,7 @@ int CPU::getCacheSize_Bytes() {
   if (cacheSize.empty()) { return -1; }
   return cacheSize[0];
 #else
-#error Unsupported Platform
+  return -1;
 #endif
 }
 

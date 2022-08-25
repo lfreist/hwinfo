@@ -29,6 +29,7 @@ int main(int argc, char** argv) {
 
   hwinfo::GPU gpu;
   std::cout << "----------------------------------- GPU -----------------------------------" << std::endl;
+  std::cout << "GPU vendor:\t\t\t" << gpu.vendor() << std::endl;
   std::cout << "GPU model:\t\t\t" << gpu.name() << std::endl;
   std::cout << "GPU driverVersion:\t" << gpu.driverVersion() << std::endl;
   std::cout << "GPU memory [MiB]:\t" << gpu.memory_Bytes() / 1024.0 / 1024.0 << std::endl;

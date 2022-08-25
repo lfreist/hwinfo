@@ -1,6 +1,8 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
+#include <fstream>
+
 #include "hwinfo/WMIwrapper.h"
 
 #include "hwinfo/mainboard.h"
@@ -54,6 +56,17 @@ std::string& MainBoard::serialNumber() {
 // _____________________________________________________________________________________________________________________
 std::string MainBoard::getManufacturer() {
 #if defined(unix) || defined(__unix) || defined(__unix__)
+  std::string manufacturer;
+  for (const auto& path: _candidates) {
+    std::string full_path = path + "id/board_vendor";
+    std::ifstream f(full_path);
+    if (f) {
+      getline(f, manufacturer);
+      if (!manufacturer.empty()) {
+        return manufacturer;
+      }
+    }
+  }
   return "<unknown>";
 #elif defined(__APPLE__)
   return "<unknown>"
@@ -64,13 +77,24 @@ std::string MainBoard::getManufacturer() {
   std::wstring tmp(ret);
   return {tmp.begin(), tmp.end()};
 #else
-#error "unsupported platform"
+  return "<unknown>";
 #endif
 }
 
 // _____________________________________________________________________________________________________________________
 std::string MainBoard::getName() {
 #if defined(unix) || defined(__unix) || defined(__unix__)
+  std::string name;
+  for (const auto& path: _candidates) {
+    std::string full_path = path + "id/board_name";
+    std::ifstream f(full_path);
+    if (f) {
+      getline(f, name);
+      if (!name.empty()) {
+        return name;
+      }
+    }
+  }
   return "<unknown>";
 #elif defined(__APPLE__)
   return "<unknown>"
@@ -81,13 +105,24 @@ std::string MainBoard::getName() {
   std::wstring tmp(ret);
   return {tmp.begin(), tmp.end()};
 #else
-#error "unsupported platform"
+  return "<unknown>";
 #endif
 }
 
 // _____________________________________________________________________________________________________________________
 std::string MainBoard::getVersion() {
 #if defined(unix) || defined(__unix) || defined(__unix__)
+  std::string version;
+  for (const auto& path: _candidates) {
+    std::string full_path = path + "id/board_version";
+    std::ifstream f(full_path);
+    if (f) {
+      getline(f, version);
+      if (!version.empty()) {
+        return version;
+      }
+    }
+  }
   return "<unknown>";
 #elif defined(__APPLE__)
   return "<unknown>"
@@ -98,13 +133,24 @@ std::string MainBoard::getVersion() {
   std::wstring tmp(ret);
   return {tmp.begin(), tmp.end()};
 #else
-#error "unsupported platform"
+  return "<unknown>";
 #endif
 }
 
 // _____________________________________________________________________________________________________________________
 std::string MainBoard::getSerialNumber() {
 #if defined(unix) || defined(__unix) || defined(__unix__)
+  std::string serialNumber;
+  for (const auto& path: _candidates) {
+    std::string full_path = path + "id/board_serial";
+    std::ifstream f(full_path);
+    if (f) {
+      getline(f, serialNumber);
+      if (serialNumber.empty()) {
+        return serialNumber;
+      }
+    }
+  }
   return "<unknown>";
 #elif defined(__APPLE__)
   return "<unknown>"
@@ -115,8 +161,12 @@ std::string MainBoard::getSerialNumber() {
   std::wstring tmp(ret);
   return {tmp.begin(), tmp.end()};
 #else
-#error "unsupported platform"
+  return "<unknown>";
 #endif
 }
+
+#if defined(unix) || defined(__unix) || defined(__unix__)
+std::vector<std::string> MainBoard::_candidates = {"/sys/devices/virtual/dmi/", "/sys/class/dmi/"};
+#endif
 
 }  // namespace hwinfo

@@ -317,7 +317,7 @@ string OS::getFullName() {
   os << " (build " << osvi.dwBuildNumber << ")";
   return os.str();
 #else
-#error Unsupported Platform
+  return "<unknown>";
 #endif
 }
 
@@ -347,7 +347,7 @@ string OS::getName() {
 #elif defined(_WIN32) || defined(_WIN64)
   return "Windows";
 #else
-#error Unsupported Platform
+  return "<unknown>";
 #endif
 }
 
@@ -377,7 +377,7 @@ string OS::getVersion() {
 #elif defined(_WIN32) || defined(_WIN64)
   return "<undefined>";
 #else
-#error Unsupported Platform
+  return "<unknown>";
 #endif
 }
 
@@ -390,7 +390,7 @@ string OS::getKernel() {
   }
   return "<unknown kernel>";
 #else
-  return "<undefined>";
+  return "<unknown>";
 #endif
 }
 
@@ -412,7 +412,7 @@ bool OS::getIs64bit() {
 #elif defined(_WIN64)
   return true;
 #else
-#error Unsupported Platform
+  return "<unknown>";
 #endif
 }
 
