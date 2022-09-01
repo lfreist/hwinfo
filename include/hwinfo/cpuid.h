@@ -5,7 +5,7 @@
 
 #include <string>
 
-#ifdef HWINFO_UNIX
+#if defined(HWINFO_UNIX) || defined(HWINFO_APPLE)
 #include <cpuid.h>
 #endif
 
