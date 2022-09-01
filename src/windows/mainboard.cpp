@@ -5,7 +5,7 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <fstream>
+#include <string>
 
 #include "hwinfo/WMIwrapper.h"
 #include "hwinfo/mainboard.h"

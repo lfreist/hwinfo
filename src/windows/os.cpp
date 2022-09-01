@@ -14,8 +14,6 @@
 
 #include "hwinfo/os.h"
 
-using std::string;
-
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
@@ -244,32 +242,18 @@ std::string OS::getName() {
 
 // _____________________________________________________________________________________________________________________
 std::string OS::getVersion() {
-  return "<undefined>";
+  return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
 std::string OS::getKernel() {
-#if defined(unix) || defined(__unix) || defined(__unix__)
-  static utsname info;
-  if (uname(&info) == 0) {
-    return info.release;
-  }
-  return "<unknown kernel>";
-}
-
-// _____________________________________________________________________________________________________________________
-bool OS::getIs32bit() {
-  return !getIs64bit();
+  return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
 bool OS::getIs64bit() {
-#elif defined(_WIN32) || defined(__CYGWIN__)
   BOOL bWow64Process = FALSE;
   return IsWow64Process(GetCurrentProcess(), &bWow64Process) && bWow64Process;
-#elif defined(_WIN64)
-  return true;
-#endif
 }
 
 }  // namespace hwinfo

@@ -6,7 +6,6 @@
 #ifdef HWINFO_WINDOWS
 
 #include <filesystem>
-#include <fstream>
 
 #include "hwinfo/disk.h"
 #include "hwinfo/utils/stringutils.h"

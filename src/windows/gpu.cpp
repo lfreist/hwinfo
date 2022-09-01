@@ -7,7 +7,6 @@
 
 #include <vector>
 #include <string>
-#include <regex>
 
 #include "hwinfo/WMIwrapper.h"
 #pragma comment(lib, "wbemuuid.lib")
