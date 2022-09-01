@@ -71,8 +71,8 @@ bool queryWMI(const std::string &WMIClass,
     return false;
   }
   IEnumWbemClassObject *pEnumerator = nullptr;
-  hres = pSvc->ExecQuery(bstr_t("WQL"),
-                         bstr_t(query.c_str()),
+  hres = pSvc->ExecQuery(bstr_t(L"WQL"),
+                         bstr_t(std::wstring(query.begin(), query.end()).c_str()),
                          WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
                          nullptr,
                          &pEnumerator);

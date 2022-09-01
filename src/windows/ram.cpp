@@ -20,6 +20,9 @@ std::string RAM::getManufacturer() {
   std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_PhysicalMemory", "Manufacturer", names);
   auto ret = names[0];
+  if (!ret) {
+    return "<unknown>";
+  }
   std::wstring tmp(ret);
   return {tmp.begin(), tmp.end()};
 }
@@ -29,6 +32,9 @@ std::string RAM::getName() {
   std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_PhysicalMemory", "Name", names);
   auto ret = names[0];
+  if (!ret) {
+    return "<unknown>";
+  }
   std::wstring tmp(ret);
   return {tmp.begin(), tmp.end()};
 }
@@ -38,6 +44,9 @@ std::string RAM::getModel() {
   std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_PhysicalMemory", "PartNumber", names);
   auto ret = names[0];
+  if (!ret) {
+    return "<unknown>";
+  }
   std::wstring tmp(ret);
   return {tmp.begin(), tmp.end()};
 }
@@ -47,6 +56,9 @@ std::string RAM::getSerialNumber() {
   std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_PhysicalMemory", "SerialNumber", names);
   auto ret = names[0];
+  if (!ret) {
+    return "<unknown>";
+  }
   std::wstring tmp(ret);
   return {tmp.begin(), tmp.end()};
 }

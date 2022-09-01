@@ -21,6 +21,9 @@ std::string GPU::getVendor() {
   std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_VideoController", "Name", names);
   auto ret = names[0];
+  if (!ret) {
+    return "<unknown>";
+  }
   std::wstring tmp(ret);
   return {tmp.begin(), tmp.end()};
 }
@@ -30,6 +33,9 @@ std::string GPU::getName() {
   std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_VideoController", "Name", names);
   auto ret = names[0];
+  if (!ret) {
+    return "<unknown>";
+  }
   std::wstring tmp(ret);
   return {tmp.begin(), tmp.end()};
 }
@@ -39,6 +45,9 @@ std::string GPU::getDriverVersion() {
   std::vector<const wchar_t*> driverVersion{};
   wmi::queryWMI("WIN32_VideoController", "DriverVersion", driverVersion);
   auto ret = driverVersion[0];
+  if (!ret) {
+    return "<unknown>";
+  }
   std::wstring tmp(ret);
   return {tmp.begin(), tmp.end()};
 }
