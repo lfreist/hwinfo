@@ -5,7 +5,7 @@
 
 #include <string>
 
-#if defined(HWINFO_UNIX) || defined(HWINFO_APPLE)
+#if defined(HWINFO_UNIX) || defined(HWINFO_APPLE) || defined(__MINGW32__)
 #include <cpuid.h>
 #endif
 
@@ -35,11 +35,13 @@ namespace hwinfo::cpuid {
  * @param regs
  */
 inline void cpuid(uint32_t func_id, uint32_t sub_func_id, uint32_t regs[4]) {
-#if __CYGWIN__
+#if defined(__CYGWIN__)
   cpuid(&regs[0], &regs[1], &regs[2], &regs[3], func_id, sub_func_id);
-#elif defined(HWINFO_WINDOWS)
+#elif defined(_MSC_VER)
   __cpuidex((int*) regs, static_cast<int>(func_id), static_cast<int>(sub_func_id));
-#elif defined(__GNUC__) || defined (__clang__)
+#elif defined(__GNUC__) || defined(__clang__)
+  __get_cpuid_count(func_id, sub_func_id, &regs[0], &regs[1], &regs[2], &regs[3]);
+#else
   __get_cpuid_count(func_id, sub_func_id, &regs[0], &regs[1], &regs[2], &regs[3]);
 #endif
 }
