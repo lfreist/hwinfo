@@ -1,14 +1,17 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#if defined(__x86_64__) || defined(__x86_64) || defined(_M_IX86)
-
-#ifndef HWINFO_CPUID_H_
-#define HWINFO_CPUID_H_
-
 #pragma once
 
 #include <string>
+
+#ifndef _MSC_VER
+#include <cpuid.h>
+#endif
+
+#include "platform.h"
+
+#ifdef HWINFO_X86
 
 #define MAX_INTEL_TOP_LVL 4
 
@@ -31,15 +34,16 @@ namespace hwinfo::cpuid {
  * @param sub_func_id
  * @param regs
  */
-void cpuid(unsigned func_id, unsigned sub_func_id, uint32_t regs[4]) {
-#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-  __cpuidex((int*) regs, static_cast<int>(func_id), static_cast<int>(sub_func_id));
-#else
-  asm volatile ("cpuid" :"=a" (regs[0]), "=b" (regs[1]), "=c" (regs[2]), "=d" (regs[3]) : "a" (func_id), "c" (sub_func_id));
+inline void cpuid(uint32_t func_id, uint32_t sub_func_id, uint32_t regs[4]) {
+#ifdef _MSC_VER
+    CpuIdEx(reinterpret_cast<int*>(regs), static_cast<int>(func_id), static_cast<int>(sub_func_id));
+#elif defined(__GNUC__) || defined (__clang__)
+    __get_cpuid_count(func_id, sub_func_id, &regs[0], &regs[1], &regs[2], &regs[3]);
+#elif __CYGWIN__
+    cpuid(&regs[0], &regs[1], &regs[2], &regs[3], func_id, sub_func_id);
 #endif
 }
 
 }  // namespace hwinfo::cpuid
 
-#endif  //HWINFO_CPUID_H_
-#endif  // check x86 arch
+#endif

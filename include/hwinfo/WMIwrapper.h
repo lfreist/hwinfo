@@ -16,9 +16,6 @@
 #include <ntddscsi.h>
 #pragma comment(lib, "wbemuuid.lib")
 
-#ifndef HWINFO_WMIWRAPPER_H_
-#define HWINFO_WMIWRAPPER_H_
-
 namespace hwinfo::wmi {
 
 template<typename T>
@@ -129,47 +126,6 @@ bool queryWMI(const std::string &WMIClass,
   return true;
 }
 
-template<typename T>
-T *AdvanceBytes(T *p, SIZE_T cb) {
-  return reinterpret_cast<T *>(reinterpret_cast<BYTE *>(p) + cb);
-}
-
-class EnumLogicalProcessorInformation {
- public:
-  explicit EnumLogicalProcessorInformation(LOGICAL_PROCESSOR_RELATIONSHIP Relationship)
-    : m_pinfoBase(nullptr), m_pinfoCurrent(nullptr), m_cbRemaining(0) {
-    DWORD cb = 0;
-    if (GetLogicalProcessorInformationEx(Relationship, nullptr, &cb)) return;
-    if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) return;
-    m_pinfoBase = reinterpret_cast<SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *>
-    (LocalAlloc(LMEM_FIXED, cb));
-    if (!m_pinfoBase) return;
-    if (!GetLogicalProcessorInformationEx(Relationship, m_pinfoBase, &cb)) return;
-    m_pinfoCurrent = m_pinfoBase;
-    m_cbRemaining = cb;
-  }
-  ~EnumLogicalProcessorInformation() { LocalFree(m_pinfoBase); }
-  void MoveNext() {
-    if (m_pinfoCurrent) {
-      m_cbRemaining -= m_pinfoCurrent->Size;
-      if (m_cbRemaining) {
-        m_pinfoCurrent = AdvanceBytes(m_pinfoCurrent, m_pinfoCurrent->Size);
-      } else {
-        m_pinfoCurrent = nullptr;
-      }
-    }
-  }
-  SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *Current() { return m_pinfoCurrent; }
- private:
-  SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *m_pinfoBase;
-  SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *m_pinfoCurrent;
-  DWORD m_cbRemaining;
-};
-
 }  // namespace hwinfo::wmi
 
-#else
-#error "This part of the software is Windows specific"
 #endif
-
-#endif //HWINFO_WMIWRAPPER_H_
