@@ -16,7 +16,7 @@ namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 std::string OS::getFullName() {
-  string os_name;
+  std::string os_name;
   os_name.resize(1024);
   size_t size = sizeof(os_name);
   if (sysctlbyname("kern.os", os_name.data(), &size, nullptr, 0) == 0) {
@@ -27,7 +27,7 @@ std::string OS::getFullName() {
 
 // _____________________________________________________________________________________________________________________
 std::string OS::getName() {
-  string os_name;
+  std::string os_name;
   os_name.resize(1024);
   size_t size = sizeof(os_name);
   if (sysctlbyname("kern.os", os_name.data(), &size, nullptr, 0) == 0) {
