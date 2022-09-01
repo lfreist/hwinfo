@@ -32,7 +32,7 @@ namespace hwinfo::cpuid {
  * @param sub_func_id
  * @param regs
  */
-void cpuid(unsigned func_id, unsigned sub_func_id, uint32_t regs[4]) {
+inline void cpuid(unsigned func_id, unsigned sub_func_id, uint32_t regs[4]) {
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
   __cpuidex((int*) regs, static_cast<int>(func_id), static_cast<int>(sub_func_id));
 #elif defined(__GNUC__) || defined(__clang__)
