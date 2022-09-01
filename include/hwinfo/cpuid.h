@@ -4,7 +4,10 @@
 #pragma once
 
 #include <string>
+
+#ifdef HWINFO_UNIX
 #include <cpuid.h>
+#endif
 
 #include "platform.h"
 
