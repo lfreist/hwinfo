@@ -31,7 +31,7 @@ class CPU {
       int numLogicalCores,
       int maxClockSpeed_kHz,
       int regularClockSpeed_kHz);
-  ~CPU();
+  ~CPU() = default;
 
   std::string& modelName();
   std::string& vendor();

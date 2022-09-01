@@ -10,7 +10,7 @@ namespace hwinfo {
 class OS {
  public:
   OS();
-  ~OS();
+  ~OS() = default;
 
   std::string fullName();
   std::string name();
@@ -35,10 +35,10 @@ class OS {
   std::string _name;
   std::string _version;
   std::string _kernel;
-  bool _32bit;
-  bool _64bit;
-  bool _bigEndian;
-  bool _littleEndian;
+  bool _32bit = false;
+  bool _64bit = false;
+  bool _bigEndian = false;
+  bool _littleEndian = false;
 };
 
 }  // namespace hwinfo

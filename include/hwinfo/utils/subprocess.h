@@ -9,14 +9,14 @@
 #include <memory>
 #include <iostream>
 
-std::string exec(std::string& command) {
+inline std::string exec(std::string& command) {
   std::string output;
   std::vector<char> buffer(0x80);
   std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
   if (!pipe) {
     return "";
   }
-  while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+  while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr) {
     output.append(buffer.data());
   }
   return output;

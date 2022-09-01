@@ -22,8 +22,8 @@ int main(int argc, char** argv) {
   std::cout << "----------------------------------- OS ------------------------------------" << std::endl;
   std::cout << "Operating System:\t" << os.fullName() <<std::endl;
   std::cout << "OS short name:\t\t" << os.name() <<std::endl;
-  std::cout << os.version() <<std::endl;
-  std::cout << os.kernel() <<std::endl;
+  std::cout << "OS version:\t\t\t" << os.version() <<std::endl;
+  std::cout << "OS kernel:\t\t\t" << os.kernel() <<std::endl;
   std::cout << "Architecture:\t\t" << (os.is32bit() ? "32 bit" : "64 bit") << std::endl;
   std::cout << "Endianess:\t\t\t" << (os.isLittleEndian() ? "little endian" : "big endian") << std::endl;
 
@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
   std::cout << "GPU vendor:\t\t\t" << gpu.vendor() << std::endl;
   std::cout << "GPU model:\t\t\t" << gpu.name() << std::endl;
   std::cout << "GPU driverVersion:\t" << gpu.driverVersion() << std::endl;
-  std::cout << "GPU memory [MiB]:\t" << gpu.memory_Bytes() / 1024.0 / 1024.0 << std::endl;
+  std::cout << "GPU memory [MiB]:\t" << static_cast<double>(gpu.memory_Bytes()) / 1024.0 / 1024.0 << std::endl;
 
   hwinfo::RAM ram;
   std::cout << "----------------------------------- RAM -----------------------------------" << std::endl;

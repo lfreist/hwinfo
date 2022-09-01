@@ -10,7 +10,7 @@
  * inplace!
  * @param input
  */
-void strip(std::string& input) {
+inline void strip(std::string& input) {
   std::string res;
   size_t start_index = 0;
   while (true) {
@@ -31,7 +31,13 @@ void strip(std::string& input) {
   input.assign(input.begin()+start_index, input.begin()+end_index+1);
 }
 
-unsigned count_substring(const std::string& input, const std::string& substring) {
+/**
+ * Count occurrences of a substring in input
+ * @param input
+ * @param substring
+ * @return
+ */
+inline unsigned count_substring(const std::string& input, const std::string& substring) {
   unsigned occurrences = 0;
   std::string::size_type shift = 0;
   while ((shift = input.find(substring, shift)) != std::string::npos) {
@@ -41,7 +47,15 @@ unsigned count_substring(const std::string& input, const std::string& substring)
   return occurrences;
 }
 
-std::string split_get_index(const std::string& input, const std::string& delimiter, int index) {
+/**
+ * split input at delimiter and return substring at position index.
+ * index can be negative, where -1 is the last occurrence.
+ * @param input
+ * @param delimiter
+ * @param index
+ * @return
+ */
+inline std::string split_get_index(const std::string& input, const std::string& delimiter, int index) {
   unsigned occ = count_substring(input, delimiter) + 1;
   index = index < 0 ? static_cast<int>(occ + index) : index;
   if (occ <= index) { return ""; }
@@ -57,4 +71,12 @@ std::string split_get_index(const std::string& input, const std::string& delimit
     return {input.begin() + static_cast<int64_t>(start_index), input.end()};
   }
   return {input.begin() + static_cast<int64_t>(start_index), input.begin() + static_cast<int64_t>(end_index)};
+}
+
+/**
+ * Convert windows wstring to string
+ * @return
+ */
+inline std::string wstring_to_string() {
+  return "";
 }

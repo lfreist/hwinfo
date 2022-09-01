@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "hwinfo/platform.h"
+
 namespace hwinfo {
 
 class MainBoard {
@@ -33,7 +35,7 @@ class MainBoard {
   std::string _version;
   std::string _serialNumber;
 
-#if defined(unix) || defined(__unix) || defined(__unix__)
+#ifdef HWINFO_UNIX
   static std::vector<std::string> _candidates;
 #endif
 };

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <string>
+
 #ifndef _MSC_VER
 #include <cpuid.h>
 #endif
@@ -33,7 +34,7 @@ namespace hwinfo::cpuid {
  * @param sub_func_id
  * @param regs
  */
-void cpuid(uint32_t func_id, uint32_t sub_func_id, uint32_t regs[4]) {
+inline void cpuid(uint32_t func_id, uint32_t sub_func_id, uint32_t regs[4]) {
 #ifdef _MSC_VER
     CpuIdEx(reinterpret_cast<int*>(regs), static_cast<int>(func_id), static_cast<int>(sub_func_id));
 #elif defined(__GNUC__) || defined (__clang__)

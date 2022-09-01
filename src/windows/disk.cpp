@@ -1,6 +1,13 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
+#include "hwinfo/platform.h"
+
+#ifdef HWINFO_WINDOWS
+
+#include <filesystem>
+#include <fstream>
+
 #include "hwinfo/disk.h"
 #include "hwinfo/utils/stringutils.h"
 
@@ -34,4 +41,14 @@ int64_t Disk::size_Bytes() const {
   return _size_Bytes;
 }
 
+
+// =====================================================================================================================
+// _____________________________________________________________________________________________________________________
+std::vector<Disk> getAllDisks() {
+  std::vector<Disk> disks;
+  return disks;
+}
+
 }  // namespace hwinfo
+
+#endif  // HWINFO_WINDOWS
