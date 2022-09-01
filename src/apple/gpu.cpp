@@ -34,7 +34,7 @@ std::string GPU::getDriverVersion() {
 // _____________________________________________________________________________________________________________________
 int64_t GPU::getMemory_Bytes() {
   // TODO: implement
-  return "<unknown>";
+  return -1;
 }
 
 }  // namespace hwinfo
