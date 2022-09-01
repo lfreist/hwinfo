@@ -5,7 +5,7 @@
 
 #include "hwinfo/platform.h"
 
-#ifdef HWINFO_X86
+#if defined(__x86_64__) || defined(__x86_64) || defined(_M_IX86)
 
 #if defined(__GNUC__) || defined(__clang__)
 #include <cpuid.h>
