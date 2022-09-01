@@ -24,9 +24,9 @@ add_library(HWinfo
         windows/cpu.cpp
         windows/gpu.cpp
         windows/ram.cpp
-        apple/os.cpp
-        apple/mainboard.cpp
-        apple/disk.cpp
+        windows/os.cpp
+        windows/mainboard.cpp
+        windows/disk.cpp
         )
 
 add_library(${PROJECT_NAME}::HWinfo ALIAS HWinfo)

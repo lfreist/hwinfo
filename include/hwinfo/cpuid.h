@@ -3,15 +3,15 @@
 
 #pragma once
 
-#include <string>
+#include "hwinfo/platform.h"
 
-#ifndef _MSC_VER
+#if defined(HWINFO_X86)
+
+#ifdef _MSC_VER
+#include <Windows.h>
+#else
 #include <cpuid.h>
 #endif
-
-#include "platform.h"
-
-#ifdef HWINFO_X86
 
 #define MAX_INTEL_TOP_LVL 4
 
@@ -26,6 +26,7 @@
 #define LVL_TYPE 0x0000ff00
 #define LVL_CORES 0x0000ffff
 
+
 namespace hwinfo::cpuid {
 
 /**
@@ -36,14 +37,14 @@ namespace hwinfo::cpuid {
  */
 inline void cpuid(uint32_t func_id, uint32_t sub_func_id, uint32_t regs[4]) {
 #ifdef _MSC_VER
-    CpuIdEx(reinterpret_cast<int*>(regs), static_cast<int>(func_id), static_cast<int>(sub_func_id));
-#elif defined(__GNUC__) || defined (__clang__)
-    __get_cpuid_count(func_id, sub_func_id, &regs[0], &regs[1], &regs[2], &regs[3]);
-#elif __CYGWIN__
-    cpuid(&regs[0], &regs[1], &regs[2], &regs[3], func_id, sub_func_id);
+  CpuIdEx(reinterpret_cast<int*>(regs), static_cast<int>(func_id), static_cast<int>(sub_func_id));
+#elif defined(__GNUC__) || defined(__clang__)
+  __get_cpuid_count(func_id, sub_func_id, &regs[0], &regs[1], &regs[2], &regs[3]);
+#elif __CYGWIN
+  cpuid(&regs[0], &regs[1], &regs[2], &regs[3], func_id, sub_func_id);
 #endif
 }
 
 }  // namespace hwinfo::cpuid
 
-#endif
+#endif  // HWINFO_X86
