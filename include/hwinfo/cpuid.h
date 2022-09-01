@@ -1,9 +1,11 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#if defined(__x86_64__) || defined(__x86_64) || defined(_M_IX86)
-
 #pragma once
+
+#include "hwinfo/platform.h"
+
+#ifdef HWINFO_X86
 
 #if defined(__GNUC__) || defined(__clang__)
 #include <cpuid.h>
@@ -24,6 +26,7 @@
 #define LVL_TYPE 0x0000ff00
 #define LVL_CORES 0x0000ffff
 
+
 namespace hwinfo::cpuid {
 
 /**
@@ -32,7 +35,7 @@ namespace hwinfo::cpuid {
  * @param sub_func_id
  * @param regs
  */
-inline void cpuid(unsigned func_id, unsigned sub_func_id, uint32_t regs[4]) {
+inline void cpuid(uint32_t func_id, uint32_t sub_func_id, uint32_t regs[4]) {
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
   __cpuidex((int*) regs, static_cast<int>(func_id), static_cast<int>(sub_func_id));
 #elif defined(__GNUC__) || defined(__clang__)
@@ -44,4 +47,4 @@ inline void cpuid(unsigned func_id, unsigned sub_func_id, uint32_t regs[4]) {
 
 }  // namespace hwinfo::cpuid
 
-#endif  //HWINFO_CPUID_H_
+#endif  // HWINFO_X86
