@@ -36,9 +36,9 @@ namespace hwinfo::cpuid {
  */
 inline void cpuid(uint32_t func_id, uint32_t sub_func_id, uint32_t regs[4]) {
 #ifdef HWINFO_WINDOWS
-    __cpuidex(reinterpret_cast<int*>(regs), static_cast<int>(func_id), static_cast<int>(sub_func_id));
+  __cpuidex((int*) regs, static_cast<int>(func_id), static_cast<int>(sub_func_id));
 #elif defined(__GNUC__) || defined (__clang__)
-    __get_cpuid_count(func_id, sub_func_id, &regs[0], &regs[1], &regs[2], &regs[3]);
+  __get_cpuid_count(func_id, sub_func_id, &regs[0], &regs[1], &regs[2], &regs[3]);
 #endif
 }
 
