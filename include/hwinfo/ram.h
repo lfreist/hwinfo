@@ -10,23 +10,23 @@ namespace hwinfo {
 class RAM {
  public:
   RAM() = default;
-  RAM(std::string &manufacturer, std::string &name, std::string &model, std::string &serialNumber, int64_t size_Bytes);
+  RAM(std::string &vendor, std::string &name, std::string &model, std::string &serialNumber, int64_t size_Bytes);
   ~RAM() = default;
 
-  std::string &manufacturer();
+  std::string &vendor();
   std::string &name();
   std::string &model();
   std::string &serialNumber();
   int64_t totalSize_Bytes();
 
-  static std::string getManufacturer();
+  static std::string getVendor();
   static std::string getName();
   static std::string getModel();
   static std::string getSerialNumber();
   static int64_t getTotalSize_Bytes();
 
  private:
-  std::string _manufacturer;
+  std::string _vendor;
   std::string _name;
   std::string _model;
   std::string _serialNumber;

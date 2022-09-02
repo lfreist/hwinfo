@@ -14,7 +14,7 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::string MainBoard::getManufacturer() {
+std::string MainBoard::getVendor() {
   std::vector<const wchar_t*> manufacturer{};
   wmi::queryWMI("Win32_BaseBoard", "Manufacturer", manufacturer);
   auto ret = manufacturer[0];

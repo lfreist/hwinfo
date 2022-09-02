@@ -17,12 +17,12 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-RAM::RAM(std::string &manufacturer,
+RAM::RAM(std::string &vendor,
          std::string &name,
          std::string &model,
          std::string &serialNumber,
          int64_t size_Bytes) {
-  _manufacturer = manufacturer;
+  _vendor = vendor;
   _name = name;
   _model = model;
   _serialNumber = serialNumber;
@@ -30,11 +30,11 @@ RAM::RAM(std::string &manufacturer,
 }
 
 // _____________________________________________________________________________________________________________________
-std::string &RAM::manufacturer() {
-  if (_manufacturer.empty()) {
-    _manufacturer = getManufacturer();
+std::string &RAM::vendor() {
+  if (_vendor.empty()) {
+    _vendor = getVendor();
   }
-  return _manufacturer;
+  return _vendor;
 }
 
 // _____________________________________________________________________________________________________________________

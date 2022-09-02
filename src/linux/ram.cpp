@@ -15,7 +15,7 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::string RAM::getManufacturer() {
+std::string RAM::getVendor() {
   return "<unknown>";
 }
 

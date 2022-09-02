@@ -11,22 +11,22 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-MainBoard::MainBoard(const std::string &manufacturer,
+MainBoard::MainBoard(const std::string &vendor,
                      const std::string &product,
                      const std::string &version,
                      const std::string &serialNumber) {
-  _manufacturer = manufacturer;
+  _vendor = vendor;
   _name = product;
   _version = version;
   _serialNumber = serialNumber;
 }
 
 // _____________________________________________________________________________________________________________________
-std::string& MainBoard::manufacturer() {
-  if (_manufacturer.empty()) {
-    _manufacturer = getManufacturer();
+std::string& MainBoard::vendor() {
+  if (_vendor.empty()) {
+    _vendor = getVendor();
   }
-  return _manufacturer;
+  return _vendor;
 }
 
 // _____________________________________________________________________________________________________________________

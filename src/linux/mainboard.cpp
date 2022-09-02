@@ -13,7 +13,7 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::string MainBoard::getManufacturer() {
+std::string MainBoard::getVendor() {
   std::string manufacturer;
   for (const auto& path: _candidates) {
     std::string full_path = path + "id/board_vendor";

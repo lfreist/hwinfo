@@ -9,6 +9,7 @@
 
 #include "hwinfo/disk.h"
 #include "hwinfo/utils/stringutils.h"
+#include "hwinfo/WMIwrapper.h"
 
 namespace hwinfo {
 
@@ -42,9 +43,20 @@ int64_t Disk::size_Bytes() const {
 
 
 // =====================================================================================================================
+struct TmpDisk {
+  std::string vendor;
+  std::string model;
+  std::string serialNumber;
+  int64_t sizeBytes;
+};
+
 // _____________________________________________________________________________________________________________________
 std::vector<Disk> getAllDisks() {
   std::vector<Disk> disks;
+  std::vector<const wchar_t*> vendor {};
+  wmi::queryWMI("Win32_Processor", "Name", vendor);
+  if (vendor.empty()) { return {}; }
+  std::wstring tmp(vendor[0]);
   return disks;
 }
 

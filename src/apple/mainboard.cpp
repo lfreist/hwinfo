@@ -11,7 +11,7 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::string MainBoard::getManufacturer() {
+std::string MainBoard::getVendor() {
   // TODO: implement
   return "<unknown>";
 }

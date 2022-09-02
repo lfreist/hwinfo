@@ -16,7 +16,7 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::string RAM::getManufacturer() {
+std::string RAM::getVendor() {
   std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_PhysicalMemory", "Manufacturer", names);
   auto ret = names[0];
