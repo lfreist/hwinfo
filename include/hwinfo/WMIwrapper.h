@@ -19,7 +19,7 @@
 namespace hwinfo::wmi {
 
 template<typename T>
-bool queryWMI(const std::string &WMIClass,
+inline bool queryWMI(const std::string &WMIClass,
               std::string field,
               std::vector<T> &value,
               const std::string &serverName = "ROOT\\CIMV2") {

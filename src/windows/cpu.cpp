@@ -19,7 +19,7 @@ namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 int CPU::currentClockSpeed_kHz() {
-  std::vector<int> speed {};
+  std::vector<int64_t> speed {};
   wmi::queryWMI("Win32_Processor", "CurrentClockSpeed", speed);
   if (speed.empty()) { return -1; }
   return speed[0];
@@ -175,7 +175,7 @@ int CPU::getNumLogicalCores() {
 
 // _____________________________________________________________________________________________________________________
 int CPU::getMaxClockSpeed_kHz() {
-  std::vector<int> speed {};
+  std::vector<int64_t> speed {};
   wmi::queryWMI("Win32_Processor", "MaxClockSpeed", speed);
   if (speed.empty()) { return -1; }
   return speed[0] * 1000;
@@ -183,14 +183,14 @@ int CPU::getMaxClockSpeed_kHz() {
 
 // _____________________________________________________________________________________________________________________
 int CPU::getRegularClockSpeed_kHz() {
-  std::vector<int> speed {};
+  std::vector<int64_t> speed {};
   wmi::queryWMI("Win32_Processor", "MaxClockSpeed", speed);
   if (speed.empty()) { return -1; }
   return speed[0] * 1000;
 }
 
 int CPU::getCacheSize_Bytes() {
-  std::vector<int> cacheSize {};
+  std::vector<int64_t> cacheSize {};
   wmi::queryWMI("Win32_Processor", "L3CacheSize", cacheSize);
   if (cacheSize.empty()) { return -1; }
   return cacheSize[0];
