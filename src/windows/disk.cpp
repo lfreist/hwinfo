@@ -19,7 +19,6 @@ std::vector<Disk> getAllDisks() {
   std::vector<const wchar_t*> vendor {};
   wmi::queryWMI("Win32_Processor", "Name", vendor);
   if (vendor.empty()) { return {}; }
-  std::wstring tmp(vendor[0]);
   return disks;
 }
 

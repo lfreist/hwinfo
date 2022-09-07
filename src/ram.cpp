@@ -21,11 +21,8 @@ RAM::RAM(std::string &vendor,
          std::string &name,
          std::string &model,
          std::string &serialNumber,
-         int64_t size_Bytes) {
-  _vendor = vendor;
-  _name = name;
-  _model = model;
-  _serialNumber = serialNumber;
+         int64_t size_Bytes)
+  : _vendor(vendor), _name(name), _model(model), _serialNumber(serialNumber) {
   _totalSize_Bytes = size_Bytes;
 }
 
