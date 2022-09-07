@@ -18,9 +18,8 @@ CPU::CPU(std::string& model,
          int numPhysicalCores,
          int numLogicalCores,
          int maxClockSpeed_kHz,
-         int regularClockSpeed_kHz) {
-  _modelName = model;
-  _vendor = vendor;
+         int regularClockSpeed_kHz)
+  : _modelName(model), _vendor(vendor) {
   _cacheSize_Bytes = cacheSize_Bytes;
   _numPhysicalCores = numPhysicalCores;
   _numLogicalCores = numLogicalCores;
