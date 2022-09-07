@@ -14,11 +14,8 @@ namespace hwinfo {
 MainBoard::MainBoard(const std::string &vendor,
                      const std::string &product,
                      const std::string &version,
-                     const std::string &serialNumber) {
-  _vendor = vendor;
-  _name = product;
-  _version = version;
-  _serialNumber = serialNumber;
+                     const std::string &serialNumber)
+  : _vendor(vendor), _name(product), _version(version), _serialNumber(serialNumber) {
 }
 
 // _____________________________________________________________________________________________________________________

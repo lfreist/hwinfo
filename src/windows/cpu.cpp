@@ -121,9 +121,7 @@ int CPU::getNumPhysicalCores() {
       cpuid::cpuid(0x80000000, 0, regs_4);
       if (regs_4[0] >= 8) {
         int numCores = 1 + (regs_4[2] & 0xff);
-        if (numCores > 0) {
-          return numCores;
-        }
+        return numCores;
       }
     }
   }

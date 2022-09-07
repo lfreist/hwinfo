@@ -11,7 +11,6 @@
  * @param input
  */
 inline void strip(std::string& input) {
-  std::string res;
   size_t start_index = 0;
   while (true) {
     char c = input[start_index];

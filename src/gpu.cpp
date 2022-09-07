@@ -18,10 +18,8 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-GPU::GPU(const std::string& vendor, const std::string &name, const std::string &driverVersion, int64_t memory_Bytes) {
-  _vendor = vendor;
-  _name = name;
-  _driverVersion = driverVersion;
+GPU::GPU(const std::string& vendor, const std::string &name, const std::string &driverVersion, int64_t memory_Bytes)
+  : _vendor(vendor), _name(name), _driverVersion(driverVersion) {
   _memory_Bytes = memory_Bytes;
 }
 

@@ -17,9 +17,9 @@ namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 std::string GPU::getVendor() {
-  std::vector<const wchar_t*> names{};
-  wmi::queryWMI("WIN32_VideoController", "Name", names);
-  auto ret = names[0];
+  std::vector<const wchar_t*> vendor{};
+  wmi::queryWMI("WIN32_VideoController", "AdapterCompatibility", vendor);
+  auto ret = vendor[0];
   if (!ret) {
     return "<unknown>";
   }

@@ -121,7 +121,8 @@ inline bool queryWMI(const std::string &WMIClass,
 
   pSvc->Release();
   pLoc->Release();
-  pEnumerator->Release();
+  if (pEnumerator)
+      pEnumerator->Release();
   CoUninitialize();
   return true;
 }
