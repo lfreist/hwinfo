@@ -182,7 +182,7 @@ int CPU::getMaxClockSpeed_kHz() {
 // _____________________________________________________________________________________________________________________
 int CPU::getRegularClockSpeed_kHz() {
   std::vector<int64_t> speed {};
-  wmi::queryWMI("Win32_Processor", "MaxClockSpeed", speed);
+  wmi::queryWMI("Win32_Processor", "CurrentClockSpeed", speed);
   if (speed.empty()) { return -1; }
   return speed[0] * 1000;
 }
