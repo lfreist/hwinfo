@@ -8,7 +8,7 @@
 
 # hwinfo
 
-hwinfo provides an easy-to-use and modern C++ API for retrieving hardware information of your systems components such as CPU, RAM, GPU, Disks, Mainboard, ...
+hwinfo provides an easy-to-use and modern C++ API for retrieving hardware information of your systems components such as CPU, RAM, GPU, Disks, Main-board, ...
 
 ## Content
 
@@ -36,7 +36,7 @@ hwinfo provides an easy-to-use and modern C++ API for retrieving hardware inform
 |                  | Serial Number      |   ❌   |   ❌   |    ✔️     |
 |                  | Total Memory Size  |  ✔️   |  ✔️   |    ✔️     |
 |                  | Free Memory Size   |   ❌   |   ❌   |     ❌     |
-| Mainboard        | Vendor             |  ✔️   |   ❌   |    ✔️     |
+| Main-board       | Vendor             |  ✔️   |   ❌   |    ✔️     |
 |                  | Model              |  ✔️   |   ❌   |    ✔️     |
 |                  | Version            |  ✔️   |   ❌   |    ✔️     |
 |                  | Serial-Number      |   ❌   |   ❌   |    ✔️     |
