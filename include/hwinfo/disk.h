@@ -9,6 +9,7 @@
 namespace hwinfo {
 
 class Disk {
+  friend std::vector<Disk>getAllDisks();
  public:
   Disk(const std::string &vendor, const std::string &model, const std::string &serialNumber, int64_t size_Bytes);
   ~Disk() = default;
@@ -19,6 +20,7 @@ class Disk {
   [[nodiscard]] int64_t size_Bytes() const;
 
  private:
+  Disk() = default;
   std::string _vendor;
   std::string _model;
   std::string _serialNumber;
