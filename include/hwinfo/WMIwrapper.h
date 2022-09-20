@@ -86,14 +86,14 @@ inline bool queryWMI(const std::string &WMIClass,
   ULONG uReturn = 0;
   while (pEnumerator) {
 
-    HRESULT Res = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
+    pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
 
     if (!uReturn) {
       break;
     }
 
     VARIANT vtProp;
-    Res = pclsObj->Get(std::wstring(field.begin(), field.end()).c_str(), 0, &vtProp, nullptr, nullptr);
+    pclsObj->Get(std::wstring(field.begin(), field.end()).c_str(), 0, &vtProp, nullptr, nullptr);
 
     if (std::is_same<T, long>::value || std::is_same<T, int>::value) {
       value.push_back((T) vtProp.intVal);
@@ -115,7 +115,7 @@ inline bool queryWMI(const std::string &WMIClass,
     pclsObj->Release();
   }
 
-  if (!value.size()) {
+  if (value.empty()) {
     value.resize(1);
   }
 
