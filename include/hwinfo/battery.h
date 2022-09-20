@@ -11,8 +11,9 @@
 namespace hwinfo {
 
 class Battery {
+  friend std::optional<Battery> getAllBatteries();
  public:
-  Battery(uint8_t id = 0);
+  Battery(int8_t id = 0);
   ~Battery() = default;
 
   std::string &vendor();
@@ -34,7 +35,7 @@ class Battery {
   bool discharging();
 
  private:
-  uint8_t _id = 0;
+  int8_t _id = -1;
   std::string _vendor;
   std::string _model;
   std::string _serialNumber;
@@ -42,10 +43,7 @@ class Battery {
   uint32_t _energyFull = 0;
 };
 
-std::optional<Battery> getAllBatteries() {
-  // TODO: implement
-  return {};
-}
+std::optional<Battery> getAllBatteries();
 
 }  // namespace hwinfo
 

@@ -5,99 +5,123 @@
 
 #ifdef HWINFO_UNIX
 
+#include <fstream>
+
 #include "hwinfo/battery.h"
 
 namespace hwinfo {
 
+static std::string base_path = "/sys/class/power_supply/";
+
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
-Battery::Battery(uint8_t id) {
-  _id = id;
-}
-
-// _____________________________________________________________________________________________________________________
-std::string &Battery::vendor() {
-  if (_vendor.empty()) {
-    _vendor = getVendor();
-  }
-  return _vendor;
-}
-
-// _____________________________________________________________________________________________________________________
-std::string &Battery::model() {
-  if (_model.empty()) {
-    _model = getModel();
-  }
-  return _model;
-}
-
-// _____________________________________________________________________________________________________________________
-std::string &Battery::serialNumber() {
-  if (_serialNumber.empty()) {
-    _serialNumber = getSerialNumber();
-  }
-  return _serialNumber;
-}
-
-// _____________________________________________________________________________________________________________________
-std::string &Battery::technology() {
-  if (_technology.empty()) {
-    _technology = getTechnology();
-  }
-  return _technology;
-}
-
-// _____________________________________________________________________________________________________________________
-uint32_t Battery::energyFull() {
-  if (_energyFull == 0) {
-    _energyFull = getEnergyFull();
-  }
-  return _energyFull;
-}
-
-// _____________________________________________________________________________________________________________________
-double Battery::capacity() {
-  return energyNow() / energyFull();
-}
-
-// _____________________________________________________________________________________________________________________
 std::string Battery::getVendor() {
+  if (_id < 0) {
+    return "<unknown>";
+  }
+  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "manufacturer");
+  std::string vendor;
+  if (vendor_file.is_open()) {
+    getline(vendor_file, vendor);
+    return vendor;
+  }
   return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
 std::string Battery::getModel() {
+  if (_id < 0) {
+    return "<unknown>";
+  }
+  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "model_name");
+  std::string value;
+  if (vendor_file.is_open()) {
+    getline(vendor_file, value);
+    return value;
+  }
   return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
 std::string Battery::getSerialNumber() {
+  if (_id < 0) {
+    return "<unknown>";
+  }
+  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "serial_number");
+  std::string value;
+  if (vendor_file.is_open()) {
+    getline(vendor_file, value);
+    return value;
+  }
   return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
 std::string Battery::getTechnology() {
+  if (_id < 0) {
+    return "<unknown>";
+  }
+  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "technology");
+  std::string value;
+  if (vendor_file.is_open()) {
+    getline(vendor_file, value);
+    return value;
+  }
   return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
 uint32_t Battery::getEnergyFull() {
+  if (_id < 0) {
+    return 0;
+  }
+  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "energy_full");
+  std::string value;
+  if (vendor_file.is_open()) {
+    getline(vendor_file, value);
+    return std::stoi(value);
+  }
   return 0;
 }
 
 // _____________________________________________________________________________________________________________________
 uint32_t Battery::energyNow() {
+  if (_id < 0) {
+    return 0;
+  }
+  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "energy_now");
+  std::string value;
+  if (vendor_file.is_open()) {
+    getline(vendor_file, value);
+    return std::stoi(value);
+  }
   return 0;
 }
 
 // _____________________________________________________________________________________________________________________
 bool Battery::charging() {
+  if (_id < 0) {
+    return false;
+  }
+  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "status");
+  std::string value;
+  if (vendor_file.is_open()) {
+    getline(vendor_file, value);
+    return value == "Charging";
+  }
   return false;
 }
 
 // _____________________________________________________________________________________________________________________
 bool Battery::discharging() {
-  return false;
+  return !charging();
+}
+
+// =====================================================================================================================
+// _____________________________________________________________________________________________________________________
+std::optional<Battery> getAllBatteries() {
+  // TODO: implement
+  return {};
 }
 
 }  // namespace hwinfo

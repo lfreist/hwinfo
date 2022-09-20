@@ -7,7 +7,7 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-Disk::Disk(const std::string &vendor, const std::string &model, const std::string &serialNumber, int64_t size_Bytes)
+Disk::Disk(std::string &vendor, std::string &model, std::string &serialNumber, int64_t size_Bytes)
   : _vendor(vendor), _model(model), _serialNumber(serialNumber) {
   _size_Bytes = size_Bytes;
 }
