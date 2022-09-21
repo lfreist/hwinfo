@@ -9,3 +9,4 @@
 #include "hwinfo/mainboard.h"
 #include "hwinfo/gpu.h"
 #include "hwinfo/disk.h"
+#include "hwinfo/battery.h"

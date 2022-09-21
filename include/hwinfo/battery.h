@@ -4,14 +4,14 @@
 #pragma once
 
 #include <string>
-#include <optional>
+#include <vector>
 
 #include "hwinfo/platform.h"
 
 namespace hwinfo {
 
 class Battery {
-  friend std::optional<Battery> getAllBatteries();
+  friend std::vector<Battery> getAllBatteries();
  public:
   explicit Battery(int8_t id = 0);
   ~Battery() = default;
@@ -43,7 +43,7 @@ class Battery {
   uint32_t _energyFull = 0;
 };
 
-std::optional<Battery> getAllBatteries();
+std::vector<Battery> getAllBatteries();
 
 }  // namespace hwinfo
 

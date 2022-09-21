@@ -10,14 +10,20 @@
 
 hwinfo provides an easy-to-use and modern C++ API for retrieving hardware information of your systems components such as CPU, RAM, GPU, Disks, Mainboard, ...
 
+> **Note**
+> If you face any issues, find bugs or if your platform is not supported yet, do not hesitate to [create an issue](https://github.com/lfreist/hwinfo/issues).
+
 ## Content
 
-* [Functionality](#functionality)
+* [Supported Components](#supported-components)
 * [Build hwinfo](#build-hwinfo)
 * [Example](#example)
 * [Include hwinfo to cmake project](#include-hwinfo-in-your-cmake-project)
 
-## Functionality
+## Supported Components
+> **Note**
+> The listed components that are not yet implemented (indicated with ❌) are in development and will be supported in
+> later releases. **You are welcome to start contributing and help improving this library!**
 
 | Component        | Info               | Linux | Apple | Windows |
 |------------------|:-------------------|:-----:|:-----:|:-------:|
@@ -51,6 +57,12 @@ hwinfo provides an easy-to-use and modern C++ API for retrieving hardware inform
 |                  | Kernel             |  ✔️   |   ❌   |    ❌    |
 |                  | Architecture (Bit) |  ✔️   |  ✔️   |   ✔️    |
 |                  | Endianess          |  ✔️   |  ✔️   |   ✔️    |
+| Battery          | Vendor             |  ✔️   |  ❌️   |   ❌️    |
+|                  | Model              |  ✔️   |   ❌   |    ❌    |
+|                  | Serial Number      |  ✔️   |   ❌   |    ❌    |
+|                  | Technology         |  ✔️   |   ❌   |    ❌    |
+|                  | Capacity           |  ✔️   |   ❌   |   ❌️    |
+|                  | Charging           |  ✔️   |   ❌   |   ❌️    |
 
 ## Build `hwinfo`
 
@@ -70,6 +82,54 @@ hwinfo provides an easy-to-use and modern C++ API for retrieving hardware inform
 ## Example
 
 See [example.cpp](examples/example.cpp)
+
+The output should look similar to this one:
+
+```
+Hardware Report:
+
+----------------------------------- CPU -----------------------------------
+vendor:             GenuineIntel
+model:              Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz
+physical cores:     8
+logical cores:      16
+max frequency:      5100000
+regular frequency:  3800000
+current frequency:  4700189
+cache size:         16384000
+----------------------------------- OS ------------------------------------
+Operating System:   Ubuntu 22.04 LTS
+short name:         Ubuntu
+version:            22.04
+kernel:             5.15.0-37-generic
+architecture:       64 bit
+endianess:          little endian
+----------------------------------- GPU -----------------------------------
+vendor:             NVIDIA Corporation
+model:              GeForce RTX 3070 Ti
+driverVersion:      <unknown>
+memory [MiB]:       -1
+----------------------------------- RAM -----------------------------------
+vendor:             <unknown>
+model:              <unknown>
+name:               <unknown>
+serial-number:      <unknown>
+size [MiB]:         64213.2
+------------------------------- Main Board --------------------------------
+vendor:             ASUSTeK COMPUTER INC.
+name:               PRIME Z490-A
+version:            Rev 1.xx
+serial-number:      <unknown>
+------------------------------- Batteries ---------------------------------
+No Batteries installed or detected
+--------------------------------- Disks -----------------------------------
+Disk 0:
+  vendor:           <unknown>
+  model:            WDS500G3X0C-00SJG0
+  serial-number:    2105EZ440111
+  size:             -1
+---------------------------------------------------------------------------
+```
 
 ## Include `hwinfo` in your cmake project
 

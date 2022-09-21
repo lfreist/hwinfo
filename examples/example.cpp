@@ -7,6 +7,11 @@
 #include "hwinfo/hwinfo.h"
 
 int main(int argc, char** argv) {
+  std::cout << "hwinfo is an open source, MIT licensed project that implements a platform independent "
+            << "hardware and system information gathering API for C++.\n\n"
+            << "If you face any issues, find bugs or if your platform is not supported yet, do not hesitate to create "
+            << "a ticket at https://github.com/lfreist/hwinfo/issues.\n\n"
+            << "Thanks for using hwinfo!" << std::endl;
   std::cout << std::endl << "Hardware Report:" << std::endl << std::endl;
   hwinfo::CPU cpu;
   std::cout << "----------------------------------- CPU -----------------------------------" << std::endl;
@@ -77,21 +82,49 @@ int main(int argc, char** argv) {
   std::cout << std::left << std::setw(20) << "serial-number:";
   std::cout << ram.serialNumber() << std::endl;
 
-  std::vector<hwinfo::Disk> disks = hwinfo::getAllDisks();
-  int counter = 0;
-  std::cout << "--------------------------------- Disks -----------------------------------" << std::endl;
-  for (const auto& disk: disks) {
-    std::cout << "Disk " << counter++ << ":" << std::endl;
-    std::cout << std::left << std::setw(20) << "  vendor:";
-    std::cout << disk.vendor() << std::endl;
-    std::cout << std::left << std::setw(20) << "  model:";
-    std::cout << disk.model() << std::endl;
-    std::cout << std::left << std::setw(20) << "  serial-number:";
-    std::cout << disk.serialNumber() << std::endl;
-    std::cout << std::left << std::setw(20) << "  size:";
-    std::cout << disk.size_Bytes() << std::endl;
+  std::vector<hwinfo::Battery> batteries = hwinfo::getAllBatteries();
+  std::cout << "------------------------------- Batteries ---------------------------------" << std::endl;
+  if (!batteries.empty()) {
+    int battery_counter = 0;
+    for (auto &battery: batteries) {
+      std::cout << "Battery " << battery_counter++ << ":" << std::endl;
+      std::cout << std::left << std::setw(20) << "  vendor:";
+      std::cout << battery.vendor() << std::endl;
+      std::cout << std::left << std::setw(20) << "  model:";
+      std::cout << battery.model() << std::endl;
+      std::cout << std::left << std::setw(20) << "  serial-number:";
+      std::cout << battery.serialNumber() << std::endl;
+      std::cout << std::left << std::setw(20) << "  charging:";
+      std::cout << (battery.charging() ? "yes" : "no") << std::endl;
+      std::cout << std::left << std::setw(20) << "  capacity:";
+      std::cout << battery.capacity() << std::endl;
+    }
+    std::cout << "---------------------------------------------------------------------------" << std::endl;
   }
-  std::cout << "---------------------------------------------------------------------------" << std::endl;
+  else {
+    std::cout << "No Batteries installed or detected" << std::endl;
+  }
+
+  std::vector<hwinfo::Disk> disks = hwinfo::getAllDisks();
+  std::cout << "--------------------------------- Disks -----------------------------------" << std::endl;
+  if (!disks.empty()) {
+    int disk_counter = 0;
+    for (const auto &disk: disks) {
+      std::cout << "Disk " << disk_counter++ << ":" << std::endl;
+      std::cout << std::left << std::setw(20) << "  vendor:";
+      std::cout << disk.vendor() << std::endl;
+      std::cout << std::left << std::setw(20) << "  model:";
+      std::cout << disk.model() << std::endl;
+      std::cout << std::left << std::setw(20) << "  serial-number:";
+      std::cout << disk.serialNumber() << std::endl;
+      std::cout << std::left << std::setw(20) << "  size:";
+      std::cout << disk.size_Bytes() << std::endl;
+    }
+    std::cout << "---------------------------------------------------------------------------" << std::endl;
+  }
+  else {
+    std::cout << "No Disks installed or detected" << std::endl;
+  }
 
   hwinfo::getAllDisks();
 }

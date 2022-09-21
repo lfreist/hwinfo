@@ -6,6 +6,7 @@
 #ifdef HWINFO_UNIX
 
 #include <fstream>
+#include <filesystem>
 
 #include "hwinfo/battery.h"
 
@@ -119,9 +120,13 @@ bool Battery::discharging() const {
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
-std::optional<Battery> getAllBatteries() {
-  // TODO: implement
-  return {};
+std::vector<Battery> getAllBatteries() {
+  std::vector<Battery> batteries;
+  int8_t id = 0;
+  while (std::filesystem::exists(std::filesystem::path(base_path + "BAT" + std::to_string(id)))) {
+    batteries.emplace_back(id++);
+  }
+  return batteries;
 }
 
 }  // namespace hwinfo
