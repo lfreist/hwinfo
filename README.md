@@ -11,6 +11,7 @@
 hwinfo provides an easy-to-use and modern C++ API for retrieving hardware information of your systems components such as CPU, RAM, GPU, Disks, Mainboard, ...
 
 > **Note**
+>
 > If you face any issues, find bugs or if your platform is not supported yet, do not hesitate to [create an issue](https://github.com/lfreist/hwinfo/issues).
 
 ## Content
@@ -22,6 +23,7 @@ hwinfo provides an easy-to-use and modern C++ API for retrieving hardware inform
 
 ## Supported Components
 > **Note**
+>
 > The listed components that are not yet implemented (indicated with ❌) are in development and will be supported in
 > later releases. **You are welcome to start contributing and help improving this library!**
 
