@@ -30,14 +30,14 @@ jobs:
             msys2-w32api-runtime
 
       - name: Configure CMake
-        run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+        run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         env:
           INCLUDE: C:\msys64\usr\include\w32api
           LIB: C:\msys64\usr\lib\w32api
-        run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
+        run: cmake --build ${{github.workspace}}\build
 
       - name: Test
         working-directory: ${{github.workspace}}\build
-        run: ctest -C ${{env.BUILD_TYPE}}
+        run: ctest -C Release

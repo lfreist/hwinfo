@@ -1,17 +1,16 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include <string>
+#pragma once
 
-#ifndef HWINFO_OS_H_
-#define HWINFO_OS_H_
+#include <string>
 
 namespace hwinfo {
 
 class OS {
  public:
   OS();
-  ~OS();
+  ~OS() = default;
 
   std::string fullName();
   std::string name();
@@ -36,12 +35,10 @@ class OS {
   std::string _name;
   std::string _version;
   std::string _kernel;
-  bool _32bit;
-  bool _64bit;
-  bool _bigEndian;
-  bool _littleEndian;
+  bool _32bit = false;
+  bool _64bit = false;
+  bool _bigEndian = false;
+  bool _littleEndian = false;
 };
 
 }  // namespace hwinfo
-
-#endif //HWINFO_OS_H_

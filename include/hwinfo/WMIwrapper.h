@@ -16,14 +16,14 @@
 #include <ntddscsi.h>
 #pragma comment(lib, "wbemuuid.lib")
 
-#ifndef HWINFO_WMIWRAPPER_H_
-#define HWINFO_WMIWRAPPER_H_
-
 namespace hwinfo::wmi {
 
 template<typename T>
-bool queryWMI(const string& WMIClass, string field, vector<T> &value, const string& serverName = "ROOT\\CIMV2") {
-  string query("SELECT " + field + " FROM " + WMIClass);
+inline bool queryWMI(const std::string &WMIClass,
+              std::string field,
+              std::vector<T> &value,
+              const std::string &serverName = "ROOT\\CIMV2") {
+  std::string query("SELECT " + field + " FROM " + WMIClass);
 
   HRESULT hres;
   hres = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -71,8 +71,8 @@ bool queryWMI(const string& WMIClass, string field, vector<T> &value, const stri
     return false;
   }
   IEnumWbemClassObject *pEnumerator = nullptr;
-  hres = pSvc->ExecQuery(bstr_t("WQL"),
-                         bstr_t(query.c_str()),
+  hres = pSvc->ExecQuery(bstr_t(L"WQL"),
+                         bstr_t(std::wstring(query.begin(), query.end()).c_str()),
                          WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
                          nullptr,
                          &pEnumerator);
@@ -86,14 +86,14 @@ bool queryWMI(const string& WMIClass, string field, vector<T> &value, const stri
   ULONG uReturn = 0;
   while (pEnumerator) {
 
-    HRESULT Res = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
+    pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
 
     if (!uReturn) {
       break;
     }
 
     VARIANT vtProp;
-    Res = pclsObj->Get(std::wstring(field.begin(), field.end()).c_str(), 0, &vtProp, nullptr, nullptr);
+    pclsObj->Get(std::wstring(field.begin(), field.end()).c_str(), 0, &vtProp, nullptr, nullptr);
 
     if (std::is_same<T, long>::value || std::is_same<T, int>::value) {
       value.push_back((T) vtProp.intVal);
@@ -108,27 +108,25 @@ bool queryWMI(const string& WMIClass, string field, vector<T> &value, const stri
     } else if (std::is_same<T, unsigned long long>::value) {
       value.push_back((T) vtProp.ullVal);
     } else {
-        value.push_back((T) ((bstr_t) vtProp.bstrVal).copy());
+      value.push_back((T) ((bstr_t) vtProp.bstrVal).copy());
     }
 
     VariantClear(&vtProp);
     pclsObj->Release();
   }
 
-  if (!value.size()) {
+  if (value.empty()) {
     value.resize(1);
   }
 
   pSvc->Release();
   pLoc->Release();
-  pEnumerator->Release();
+  if (pEnumerator)
+      pEnumerator->Release();
   CoUninitialize();
   return true;
 }
 
 }  // namespace hwinfo::wmi
-#else
-#error "This part of the software is Windows specific"
-#endif
 
-#endif //HWINFO_WMIWRAPPER_H_
+#endif
