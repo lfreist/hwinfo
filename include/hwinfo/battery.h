@@ -13,7 +13,7 @@ namespace hwinfo {
 class Battery {
   friend std::optional<Battery> getAllBatteries();
  public:
-  Battery(int8_t id = 0);
+  explicit Battery(int8_t id = 0);
   ~Battery() = default;
 
   std::string &vendor();
@@ -24,15 +24,15 @@ class Battery {
 
   double capacity();
 
-  std::string getVendor();
-  std::string getModel();
-  std::string getSerialNumber();
-  std::string getTechnology();
-  uint32_t getEnergyFull();
+  [[nodiscard]] std::string getVendor() const;
+  [[nodiscard]] std::string getModel() const;
+  [[nodiscard]] std::string getSerialNumber() const;
+  [[nodiscard]] std::string getTechnology() const;
+  [[nodiscard]] uint32_t getEnergyFull() const;
 
-  uint32_t energyNow();
-  bool charging();
-  bool discharging();
+  [[nodiscard]] uint32_t energyNow() const;
+  [[nodiscard]] bool charging() const;
+  [[nodiscard]] bool discharging() const;
 
  private:
   int8_t _id = -1;

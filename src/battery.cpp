@@ -53,7 +53,7 @@ uint32_t Battery::energyFull() {
 
 // _____________________________________________________________________________________________________________________
 double Battery::capacity() {
-  return energyNow() / energyFull();
+  return static_cast<double>(energyNow()) / energyFull();
 }
 
 }  // namespace hwinfo

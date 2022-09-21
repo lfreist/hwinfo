@@ -15,7 +15,7 @@ static std::string base_path = "/sys/class/power_supply/";
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
-std::string Battery::getVendor() {
+std::string Battery::getVendor() const {
   if (_id < 0) {
     return "<unknown>";
   }
@@ -29,7 +29,7 @@ std::string Battery::getVendor() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getModel() {
+std::string Battery::getModel() const {
   if (_id < 0) {
     return "<unknown>";
   }
@@ -43,7 +43,7 @@ std::string Battery::getModel() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getSerialNumber() {
+std::string Battery::getSerialNumber() const {
   if (_id < 0) {
     return "<unknown>";
   }
@@ -57,7 +57,7 @@ std::string Battery::getSerialNumber() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getTechnology() {
+std::string Battery::getTechnology() const {
   if (_id < 0) {
     return "<unknown>";
   }
@@ -71,7 +71,7 @@ std::string Battery::getTechnology() {
 }
 
 // _____________________________________________________________________________________________________________________
-uint32_t Battery::getEnergyFull() {
+uint32_t Battery::getEnergyFull() const {
   if (_id < 0) {
     return 0;
   }
@@ -85,7 +85,7 @@ uint32_t Battery::getEnergyFull() {
 }
 
 // _____________________________________________________________________________________________________________________
-uint32_t Battery::energyNow() {
+uint32_t Battery::energyNow() const {
   if (_id < 0) {
     return 0;
   }
@@ -99,7 +99,7 @@ uint32_t Battery::energyNow() {
 }
 
 // _____________________________________________________________________________________________________________________
-bool Battery::charging() {
+bool Battery::charging() const {
   if (_id < 0) {
     return false;
   }
@@ -113,7 +113,7 @@ bool Battery::charging() {
 }
 
 // _____________________________________________________________________________________________________________________
-bool Battery::discharging() {
+bool Battery::discharging() const {
   return !charging();
 }
 
