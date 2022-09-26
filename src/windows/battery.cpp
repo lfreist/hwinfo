@@ -6,6 +6,7 @@
 #ifdef HWINFO_WINDOWS
 
 #include "hwinfo/battery.h"
+#include "hwinfo/WMIwrapper.h"
 
 namespace hwinfo {
 
@@ -17,7 +18,7 @@ std::string Battery::getVendor() const {
 
 // _____________________________________________________________________________________________________________________
 std::string Battery::getModel() const {
-  return "<unknwon>";
+  return _model;
 }
 
 // _____________________________________________________________________________________________________________________
@@ -53,8 +54,18 @@ bool Battery::discharging() const {
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
 std::vector<Battery> getAllBatteries() {
-  // TODO: implement
-  return {};
+  std::vector<Battery> batteries;
+  std::vector<const wchar_t*> res {};
+  wmi::queryWMI("Win32_Battery", "Name", res);
+  if (res.empty() || res.at(0) == nullptr) { return {}; }
+  int8_t counter = 0;
+  for (const auto &v: res) {
+    std::wstring tmp(v);
+    batteries.emplace_back(counter++);
+    batteries.back()._model = { tmp.begin(), tmp.end() };
+  }
+  res.clear();
+  return batteries;
 }
 
 }  // namespace hwinfo
