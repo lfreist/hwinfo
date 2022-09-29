@@ -126,5 +126,6 @@ int main(int argc, char** argv) {
     std::cout << "No Disks installed or detected" << std::endl;
   }
 
-  hwinfo::getAllDisks();
+  // call to get all CPU-Sockets:
+  hwinfo::getAllSockets();
 }

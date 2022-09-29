@@ -12,22 +12,6 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-CPU::CPU(std::string& model,
-         std::string& vendor,
-         int cacheSize_Bytes,
-         int numPhysicalCores,
-         int numLogicalCores,
-         int maxClockSpeed_kHz,
-         int regularClockSpeed_kHz)
-  : _modelName(model), _vendor(vendor) {
-  _cacheSize_Bytes = cacheSize_Bytes;
-  _numPhysicalCores = numPhysicalCores;
-  _numLogicalCores = numLogicalCores;
-  _maxClockSpeed_kHz = maxClockSpeed_kHz;
-  _regularClockSpeed_kHz = regularClockSpeed_kHz;
-}
-
-// _____________________________________________________________________________________________________________________
 std::string& CPU::modelName() {
   if (_modelName.empty()) {
     _modelName = std::move(getModelName());
@@ -108,5 +92,12 @@ InstructionSet &CPU::instructionSet() {
   }
   return _instructionSet;
 }
+
+// ===== Socket ========================================================================================================
+// _____________________________________________________________________________________________________________________
+CPU &Socket::CPU() {
+  return _cpu;
+}
+
 
 }  // namespace hwinfo

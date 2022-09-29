@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <optional>
 
 namespace hwinfo {
 
@@ -22,15 +23,9 @@ struct InstructionSet {
 };
 
 class CPU {
+  friend std::optional<CPU> getCPU(uint8_t socket_id);
  public:
   CPU() = default;
-  CPU(std::string& model,
-      std::string& vendor,
-      int cacheSize_Bytes,
-      int numPhysicalCores,
-      int numLogicalCores,
-      int maxClockSpeed_kHz,
-      int regularClockSpeed_kHz);
   ~CPU() = default;
 
   std::string& modelName();
@@ -62,5 +57,22 @@ class CPU {
   int _cacheSize_Bytes = -1;
   InstructionSet _instructionSet;
 };
+
+class Socket {
+ public:
+  explicit Socket(uint8_t id);
+  Socket(uint8_t id, const CPU& cpu);
+  ~Socket() = default;
+
+  class CPU& CPU();
+
+ private:
+  uint8_t _id;
+  class CPU _cpu;
+};
+
+std::optional<CPU> getCPU(uint8_t socket_id);
+
+std::vector<Socket> getAllSockets();
 
 }  // namespace hwinfo

@@ -8,12 +8,13 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-
-#include <regex>
+#include <optional>
 #include <fstream>
+#include <map>
 
 #include "hwinfo/cpu.h"
 #include "hwinfo/cpuid.h"
+#include "hwinfo/utils/stringutils.h"
 
 
 namespace hwinfo {
@@ -252,6 +253,104 @@ int CPU::getCacheSize_Bytes() {
   }
   stream.close();
   return -1;
+}
+
+// =====================================================================================================================
+// _____________________________________________________________________________________________________________________
+// Helper function for linux: parses /proc/cpuinfo. socket_id == physical_id.
+// _____________________________________________________________________________________________________________________
+std::optional<CPU> getCPU(uint8_t socket_id) {
+  std::ifstream cpuinfo("/proc/cpuinfo");
+  if (!cpuinfo.is_open()) {
+    return {};
+  }
+  std::string file((std::istreambuf_iterator<char>(cpuinfo)),
+                   (std::istreambuf_iterator<char>()));
+  cpuinfo.close();
+  auto cpu_blocks_string = split(file, "\n\n");
+  std::map<const std::string, const std::string> cpu_block;
+  bool physical_id_found = false;
+  for (const auto &block: cpu_blocks_string) {
+    if (physical_id_found) {
+      break;
+    }
+    auto lines = split(block, '\n');
+    std::map<const std::string, const std::string> cpu_map;
+    bool add = true;
+    for (const auto &line: lines) {
+      auto pair = split(line, "\t: ");
+      if (pair.size() != 2) { continue; }
+      strip(pair[0]);
+      strip(pair[1]);
+      if (pair[0] == "physical id" && pair[1] != std::to_string(socket_id)) {
+        add = false;
+        break;
+      }
+      if (pair[0] == "physical id" && pair[1] == std::to_string(socket_id)) {
+        physical_id_found = true;
+      }
+      cpu_map.insert({std::move(pair[0]), std::move(pair[1])});
+    }
+    if (add && physical_id_found) {
+      cpu_block = std::move(cpu_map);
+      break;
+    }
+  }
+  if (cpu_block.empty()) {
+    return {};
+  }
+  CPU cpu;
+  cpu._modelName = cpu_block["model name"];
+  cpu._vendor = cpu_block["vendor_id"];
+  cpu._cacheSize_Bytes = std::stoi(split(cpu_block["cache size"], ' ')[0]) * 1024;
+  cpu._numPhysicalCores = std::stoi(cpu_block["cpu cores"]);
+  cpu._numLogicalCores = std::stoi(cpu_block["siblings"]);
+  cpu._maxClockSpeed_kHz = static_cast<int>(std::stod(cpu_block["cpu MHz"]) * 1000);
+  cpu._regularClockSpeed_kHz = static_cast<int>(std::stod(cpu_block["cpu MHz"]) * 1000);
+
+  InstructionSet instruction_set;
+  std::vector<std::string> flags{"htt", "sse", "sse1", "sse2", "sse3", "sse4_1", "sse4_2", "avx", "avx2"};
+  instruction_set._isHTT = (cpu_block["flags"].find(" htt ") != std::string::npos);
+  instruction_set._isSSE = (cpu_block["flags"].find(" sse ") != std::string::npos);
+  instruction_set._isSSE2 = (cpu_block["flags"].find(" sse2 ") != std::string::npos);
+  instruction_set._isSSE3 = (cpu_block["flags"].find(" sse3 ") != std::string::npos);
+  instruction_set._isSSE41 = (cpu_block["flags"].find(" sse4_1 ") != std::string::npos);
+  instruction_set._isSSE42 = (cpu_block["flags"].find(" sse4_2 ") != std::string::npos);
+  instruction_set._isAVX = (cpu_block["flags"].find(" avx ") != std::string::npos);
+  instruction_set._isAVX2 = (cpu_block["flags"].find(" avx2 ") != std::string::npos);
+  instruction_set._init_ = true;
+
+  cpu._instructionSet = instruction_set;
+  return cpu;
+}
+
+// ===== Socket ========================================================================================================
+// _____________________________________________________________________________________________________________________
+Socket::Socket(uint8_t id) : _id(id) {
+  auto cpu = getCPU(_id);
+  if (cpu.has_value()) {
+    _cpu = cpu.value();
+  }
+}
+
+// _____________________________________________________________________________________________________________________
+Socket::Socket(uint8_t id, const class CPU& cpu) : _id(id) {
+  _cpu = cpu;
+}
+
+// =====================================================================================================================
+// _____________________________________________________________________________________________________________________
+std::vector<Socket> getAllSockets() {
+  std::vector<Socket> sockets;
+  int id = 0;
+  while (true) {
+    auto cpu = getCPU(id);
+    if (!cpu.has_value()) {
+      break;
+    }
+    sockets.emplace_back(id++, std::move(cpu.value()));
+  }
+  return sockets;
 }
 
 }  // namespace hwinfo

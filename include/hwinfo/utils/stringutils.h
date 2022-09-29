@@ -11,6 +11,17 @@
  * @param input
  */
 inline void strip(std::string& input) {
+  if (input.empty()) { return; }
+  // optimization for input size == 1
+  if (input.size() == 1) {
+    if (input[0] == ' ' || input[0] == '\t' || input[0] == '\n') {
+      input = "";
+      return;
+    }
+    else {
+      return;
+    }
+  }
   size_t start_index = 0;
   while (true) {
     char c = input[start_index];
@@ -44,6 +55,42 @@ inline unsigned count_substring(const std::string& input, const std::string& sub
     shift += substring.size();
   }
   return occurrences;
+}
+
+/**
+ * Split input string at delimiter and return result
+ * @param input
+ * @param delimiter
+ * @return
+ */
+inline std::vector<std::string> split(const std::string& input, const std::string& delimiter) {
+  std::vector<std::string> result;
+  size_t shift = 0;
+  while(true) {
+    size_t match = input.find(delimiter, shift);
+    result.emplace_back(input.substr(shift, match-shift));
+    if (match == std::string::npos) { break; }
+    shift = match + delimiter.size();
+  }
+  return result;
+}
+
+/**
+ * Split input string at delimiter (char) and return result
+ * @param input
+ * @param delimiter
+ * @return
+ */
+inline std::vector<std::string> split(const std::string& input, const char delimiter) {
+  std::vector<std::string> result;
+  size_t shift = 0;
+  while(true) {
+    size_t match = input.find(delimiter, shift);
+    if (match == std::string::npos) { break; }
+    result.emplace_back(input.substr(shift, match-shift));
+    shift = match + 1;
+  }
+  return result;
 }
 
 /**
