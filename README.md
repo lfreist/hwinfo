@@ -157,9 +157,13 @@ Disk 0:
     ```
 3. Include `hwinfo` into your `.cpp/.h` files:
     ```c++
-    // file: your_benchmarks.cpp
+    // file: your_executable.cpp
     
     #include "hwinfo/hwinfo.h"
+
+   int main(int argc, char** argv) {
+     // Your code
+   }
     ```
 4. Link it in cmake
     ```cmake
