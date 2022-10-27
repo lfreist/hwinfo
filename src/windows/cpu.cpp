@@ -27,148 +27,153 @@ int CPU::currentClockSpeed_kHz() {
 
 // _____________________________________________________________________________________________________________________
 std::string CPU::getVendor() {
-#if defined(HWINFO_X86)
-  std::string vendor;
-  uint32_t regs[4] {0};
-  cpuid::cpuid(0, 0, regs);
-  vendor += std::string((const char *) &regs[1], 4);
-  vendor += std::string((const char *) &regs[3], 4);
-  vendor += std::string((const char *) &regs[2], 4);
-  return vendor;
-#else
   std::vector<const wchar_t*> vendor {};
   wmi::queryWMI("Win32_Processor", "Manufacturer", vendor);
-  if (vendor.empty()) { return "<unknown>"; }
+  if (vendor.empty()) {
+#if defined(HWINFO_X86)
+    std::string v;
+    uint32_t regs[4] {0};
+    cpuid::cpuid(0, 0, regs);
+    v += std::string((const char *) &regs[1], 4);
+    v += std::string((const char *) &regs[3], 4);
+    v += std::string((const char *) &regs[2], 4);
+    return v;
+#else
+    return "<unknown>";
+#endif
+  }
   std::wstring tmp(vendor[0]);
   return {tmp.begin(), tmp.end()};
-#endif
   return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
 std::string CPU::getModelName() {
-#if defined(HWINFO_X86)
-  std::string model;
-  uint32_t regs[4] {};
-  for (unsigned i = 0x80000002; i < 0x80000005; ++i) {
-    cpuid::cpuid(i, 0, regs);
-    for(auto c : std::string((const char*)&regs[0], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
-    }
-    for(auto c : std::string((const char*)&regs[1], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
-    }
-    for(auto c : std::string((const char*)&regs[2], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
-    }
-    for(auto c : std::string((const char*)&regs[3], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
-    }
-  }
-  return model;
-#else
   std::vector<const wchar_t*> vendor {};
   wmi::queryWMI("Win32_Processor", "Name", vendor);
-  if (vendor.empty()) { return "<unknown>"; }
+  if (vendor.empty()) {
+#if defined(HWINFO_X86)
+    std::string model;
+    uint32_t regs[4] {};
+    for (unsigned i = 0x80000002; i < 0x80000005; ++i) {
+      cpuid::cpuid(i, 0, regs);
+      for(auto c : std::string((const char*)&regs[0], 4)) {
+        if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
+          model += c;
+        }
+      }
+      for(auto c : std::string((const char*)&regs[1], 4)) {
+        if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
+          model += c;
+        }
+      }
+      for(auto c : std::string((const char*)&regs[2], 4)) {
+        if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
+          model += c;
+        }
+      }
+      for(auto c : std::string((const char*)&regs[3], 4)) {
+        if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
+          model += c;
+        }
+      }
+    }
+    return model;
+#else
+    return "<unknown>";
+#endif
+  }
   std::wstring tmp(vendor[0]);
   return {tmp.begin(), tmp.end()};
-#endif
-  return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
 int CPU::getNumPhysicalCores() {
+  std::vector<int> cores {};
+  wmi::queryWMI("Win32_Processor", "NumberOfCores", cores);
+  if (cores.empty()) {
 #if defined(HWINFO_X86)
-  uint32_t regs[4] {};
-  std::string vendorId = getVendor();
-  std::for_each(vendorId.begin(), vendorId.end(), [](char &in) { in = ::toupper(in); } );
-  cpuid::cpuid(0, 0, regs);
-  uint32_t HFS = regs[0];
-  if (vendorId.find("INTEL") != std::string::npos) {
-    if (HFS >= 11) {
-      for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-        uint32_t regs_2[4] {};
-        cpuid::cpuid(0x0b, lvl, regs_2);
-        uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
-        if (currLevel == 0x01) {
-          int numCores = getNumLogicalCores()/static_cast<int>(LVL_CORES & regs_2[1]);
+    uint32_t regs[4] {};
+    std::string vendorId = getVendor();
+    std::for_each(vendorId.begin(), vendorId.end(), [](char &in) { in = ::toupper(in); } );
+    cpuid::cpuid(0, 0, regs);
+    uint32_t HFS = regs[0];
+    if (vendorId.find("INTEL") != std::string::npos) {
+      if (HFS >= 11) {
+        for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
+          uint32_t regs_2[4] {};
+          cpuid::cpuid(0x0b, lvl, regs_2);
+          uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
+          if (currLevel == 0x01) {
+            int numCores = getNumLogicalCores()/static_cast<int>(LVL_CORES & regs_2[1]);
+            if (numCores > 0) {
+              return numCores;
+            }
+          }
+        }
+      } else {
+        if (HFS >= 4) {
+          uint32_t regs_3[4] {};
+          cpuid::cpuid(4, 0, regs_3);
+          int numCores = getNumLogicalCores()/static_cast<int>(1 + ((regs_3[0] >> 26) & 0x3f));
           if (numCores > 0) {
             return numCores;
           }
         }
       }
-    } else {
-      if (HFS >= 4) {
-        uint32_t regs_3[4] {};
-        cpuid::cpuid(4, 0, regs_3);
-        int numCores = getNumLogicalCores()/static_cast<int>(1 + ((regs_3[0] >> 26) & 0x3f));
-        if (numCores > 0) {
+    } else if (vendorId.find("AMD") != std::string::npos) {
+      if (HFS > 0) {
+        uint32_t regs_4[4] {};
+        cpuid::cpuid(0x80000000, 0, regs_4);
+        if (regs_4[0] >= 8) {
+          int numCores = 1 + (regs_4[2] & 0xff);
           return numCores;
         }
       }
     }
-  } else if (vendorId.find("AMD") != std::string::npos) {
-    if (HFS > 0) {
-      uint32_t regs_4[4] {};
-      cpuid::cpuid(0x80000000, 0, regs_4);
-      if (regs_4[0] >= 8) {
-        int numCores = 1 + (regs_4[2] & 0xff);
-        return numCores;
-      }
-    }
-  }
-  return -1;
+    return -1;
 #else
-  std::vector<int> cores {};
-  wmi::queryWMI("Win32_Processor", "NumberOfCores", cores);
-  if (cores.empty()) { return -1; }
-  return cores[0];
+    return -1;
 #endif
-  return -1;
+  }
+  return cores[0];
 }
 
 // _____________________________________________________________________________________________________________________
 int CPU::getNumLogicalCores() {
+  std::vector<int> cores {};
+  wmi::queryWMI("Win32_Processor", "NumberOfLogicalProcessors", cores);
+  if (cores.empty()) {
 #if defined(HWINFO_X86)
-  std::string vendorId = getVendor();
-  std::for_each(vendorId.begin(), vendorId.end(), [](char &in) { in = ::toupper(in); } );
-  uint32_t regs[4] {};
-  cpuid::cpuid(0, 0, regs);
-  uint32_t HFS = regs[0];
-  if (vendorId.find("INTEL") != std::string::npos) {
-    if (HFS >= 0xb) {
-      for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-        uint32_t regs_2[4] {};
-        cpuid::cpuid(0x0b, lvl, regs_2);
-        uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
-        if (currLevel == 0x02) {
-          return static_cast<int>(LVL_CORES & regs_2[1]);
+    std::string vendorId = getVendor();
+    std::for_each(vendorId.begin(), vendorId.end(), [](char &in) { in = ::toupper(in); } );
+    uint32_t regs[4] {};
+    cpuid::cpuid(0, 0, regs);
+    uint32_t HFS = regs[0];
+    if (vendorId.find("INTEL") != std::string::npos) {
+      if (HFS >= 0xb) {
+        for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
+          uint32_t regs_2[4] {};
+          cpuid::cpuid(0x0b, lvl, regs_2);
+          uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
+          if (currLevel == 0x02) {
+            return static_cast<int>(LVL_CORES & regs_2[1]);
+          }
         }
       }
+    } else if (vendorId.find("AMD") != std::string::npos) {
+      if (HFS > 0) {
+        cpuid::cpuid(1, 0, regs);
+        return static_cast<int>(regs[1] >> 16) & 0xff;
+      }
+      return 1;
     }
-  } else if (vendorId.find("AMD") != std::string::npos) {
-    if (HFS > 0) {
-      cpuid::cpuid(1, 0, regs);
-      return static_cast<int>(regs[1] >> 16) & 0xff;
-    }
-    return 1;
-  }
-  return -1;
+    return -1;
 #else
-  std::vector<int> cores {};
-  wmi::queryWMI("Win32_Processor", "NumberOfThreads", cores);
-  if (cores.empty()) { return -1; }
-  return cores[0];
+    return -1;
 #endif
-  return -1;
+  }
+  return cores[0];
 }
 
 // _____________________________________________________________________________________________________________________

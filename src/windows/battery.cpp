@@ -1,6 +1,7 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
+#include <iostream>
 #include "hwinfo/platform.h"
 
 #ifdef HWINFO_WINDOWS
@@ -58,6 +59,7 @@ std::vector<Battery> getAllBatteries() {
   std::vector<const wchar_t*> res {};
   wmi::queryWMI("Win32_Battery", "Name", res);
   if (res.empty() || res.at(0) == nullptr) { return {}; }
+  std::cout << res.size() << std::endl;
   int8_t counter = 0;
   for (const auto &v: res) {
     std::wstring tmp(v);
