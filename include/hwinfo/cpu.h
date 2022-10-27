@@ -26,6 +26,7 @@ class CPU {
   friend std::optional<CPU> getCPU(uint8_t socket_id);
  public:
   CPU() = default;
+  CPU(int id);
   ~CPU() = default;
 
   std::string& modelName();
@@ -56,6 +57,8 @@ class CPU {
   int _regularClockSpeed_kHz = -1;
   int _cacheSize_Bytes = -1;
   InstructionSet _instructionSet;
+
+  int _id = 0;
 };
 
 class Socket {
