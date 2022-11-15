@@ -13,9 +13,12 @@
 #include <map>
 
 #include "hwinfo/cpu.h"
-#include "hwinfo/cpuid.h"
 #include "hwinfo/utils/stringutils.h"
 
+
+#if defined(HWINFO_X86)
+#include "hwinfo/cpuid.h"
+#endif
 
 namespace hwinfo {
 
