@@ -1,0 +1,3 @@
+ToolSet: 1.0 (local)Options: 
+
+Options:-DCMAKE_MAKE_PROGRAM=/var/lib/snapd/snap/clion/209/bin/ninja/linux/ninja

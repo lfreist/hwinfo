@@ -1,0 +1,10 @@
+/home/draco/hwinfo/build/CMakeFiles/edit_cache.dir
+/home/draco/hwinfo/build/CMakeFiles/rebuild_cache.dir
+/home/draco/hwinfo/build/src/CMakeFiles/HWinfo.dir
+/home/draco/hwinfo/build/src/CMakeFiles/edit_cache.dir
+/home/draco/hwinfo/build/src/CMakeFiles/rebuild_cache.dir
+/home/draco/hwinfo/build/examples/CMakeFiles/Example.dir
+/home/draco/hwinfo/build/examples/CMakeFiles/edit_cache.dir
+/home/draco/hwinfo/build/examples/CMakeFiles/rebuild_cache.dir
+/home/draco/hwinfo/build/test/CMakeFiles/edit_cache.dir
+/home/draco/hwinfo/build/test/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -DNDEBUG -O3 CMakeFiles/Example.dir/example.cpp.o -o Example  ../lib/libHWinfo.a 
