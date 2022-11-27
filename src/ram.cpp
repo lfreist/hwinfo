@@ -65,5 +65,33 @@ int64_t RAM::totalSize_Bytes() {
   }
   return _totalSize_Bytes;
 }
+// _____________________________________________________________________________________________________________________
+    int64_t RAM::freeAvailableMemory() {
+        if (_totalFreeSize_Bytes == -1) {
+            _totalFreeSize_Bytes = getFreeAvailableMemory();
+        }
+        return _totalFreeSize_Bytes;
+    }
+
+/* Finding free memory in windows */
+/*  PFN_MS_EX pfnex;
+    HMODULE h = GetModuleHandle ("kernel32.dll");
+
+    if (!h)
+    return 0.0;
+
+    if ((pfnex = (PFN_MS_EX) GetProcAddress (h, "GlobalMemoryStatusEx"))) {
+    lMEMORYSTATUSEX lms_ex;
+    lms_ex.dwLength = sizeof lms_ex;
+    if (!pfnex (&lms_ex))
+    return 0.0;
+    return (double) lms_ex.ullAvailPhys;
+}
+
+else {
+MEMORYSTATUS ms;
+GlobalMemoryStatus (&ms);
+return (double) ms.dwAvailPhys;
+} */
 
 }  // namespace hwinfo
