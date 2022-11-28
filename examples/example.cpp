@@ -70,6 +70,8 @@ int main(int argc, char** argv) {
   std::cout << ram.serialNumber() << std::endl;
   std::cout << std::left << std::setw(20) << "size [MiB]:";
   std::cout << static_cast<double>(ram.totalSize_Bytes()) / 1024.0 / 1024.0 << std::endl;
+  std::cout << std::left << std::setw(20) << "free [MiB]:";
+  std::cout << static_cast<double>(ram.availableMemory()) / 1024.0 / 1024.0 << std::endl;
 
   hwinfo::MainBoard main_board;
   std::cout << "------------------------------- Main Board --------------------------------" << std::endl;
