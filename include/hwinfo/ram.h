@@ -10,13 +10,13 @@ namespace hwinfo {
 class RAM {
  public:
   RAM() = default;
-  RAM(std::string &vendor, std::string &name, std::string &model, std::string &serialNumber, int64_t size_Bytes);
+  RAM(std::string& vendor, std::string& name, std::string& model, std::string& serialNumber, int64_t size_Bytes);
   ~RAM() = default;
 
-  std::string &vendor();
-  std::string &name();
-  std::string &model();
-  std::string &serialNumber();
+  std::string& vendor();
+  std::string& name();
+  std::string& model();
+  std::string& serialNumber();
   int64_t totalSize_Bytes();
 
   static std::string getVendor();

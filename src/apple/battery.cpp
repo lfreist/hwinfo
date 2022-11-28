@@ -11,44 +11,28 @@ namespace hwinfo {
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
-std::string Battery::getVendor() const {
-  return "<unknwon>";
-}
+std::string Battery::getVendor() const { return "<unknwon>"; }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getModel() const {
-  return "<unknwon>";
-}
+std::string Battery::getModel() const { return "<unknwon>"; }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getSerialNumber() const {
-  return "<unknwon>";
-}
+std::string Battery::getSerialNumber() const { return "<unknwon>"; }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getTechnology() const {
-  return "<unknwon>";
-}
+std::string Battery::getTechnology() const { return "<unknwon>"; }
 
 // _____________________________________________________________________________________________________________________
-uint32_t Battery::getEnergyFull() const {
-  return 0;
-}
+uint32_t Battery::getEnergyFull() const { return 0; }
 
 // _____________________________________________________________________________________________________________________
-uint32_t Battery::energyNow() const {
-  return 0;
-}
+uint32_t Battery::energyNow() const { return 0; }
 
 // _____________________________________________________________________________________________________________________
-bool Battery::charging() const {
-  return false;
-}
+bool Battery::charging() const { return false; }
 
 // _____________________________________________________________________________________________________________________
-bool Battery::discharging() const {
-  return false;
-}
+bool Battery::discharging() const { return false; }
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________

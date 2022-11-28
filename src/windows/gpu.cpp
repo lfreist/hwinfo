@@ -5,8 +5,8 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "hwinfo/WMIwrapper.h"
 #pragma comment(lib, "wbemuuid.lib")

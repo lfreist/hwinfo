@@ -1,20 +1,18 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
+#include "hwinfo/cpu.h"
+
 #include <string>
 #include <vector>
 
-#include "hwinfo/cpu.h"
-#include "hwinfo/platform.h"
-
 #include "hwinfo/cpuid.h"
+#include "hwinfo/platform.h"
 
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-CPU::CPU(int id) {
-  _id = id;
-}
+CPU::CPU(int id) { _id = id; }
 
 // _____________________________________________________________________________________________________________________
 std::string& CPU::modelName() {
@@ -73,22 +71,20 @@ int CPU::regularClockSpeed_kHz() {
 }
 
 // _____________________________________________________________________________________________________________________
-InstructionSet &CPU::instructionSet() {
+InstructionSet& CPU::instructionSet() {
   if (!_instructionSet._init_) {
 #if defined(HWINFO_X86)
-    uint32_t regs[4] {};
+    uint32_t regs[4]{};
     cpuid::cpuid(1, 0, regs);
-    _instructionSet = InstructionSet {
-      static_cast<bool>(regs[3] & AVX_POS),
-      static_cast<bool>(regs[3] & SSE_POS),
-      static_cast<bool>(regs[3] & SSE2_POS),
-      static_cast<bool>(regs[2] & SSE3_POS),
-      static_cast<bool>(regs[2] & SSE41_POS),
-      static_cast<bool>(regs[2] & SSE42_POS),
-      static_cast<bool>(regs[2] & AVX_POS),
-      false,
-      true
-    };
+    _instructionSet = InstructionSet{static_cast<bool>(regs[3] & AVX_POS),
+                                     static_cast<bool>(regs[3] & SSE_POS),
+                                     static_cast<bool>(regs[3] & SSE2_POS),
+                                     static_cast<bool>(regs[2] & SSE3_POS),
+                                     static_cast<bool>(regs[2] & SSE41_POS),
+                                     static_cast<bool>(regs[2] & SSE42_POS),
+                                     static_cast<bool>(regs[2] & AVX_POS),
+                                     false,
+                                     true};
     cpuid::cpuid(7, 0, regs);
     _instructionSet._isAVX2 = static_cast<bool>(regs[1] & AVX2_POS);
 #else
@@ -100,9 +96,6 @@ InstructionSet &CPU::instructionSet() {
 
 // ===== Socket ========================================================================================================
 // _____________________________________________________________________________________________________________________
-CPU &Socket::CPU() {
-  return _cpu;
-}
-
+CPU& Socket::CPU() { return _cpu; }
 
 }  // namespace hwinfo

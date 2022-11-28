@@ -21,7 +21,7 @@ std::vector<Disk> getAllDisks() {
   std::string vendor;
   std::string model;
   std::string serialNumber;
-  for (const auto& entry: std::filesystem::directory_iterator(base_path)) {
+  for (const auto& entry : std::filesystem::directory_iterator(base_path)) {
     std::string path = entry.path().string() + "/device/";
     if (!std::filesystem::exists(std::filesystem::path(path))) {
       continue;
@@ -29,20 +29,23 @@ std::vector<Disk> getAllDisks() {
     std::ifstream f(path + "vendor");
     if (f) {
       getline(f, vendor);
+    } else {
+      vendor = "<unknown>";
     }
-    else { vendor = "<unknown>"; }
     f.close();
     f.open(path + "model");
     if (f) {
       getline(f, model);
+    } else {
+      vendor = "<unknown>";
     }
-    else { vendor = "<unknown>"; }
     f.close();
     f.open(path + "serial");
     if (f) {
       getline(f, serialNumber);
+    } else {
+      serialNumber = "<unknown>";
     }
-    else { serialNumber = "<unknown>"; }
     f.close();
     strip(vendor);
     strip(model);

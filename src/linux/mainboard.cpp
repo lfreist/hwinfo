@@ -9,13 +9,12 @@
 
 #include "hwinfo/mainboard.h"
 
-
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 std::string MainBoard::getVendor() {
   std::string manufacturer;
-  for (const auto& path: _candidates) {
+  for (const auto& path : _candidates) {
     std::string full_path = path + "id/board_vendor";
     std::ifstream f(full_path);
     if (f) {
@@ -31,7 +30,7 @@ std::string MainBoard::getVendor() {
 // _____________________________________________________________________________________________________________________
 std::string MainBoard::getName() {
   std::string name;
-  for (const auto& path: _candidates) {
+  for (const auto& path : _candidates) {
     std::string full_path = path + "id/board_name";
     std::ifstream f(full_path);
     if (f) {
@@ -47,7 +46,7 @@ std::string MainBoard::getName() {
 // _____________________________________________________________________________________________________________________
 std::string MainBoard::getVersion() {
   std::string version;
-  for (const auto& path: _candidates) {
+  for (const auto& path : _candidates) {
     std::string full_path = path + "id/board_version";
     std::ifstream f(full_path);
     if (f) {
@@ -63,7 +62,7 @@ std::string MainBoard::getVersion() {
 // _____________________________________________________________________________________________________________________
 std::string MainBoard::getSerialNumber() {
   std::string serialNumber;
-  for (const auto& path: _candidates) {
+  for (const auto& path : _candidates) {
     std::string full_path = path + "id/board_serial";
     std::ifstream f(full_path);
     if (f) {

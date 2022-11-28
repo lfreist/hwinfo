@@ -5,34 +5,26 @@
 
 #ifdef HWINFO_UNIX
 
+#include <unistd.h>
+
 #include <string>
 #include <vector>
-
-#include <unistd.h>
 
 #include "hwinfo/ram.h"
 
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::string RAM::getVendor() {
-  return "<unknown>";
-}
+std::string RAM::getVendor() { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
-std::string RAM::getName() {
-  return "<unknown>";
-}
+std::string RAM::getName() { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
-std::string RAM::getModel() {
-  return "<unknown>";
-}
+std::string RAM::getModel() { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
-std::string RAM::getSerialNumber() {
-  return "<unknown>";
-}
+std::string RAM::getSerialNumber() { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
 int64_t RAM::getTotalSize_Bytes() {

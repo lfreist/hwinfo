@@ -7,22 +7,24 @@
 
 #include <filesystem>
 
+#include "hwinfo/WMIwrapper.h"
 #include "hwinfo/disk.h"
 #include "hwinfo/utils/stringutils.h"
-#include "hwinfo/WMIwrapper.h"
 
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 std::vector<Disk> getAllDisks() {
   std::vector<Disk> disks;
-  std::vector<const wchar_t*> res {};
+  std::vector<const wchar_t*> res{};
   wmi::queryWMI("Win32_DiskDrive", "Manufacturer", res);
-  if (res.empty()) { return {}; }
-  for (const auto &v: res) {
+  if (res.empty()) {
+    return {};
+  }
+  for (const auto& v : res) {
     std::wstring tmp(v);
     disks.push_back(Disk());
-    disks.back()._vendor = { tmp.begin(), tmp.end() };
+    disks.back()._vendor = {tmp.begin(), tmp.end()};
   }
   res.clear();
   wmi::queryWMI("Win32_DiskDrive", "Model", res);
@@ -31,7 +33,7 @@ std::vector<Disk> getAllDisks() {
       break;
     }
     std::wstring tmp(res[i]);
-    disks[i]._model = { tmp.begin(), tmp.end() };
+    disks[i]._model = {tmp.begin(), tmp.end()};
   }
   res.clear();
   wmi::queryWMI("Win32_DiskDrive", "SerialNumber", res);
@@ -40,7 +42,7 @@ std::vector<Disk> getAllDisks() {
       break;
     }
     std::wstring tmp(res[i]);
-    disks[i]._serialNumber = { tmp.begin(), tmp.end() };
+    disks[i]._serialNumber = {tmp.begin(), tmp.end()};
   }
   std::vector<uint64_t> res2;
   // this returns a random same number for all disks...

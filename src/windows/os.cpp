@@ -5,11 +5,11 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <sstream>
-#include <string>
-
 #include <Windows.h>
 #include <winternl.h>
+
+#include <sstream>
+#include <string>
 #define STATUS_SUCCESS 0x00000000
 
 #include "hwinfo/os.h"
@@ -18,9 +18,15 @@ namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 std::string OS::getFullName() {
-  static NTSTATUS(__stdcall *RtlGetVersion)(OUT PRTL_OSVERSIONINFOEXW lpVersionInformation) = (NTSTATUS(__stdcall*)(PRTL_OSVERSIONINFOEXW))GetProcAddress(GetModuleHandle("ntdll.dll"), "RtlGetVersion");
-  static void(__stdcall *GetNativeSystemInfo)(OUT LPSYSTEM_INFO lpSystemInfo) = (void(__stdcall*)(LPSYSTEM_INFO))GetProcAddress(GetModuleHandle("kernel32.dll"), "GetNativeSystemInfo");
-  static BOOL(__stdcall *GetProductInfo)(IN DWORD dwOSMajorVersion, IN DWORD dwOSMinorVersion, IN DWORD dwSpMajorVersion, IN DWORD dwSpMinorVersion, OUT PDWORD pdwReturnedProductType) = (BOOL(__stdcall*)(DWORD, DWORD, DWORD, DWORD, PDWORD))GetProcAddress(GetModuleHandle("kernel32.dll"), "GetProductInfo");
+  static NTSTATUS(__stdcall * RtlGetVersion)(OUT PRTL_OSVERSIONINFOEXW lpVersionInformation) =
+      (NTSTATUS(__stdcall*)(PRTL_OSVERSIONINFOEXW))GetProcAddress(GetModuleHandle("ntdll.dll"), "RtlGetVersion");
+  static void(__stdcall * GetNativeSystemInfo)(OUT LPSYSTEM_INFO lpSystemInfo) =
+      (void(__stdcall*)(LPSYSTEM_INFO))GetProcAddress(GetModuleHandle("kernel32.dll"), "GetNativeSystemInfo");
+  static BOOL(__stdcall * GetProductInfo)(IN DWORD dwOSMajorVersion, IN DWORD dwOSMinorVersion,
+                                          IN DWORD dwSpMajorVersion, IN DWORD dwSpMinorVersion,
+                                          OUT PDWORD pdwReturnedProductType) =
+      (BOOL(__stdcall*)(DWORD, DWORD, DWORD, DWORD, PDWORD))GetProcAddress(GetModuleHandle("kernel32.dll"),
+                                                                           "GetProductInfo");
 
   OSVERSIONINFOEXW osvi;
   ZeroMemory(&osvi, sizeof(OSVERSIONINFOEXW));
@@ -34,7 +40,7 @@ std::string OS::getFullName() {
   } else {
 #if defined(_MSC_VER)
 #pragma warning(push)
-#pragma warning(disable: 4996) // C4996: 'function': was declared deprecated
+#pragma warning(disable : 4996)  // C4996: 'function': was declared deprecated
 #endif
     BOOL bOsVersionInfoEx = GetVersionExW((OSVERSIONINFOW*)&osvi);
     if (bOsVersionInfoEx == 0) {
@@ -83,8 +89,7 @@ std::string OS::getFullName() {
       if (osvi.dwMinorVersion == 3) {
         if (osvi.wProductType == VER_NT_WORKSTATION) {
           os << "Windows 8.1 ";
-        }
-        else {
+        } else {
           os << "Windows Server 2012 R2 ";
         }
       } else if (osvi.dwMinorVersion == 2) {
@@ -177,17 +182,18 @@ std::string OS::getFullName() {
     } else if (osvi.wSuiteMask & VER_SUITE_WH_SERVER) {
       os << "Windows Home Server";
     } else if ((osvi.wProductType == VER_NT_WORKSTATION) &&
-    (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)) {
+               (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)) {
       os << "Windows XP Professional x64 Edition";
     } else {
       os << "Windows Server 2003, ";
-    } if (osvi.wProductType != VER_NT_WORKSTATION) {
-        if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_IA64) {
-          if (osvi.wSuiteMask & VER_SUITE_DATACENTER) {
-            os << "Datacenter Edition for Itanium-based Systems";
-          } else if (osvi.wSuiteMask & VER_SUITE_ENTERPRISE) {
-            os << "Enterprise Edition for Itanium-based Systems";
-          }
+    }
+    if (osvi.wProductType != VER_NT_WORKSTATION) {
+      if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_IA64) {
+        if (osvi.wSuiteMask & VER_SUITE_DATACENTER) {
+          os << "Datacenter Edition for Itanium-based Systems";
+        } else if (osvi.wSuiteMask & VER_SUITE_ENTERPRISE) {
+          os << "Enterprise Edition for Itanium-based Systems";
+        }
       } else if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64) {
         if (osvi.wSuiteMask & VER_SUITE_DATACENTER) {
           os << "Datacenter x64 Edition";
@@ -236,19 +242,13 @@ std::string OS::getFullName() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string OS::getName() {
-  return "Windows";
-}
+std::string OS::getName() { return "Windows"; }
 
 // _____________________________________________________________________________________________________________________
-std::string OS::getVersion() {
-  return "<unknown>";
-}
+std::string OS::getVersion() { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
-std::string OS::getKernel() {
-  return "<unknown>";
-}
+std::string OS::getKernel() { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
 bool OS::getIs64bit() {

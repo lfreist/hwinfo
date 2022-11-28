@@ -5,16 +5,15 @@
 
 #ifdef HWINFO_UNIX
 
-#include <string>
-#include <vector>
 #include <algorithm>
-#include <optional>
 #include <fstream>
 #include <map>
+#include <optional>
+#include <string>
+#include <vector>
 
 #include "hwinfo/cpu.h"
 #include "hwinfo/utils/stringutils.h"
-
 
 #if defined(HWINFO_X86)
 #include "hwinfo/cpuid.h"
@@ -33,7 +32,7 @@ int CPU::currentClockSpeed_kHz() {
   stream.close();
   try {
     return std::stoi(line);
-  } catch (std::invalid_argument &e) {
+  } catch (std::invalid_argument& e) {
     return -1;
   }
 }
@@ -42,11 +41,11 @@ int CPU::currentClockSpeed_kHz() {
 std::string CPU::getVendor() {
 #if defined(HWINFO_X86)
   std::string vendor;
-  uint32_t regs[4] {0};
+  uint32_t regs[4]{0};
   cpuid::cpuid(0, 0, regs);
-  vendor += std::string((const char *) &regs[1], 4);
-  vendor += std::string((const char *) &regs[3], 4);
-  vendor += std::string((const char *) &regs[2], 4);
+  vendor += std::string((const char*)&regs[1], 4);
+  vendor += std::string((const char*)&regs[3], 4);
+  vendor += std::string((const char*)&regs[2], 4);
   return vendor;
 #else
   std::string line;
@@ -57,7 +56,7 @@ std::string CPU::getVendor() {
   while (getline(stream, line)) {
     if (line.starts_with("vendor_id")) {
       stream.close();
-      return line.substr(line.find(": ")+2, line.length());
+      return line.substr(line.find(": ") + 2, line.length());
     }
   }
   return "<unknown>";
@@ -69,25 +68,25 @@ std::string CPU::getVendor() {
 std::string CPU::getModelName() {
 #if defined(HWINFO_X86)
   std::string model;
-  uint32_t regs[4] {};
+  uint32_t regs[4]{};
   for (unsigned i = 0x80000002; i < 0x80000005; ++i) {
     cpuid::cpuid(i, 0, regs);
-    for(auto c : std::string((const char*)&regs[0], 4)) {
+    for (auto c : std::string((const char*)&regs[0], 4)) {
       if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
         model += c;
       }
     }
-    for(auto c : std::string((const char*)&regs[1], 4)) {
+    for (auto c : std::string((const char*)&regs[1], 4)) {
       if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
         model += c;
       }
     }
-    for(auto c : std::string((const char*)&regs[2], 4)) {
+    for (auto c : std::string((const char*)&regs[2], 4)) {
       if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
         model += c;
       }
     }
-    for(auto c : std::string((const char*)&regs[3], 4)) {
+    for (auto c : std::string((const char*)&regs[3], 4)) {
       if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
         model += c;
       }
@@ -103,7 +102,7 @@ std::string CPU::getModelName() {
   while (getline(stream, line)) {
     if (line.starts_with("model name")) {
       stream.close();
-      return line.substr(line.find(": ")+2, line.length());
+      return line.substr(line.find(": ") + 2, line.length());
     }
   }
   return "<unknown>";
@@ -114,19 +113,19 @@ std::string CPU::getModelName() {
 // _____________________________________________________________________________________________________________________
 int CPU::getNumPhysicalCores() {
 #if defined(HWINFO_X86)
-  uint32_t regs[4] {};
+  uint32_t regs[4]{};
   std::string vendorId = getVendor();
-  std::for_each(vendorId.begin(), vendorId.end(), [](char &in) { in = ::toupper(in); } );
+  std::for_each(vendorId.begin(), vendorId.end(), [](char& in) { in = ::toupper(in); });
   cpuid::cpuid(0, 0, regs);
   uint32_t HFS = regs[0];
   if (vendorId.find("INTEL") != std::string::npos) {
     if (HFS >= 11) {
       for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-        uint32_t regs_2[4] {};
+        uint32_t regs_2[4]{};
         cpuid::cpuid(0x0b, lvl, regs_2);
         uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
         if (currLevel == 0x01) {
-          int numCores = getNumLogicalCores()/static_cast<int>(LVL_CORES & regs_2[1]);
+          int numCores = getNumLogicalCores() / static_cast<int>(LVL_CORES & regs_2[1]);
           if (numCores > 0) {
             return numCores;
           }
@@ -134,9 +133,9 @@ int CPU::getNumPhysicalCores() {
       }
     } else {
       if (HFS >= 4) {
-        uint32_t regs_3[4] {};
+        uint32_t regs_3[4]{};
         cpuid::cpuid(4, 0, regs_3);
-        int numCores = getNumLogicalCores()/static_cast<int>(1 + ((regs_3[0] >> 26) & 0x3f));
+        int numCores = getNumLogicalCores() / static_cast<int>(1 + ((regs_3[0] >> 26) & 0x3f));
         if (numCores > 0) {
           return numCores;
         }
@@ -144,7 +143,7 @@ int CPU::getNumPhysicalCores() {
     }
   } else if (vendorId.find("AMD") != std::string::npos) {
     if (HFS > 0) {
-      uint32_t regs_4[4] {};
+      uint32_t regs_4[4]{};
       cpuid::cpuid(0x80000000, 0, regs_4);
       if (regs_4[0] >= 8) {
         int numCores = 1 + (regs_4[2] & 0xff);
@@ -169,14 +168,14 @@ int CPU::getNumPhysicalCores() {
 int CPU::getNumLogicalCores() {
 #if defined(HWINFO_X86)
   std::string vendorId = getVendor();
-  std::for_each(vendorId.begin(), vendorId.end(), [](char &in) { in = ::toupper(in); } );
-  uint32_t regs[4] {};
+  std::for_each(vendorId.begin(), vendorId.end(), [](char& in) { in = ::toupper(in); });
+  uint32_t regs[4]{};
   cpuid::cpuid(0, 0, regs);
   uint32_t HFS = regs[0];
   if (vendorId.find("INTEL") != std::string::npos) {
     if (HFS >= 0xb) {
       for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-        uint32_t regs_2[4] {};
+        uint32_t regs_2[4]{};
         cpuid::cpuid(0x0b, lvl, regs_2);
         uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
         if (currLevel == 0x02) {
@@ -212,7 +211,7 @@ int CPU::getMaxClockSpeed_kHz() {
   stream.close();
   try {
     return std::stoi(line);
-  } catch (std::invalid_argument &e) {
+  } catch (std::invalid_argument& e) {
     return -1;
   }
 }
@@ -228,8 +227,8 @@ int CPU::getRegularClockSpeed_kHz() {
     if (line.starts_with("cpu MHz")) {
       try {
         stream.close();
-        return static_cast<int>(std::stof(line.substr(line.find(": ")+2, line.length()))) * 1000;
-      } catch (std::invalid_argument &e) {
+        return static_cast<int>(std::stof(line.substr(line.find(": ") + 2, line.length()))) * 1000;
+      } catch (std::invalid_argument& e) {
         return -1;
       }
     }
@@ -248,8 +247,8 @@ int CPU::getCacheSize_Bytes() {
     if (line.starts_with("cache size")) {
       try {
         stream.close();
-        return std::stoi(line.substr(line.find(": ")+2, line.length()-3)) * 1000;
-      } catch (std::invalid_argument &e) {
+        return std::stoi(line.substr(line.find(": ") + 2, line.length() - 3)) * 1000;
+      } catch (std::invalid_argument& e) {
         return -1;
       }
     }
@@ -267,22 +266,23 @@ std::optional<CPU> getCPU(uint8_t socket_id) {
   if (!cpuinfo.is_open()) {
     return {};
   }
-  std::string file((std::istreambuf_iterator<char>(cpuinfo)),
-                   (std::istreambuf_iterator<char>()));
+  std::string file((std::istreambuf_iterator<char>(cpuinfo)), (std::istreambuf_iterator<char>()));
   cpuinfo.close();
   auto cpu_blocks_string = split(file, "\n\n");
   std::map<const std::string, const std::string> cpu_block;
   bool physical_id_found = false;
-  for (const auto &block: cpu_blocks_string) {
+  for (const auto& block : cpu_blocks_string) {
     if (physical_id_found) {
       break;
     }
     auto lines = split(block, '\n');
     std::map<const std::string, const std::string> cpu_map;
     bool add = true;
-    for (const auto &line: lines) {
+    for (const auto& line : lines) {
       auto pair = split(line, "\t: ");
-      if (pair.size() != 2) { continue; }
+      if (pair.size() != 2) {
+        continue;
+      }
       strip(pair[0]);
       strip(pair[1]);
       if (pair[0] == "physical id" && pair[1] != std::to_string(socket_id)) {
@@ -337,9 +337,7 @@ Socket::Socket(uint8_t id) : _id(id) {
 }
 
 // _____________________________________________________________________________________________________________________
-Socket::Socket(uint8_t id, const class CPU& cpu) : _id(id) {
-  _cpu = cpu;
-}
+Socket::Socket(uint8_t id, const class CPU& cpu) : _id(id) { _cpu = cpu; }
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________

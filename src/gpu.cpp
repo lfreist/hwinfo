@@ -1,9 +1,9 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include <vector>
-#include <string>
 #include <regex>
+#include <string>
+#include <vector>
 
 #if defined(unix) || defined(__unix) || defined(__unix__)
 #include "hwinfo/utils/subprocess.h"
@@ -18,13 +18,13 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-GPU::GPU(const std::string& vendor, const std::string &name, const std::string &driverVersion, int64_t memory_Bytes)
-  : _vendor(vendor), _name(name), _driverVersion(driverVersion) {
+GPU::GPU(const std::string& vendor, const std::string& name, const std::string& driverVersion, int64_t memory_Bytes)
+    : _vendor(vendor), _name(name), _driverVersion(driverVersion) {
   _memory_Bytes = memory_Bytes;
 }
 
 // _____________________________________________________________________________________________________________________
-std::string &GPU::vendor() {
+std::string& GPU::vendor() {
   if (_vendor.empty()) {
     _vendor = getVendor();
   }
@@ -32,7 +32,7 @@ std::string &GPU::vendor() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string &GPU::name() {
+std::string& GPU::name() {
   if (_name.empty()) {
     _name = getName();
   }
@@ -40,7 +40,7 @@ std::string &GPU::name() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string &GPU::driverVersion() {
+std::string& GPU::driverVersion() {
   if (_driverVersion.empty()) {
     _driverVersion = getDriverVersion();
   }

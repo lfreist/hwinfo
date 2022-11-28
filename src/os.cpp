@@ -1,9 +1,9 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#include <string>
-
 #include "hwinfo/os.h"
+
+#include <string>
 
 namespace hwinfo {
 
@@ -48,29 +48,19 @@ std::string OS::kernel() {
 }
 
 // _____________________________________________________________________________________________________________________
-bool OS::is32bit() const {
-  return _32bit;
-}
+bool OS::is32bit() const { return _32bit; }
 
 // _____________________________________________________________________________________________________________________
-bool OS::is64bit() const {
-  return _64bit;
-}
+bool OS::is64bit() const { return _64bit; }
 
 // _____________________________________________________________________________________________________________________
-bool OS::isBigEndian() const {
-  return _bigEndian;
-}
+bool OS::isBigEndian() const { return _bigEndian; }
 
 // _____________________________________________________________________________________________________________________
-bool OS::isLittleEndian() const {
-  return _littleEndian;
-}
+bool OS::isLittleEndian() const { return _littleEndian; }
 
 // _____________________________________________________________________________________________________________________
-bool OS::getIs32bit() {
-  return !getIs64bit();
-}
+bool OS::getIs32bit() { return !getIs64bit(); }
 
 // _____________________________________________________________________________________________________________________
 bool OS::getIsBigEndian() {

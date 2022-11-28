@@ -5,10 +5,10 @@
 
 #ifdef HWINFO_APPLE
 
+#include <sys/sysctl.h>
+
 #include <sstream>
 #include <string>
-
-#include <sys/sysctl.h>
 
 #include "hwinfo/os.h"
 
@@ -54,9 +54,7 @@ std::string OS::getKernel() {
 }
 
 // _____________________________________________________________________________________________________________________
-bool OS::getIs64bit() {
-  return true;
-}
+bool OS::getIs64bit() { return true; }
 
 }  // namespace hwinfo
 

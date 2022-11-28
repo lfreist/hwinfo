@@ -1,0 +1,22 @@
+name: code-style
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: sudo apt-get install -y clang-format-14
+
+      - name: Run clang-format
+        run: |
+          chmod +x ./format_check.sh
+          ./code_style_check.sh
+        shell: bash

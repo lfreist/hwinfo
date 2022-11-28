@@ -7,12 +7,10 @@ namespace hwinfo {
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
-Battery::Battery(int8_t id) {
-  _id = id;
-}
+Battery::Battery(int8_t id) { _id = id; }
 
 // _____________________________________________________________________________________________________________________
-std::string &Battery::vendor() {
+std::string& Battery::vendor() {
   if (_vendor.empty()) {
     _vendor = getVendor();
   }
@@ -20,7 +18,7 @@ std::string &Battery::vendor() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string &Battery::model() {
+std::string& Battery::model() {
   if (_model.empty()) {
     _model = getModel();
   }
@@ -28,7 +26,7 @@ std::string &Battery::model() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string &Battery::serialNumber() {
+std::string& Battery::serialNumber() {
   if (_serialNumber.empty()) {
     _serialNumber = getSerialNumber();
   }
@@ -36,7 +34,7 @@ std::string &Battery::serialNumber() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string &Battery::technology() {
+std::string& Battery::technology() {
   if (_technology.empty()) {
     _technology = getTechnology();
   }
@@ -52,8 +50,6 @@ uint32_t Battery::energyFull() {
 }
 
 // _____________________________________________________________________________________________________________________
-double Battery::capacity() {
-  return static_cast<double>(energyNow()) / energyFull();
-}
+double Battery::capacity() { return static_cast<double>(energyNow()) / energyFull(); }
 
 }  // namespace hwinfo

@@ -5,8 +5,8 @@
 
 #ifdef HWINFO_UNIX
 
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 
 #include "hwinfo/battery.h"
 
@@ -114,9 +114,7 @@ bool Battery::charging() const {
 }
 
 // _____________________________________________________________________________________________________________________
-bool Battery::discharging() const {
-  return !charging();
-}
+bool Battery::discharging() const { return !charging(); }
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________

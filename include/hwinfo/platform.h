@@ -6,7 +6,7 @@
 #if defined(__APPLE__)
 #define HWINFO_APPLE
 #endif
-#if defined(_WIN32) || defined (_WIN64) || defined(__CYGWIN__)
+#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #define HWINFO_WINDOWS
 #endif
 

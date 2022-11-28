@@ -5,10 +5,10 @@
 
 #ifdef HWINFO_WINDOWS
 
+#include <Windows.h>
+
 #include <string>
 #include <vector>
-
-#include <Windows.h>
 
 #include "hwinfo/WMIwrapper.h"
 #include "hwinfo/ram.h"

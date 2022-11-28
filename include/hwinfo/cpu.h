@@ -3,9 +3,9 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
 
 namespace hwinfo {
 
@@ -24,6 +24,7 @@ struct InstructionSet {
 
 class CPU {
   friend std::optional<CPU> getCPU(uint8_t socket_id);
+
  public:
   CPU() = default;
   CPU(int id);

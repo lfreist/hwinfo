@@ -10,6 +10,7 @@
 #include <sys/sysctl.h>
 #elif defined(_WIN32) || defined(_WIN64)
 #include <Windows.h>
+
 #include "hwinfo/WMIwrapper.h"
 #endif
 #include "hwinfo/ram.h"
@@ -17,17 +18,13 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-RAM::RAM(std::string &vendor,
-         std::string &name,
-         std::string &model,
-         std::string &serialNumber,
-         int64_t size_Bytes)
-  : _vendor(vendor), _name(name), _model(model), _serialNumber(serialNumber) {
+RAM::RAM(std::string& vendor, std::string& name, std::string& model, std::string& serialNumber, int64_t size_Bytes)
+    : _vendor(vendor), _name(name), _model(model), _serialNumber(serialNumber) {
   _totalSize_Bytes = size_Bytes;
 }
 
 // _____________________________________________________________________________________________________________________
-std::string &RAM::vendor() {
+std::string& RAM::vendor() {
   if (_vendor.empty()) {
     _vendor = getVendor();
   }
@@ -35,7 +32,7 @@ std::string &RAM::vendor() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string &RAM::name() {
+std::string& RAM::name() {
   if (_name.empty()) {
     _name = getName();
   }
@@ -43,7 +40,7 @@ std::string &RAM::name() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string &RAM::model() {
+std::string& RAM::model() {
   if (_model.empty()) {
     _model = getModel();
   }
@@ -51,7 +48,7 @@ std::string &RAM::model() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string &RAM::serialNumber() {
+std::string& RAM::serialNumber() {
   if (_serialNumber.empty()) {
     _serialNumber = getSerialNumber();
   }

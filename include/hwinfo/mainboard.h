@@ -13,16 +13,13 @@ namespace hwinfo {
 class MainBoard {
  public:
   MainBoard() = default;
-  MainBoard(const std::string &vendor,
-            const std::string &product,
-            const std::string &version,
-            const std::string &serialNumber);
+  MainBoard(std::string vendor, std::string product, std::string version, std::string serialNumber);
   ~MainBoard() = default;
 
-  std::string &vendor();
-  std::string &name();
-  std::string &version();
-  std::string &serialNumber();
+  std::string& vendor();
+  std::string& name();
+  std::string& version();
+  std::string& serialNumber();
 
   static std::string getVendor();
   static std::string getName();

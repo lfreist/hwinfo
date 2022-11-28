@@ -5,10 +5,10 @@
 
 #ifdef HWINFO_APPLE
 
+#include <sys/sysctl.h>
+
 #include <string>
 #include <vector>
-
-#include <sys/sysctl.h>
 
 #include "hwinfo/ram.h"
 

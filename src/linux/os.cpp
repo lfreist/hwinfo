@@ -5,12 +5,12 @@
 
 #ifdef HWINFO_UNIX
 
-#include <sstream>
-#include <string>
-
-#include <fstream>
 #include <sys/stat.h>
 #include <sys/utsname.h>
+
+#include <fstream>
+#include <sstream>
+#include <string>
 
 #include "hwinfo/os.h"
 
@@ -25,9 +25,9 @@ std::string OS::getFullName() {
   }
   while (getline(stream, line)) {
     if (line.starts_with("DISTRIB_DESCRIPTION")) {
-      line = line.substr(line.find('=')+1, line.length());
+      line = line.substr(line.find('=') + 1, line.length());
       // remove \" at begin and end of the substring result
-      return {line.begin()+1, line.end()-1};
+      return {line.begin() + 1, line.end() - 1};
     }
   }
   stream.close();
@@ -43,7 +43,7 @@ std::string OS::getName() {
   }
   while (getline(stream, line)) {
     if (line.starts_with("DISTRIB_ID")) {
-      return line.substr(line.find('=')+1, line.length());
+      return line.substr(line.find('=') + 1, line.length());
     }
   }
   stream.close();
@@ -59,7 +59,7 @@ std::string OS::getVersion() {
   }
   while (getline(stream, line)) {
     if (line.starts_with("DISTRIB_RELEASE")) {
-      return line.substr(line.find('=')+1, line.length());
+      return line.substr(line.find('=') + 1, line.length());
     }
   }
   stream.close();
@@ -77,7 +77,7 @@ std::string OS::getKernel() {
 
 // _____________________________________________________________________________________________________________________
 bool OS::getIs64bit() {
-  struct stat buffer{};
+  struct stat buffer {};
   return (stat("/lib64/ld-linux-x86-64.so.2", &buffer) == 0);
 }
 

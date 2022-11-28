@@ -26,7 +26,6 @@
 #define LVL_TYPE 0x0000ff00
 #define LVL_CORES 0x0000ffff
 
-
 namespace hwinfo::cpuid {
 
 /**

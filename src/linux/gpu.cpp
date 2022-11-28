@@ -1,3 +1,4 @@
+
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
@@ -5,13 +6,12 @@
 
 #ifdef HWINFO_UNIX
 
-#include <vector>
-#include <string>
 #include <regex>
-
-#include "hwinfo/utils/subprocess.h"
+#include <string>
+#include <vector>
 
 #include "hwinfo/gpu.h"
+#include "hwinfo/utils/subprocess.h"
 
 namespace hwinfo {
 
@@ -28,12 +28,16 @@ std::string GPU::getVendor() {
     char prev = '\0';
     bool add = false;
     std::string tmp = match[0];
-    for (auto& c: tmp) {
-      if (c == '\n') { break; }
+    for (auto& c : tmp) {
+      if (c == '\n') {
+        break;
+      }
       if (add) {
         vendor += c;
       }
-      if (prev == ':') { add = true; }
+      if (prev == ':') {
+        add = true;
+      }
       prev = c;
     }
   }
@@ -52,12 +56,16 @@ std::string GPU::getName() {
   if (std::regex_search(output.cbegin(), output.cend(), match, matcher)) {
     bool add = false;
     std::string tmp = match[0];
-    for (auto& c: tmp) {
-      if (c == ']') { break; }
+    for (auto& c : tmp) {
+      if (c == ']') {
+        break;
+      }
       if (add) {
         name += c;
       }
-      if (c == '[') { add = true; }
+      if (c == '[') {
+        add = true;
+      }
     }
   }
   return name;

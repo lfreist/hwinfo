@@ -12,14 +12,15 @@ namespace hwinfo {
 
 class Battery {
   friend std::vector<Battery> getAllBatteries();
+
  public:
   explicit Battery(int8_t id = 0);
   ~Battery() = default;
 
-  std::string &vendor();
-  std::string &model();
-  std::string &serialNumber();
-  std::string &technology();
+  std::string& vendor();
+  std::string& model();
+  std::string& serialNumber();
+  std::string& technology();
   uint32_t energyFull();
 
   double capacity();
@@ -46,4 +47,3 @@ class Battery {
 std::vector<Battery> getAllBatteries();
 
 }  // namespace hwinfo
-

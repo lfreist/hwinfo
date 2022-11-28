@@ -5,9 +5,9 @@
 
 #ifdef HWINFO_APPLE
 
-#include <vector>
-#include <string>
 #include <regex>
+#include <string>
+#include <vector>
 
 #include "hwinfo/gpu.h"
 

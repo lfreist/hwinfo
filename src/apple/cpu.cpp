@@ -5,19 +5,18 @@
 
 #ifdef HWINFO_APPLE
 
-#include <string>
-#include <vector>
-#include <algorithm>
-
 #include <mach/mach.h>
 #include <mach/mach_time.h>
-#include <sys/sysctl.h>
 #include <math.h>
 #include <pthread.h>
+#include <sys/sysctl.h>
+
+#include <algorithm>
+#include <string>
+#include <vector>
 
 #include "hwinfo/cpu.h"
 #include "hwinfo/cpuid.h"
-
 
 namespace hwinfo {
 
@@ -31,11 +30,11 @@ int CPU::currentClockSpeed_kHz() {
 std::string CPU::getVendor() {
 #if defined(HWINFO_X86)
   std::string vendor;
-  uint32_t regs[4] {0};
+  uint32_t regs[4]{0};
   cpuid::cpuid(0, 0, regs);
-  vendor += std::string((const char *) &regs[1], 4);
-  vendor += std::string((const char *) &regs[3], 4);
-  vendor += std::string((const char *) &regs[2], 4);
+  vendor += std::string((const char*)&regs[1], 4);
+  vendor += std::string((const char*)&regs[3], 4);
+  vendor += std::string((const char*)&regs[2], 4);
   return vendor;
 #else
   // TODO: implement
@@ -47,25 +46,25 @@ std::string CPU::getVendor() {
 std::string CPU::getModelName() {
 #if defined(HWINFO_X86)
   std::string model;
-  uint32_t regs[4] {};
+  uint32_t regs[4]{};
   for (unsigned i = 0x80000002; i < 0x80000005; ++i) {
     cpuid::cpuid(i, 0, regs);
-    for(auto c : std::string((const char*)&regs[0], 4)) {
+    for (auto c : std::string((const char*)&regs[0], 4)) {
       if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
         model += c;
       }
     }
-    for(auto c : std::string((const char*)&regs[1], 4)) {
+    for (auto c : std::string((const char*)&regs[1], 4)) {
       if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
         model += c;
       }
     }
-    for(auto c : std::string((const char*)&regs[2], 4)) {
+    for (auto c : std::string((const char*)&regs[2], 4)) {
       if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
         model += c;
       }
     }
-    for(auto c : std::string((const char*)&regs[3], 4)) {
+    for (auto c : std::string((const char*)&regs[3], 4)) {
       if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
         model += c;
       }
@@ -74,9 +73,9 @@ std::string CPU::getModelName() {
   return model;
 #else
   char* model_2[1024];
-  size_t size=sizeof(model_2);
+  size_t size = sizeof(model_2);
   if (sysctlbyname("machdep.cpu.brand_string", model_2, &size, NULL, 0) < 0) {
-      perror("sysctl");
+    perror("sysctl");
   }
   return std::string(model);
 #endif
@@ -85,19 +84,19 @@ std::string CPU::getModelName() {
 // _____________________________________________________________________________________________________________________
 int CPU::getNumPhysicalCores() {
 #if defined(HWINFO_X86)
-  uint32_t regs[4] {};
+  uint32_t regs[4]{};
   std::string vendorId = getVendor();
-  std::for_each(vendorId.begin(), vendorId.end(), [](char &in) { in = ::toupper(in); } );
+  std::for_each(vendorId.begin(), vendorId.end(), [](char& in) { in = ::toupper(in); });
   cpuid::cpuid(0, 0, regs);
   uint32_t HFS = regs[0];
   if (vendorId.find("INTEL") != std::string::npos) {
     if (HFS >= 11) {
       for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-        uint32_t regs_2[4] {};
+        uint32_t regs_2[4]{};
         cpuid::cpuid(0x0b, lvl, regs_2);
         uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
         if (currLevel == 0x01) {
-          int numCores = getNumLogicalCores()/static_cast<int>(LVL_CORES & regs_2[1]);
+          int numCores = getNumLogicalCores() / static_cast<int>(LVL_CORES & regs_2[1]);
           if (numCores > 0) {
             return numCores;
           }
@@ -105,9 +104,9 @@ int CPU::getNumPhysicalCores() {
       }
     } else {
       if (HFS >= 4) {
-        uint32_t regs_3[4] {};
+        uint32_t regs_3[4]{};
         cpuid::cpuid(4, 0, regs_3);
-        int numCores = getNumLogicalCores()/static_cast<int>(1 + ((regs_3[0] >> 26) & 0x3f));
+        int numCores = getNumLogicalCores() / static_cast<int>(1 + ((regs_3[0] >> 26) & 0x3f));
         if (numCores > 0) {
           return numCores;
         }
@@ -115,7 +114,7 @@ int CPU::getNumPhysicalCores() {
     }
   } else if (vendorId.find("AMD") != std::string::npos) {
     if (HFS > 0) {
-      uint32_t regs_4[4] {};
+      uint32_t regs_4[4]{};
       cpuid::cpuid(0x80000000, 0, regs_4);
       if (regs_4[0] >= 8) {
         int numCores = 1 + (regs_4[2] & 0xff);
@@ -128,11 +127,11 @@ int CPU::getNumPhysicalCores() {
   return -1;
 #else
   int physical = 0;
-    size_t physical_size = sizeof(physical);
-    if (sysctlbyname("hw.physicalcpu", &physical, &physical_size, nullptr, 0) != 0) {
-      return -1;
-    }
-    return physical;
+  size_t physical_size = sizeof(physical);
+  if (sysctlbyname("hw.physicalcpu", &physical, &physical_size, nullptr, 0) != 0) {
+    return -1;
+  }
+  return physical;
 #endif
 }
 
@@ -140,14 +139,14 @@ int CPU::getNumPhysicalCores() {
 int CPU::getNumLogicalCores() {
 #if defined(HWINFO_X86)
   std::string vendorId = getVendor();
-  std::for_each(vendorId.begin(), vendorId.end(), [](char &in) { in = ::toupper(in); } );
-  uint32_t regs[4] {};
+  std::for_each(vendorId.begin(), vendorId.end(), [](char& in) { in = ::toupper(in); });
+  uint32_t regs[4]{};
   cpuid::cpuid(0, 0, regs);
   uint32_t HFS = regs[0];
   if (vendorId.find("INTEL") != std::string::npos) {
     if (HFS >= 0xb) {
       for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-        uint32_t regs_2[4] {};
+        uint32_t regs_2[4]{};
         cpuid::cpuid(0x0b, lvl, regs_2);
         uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
         if (currLevel == 0x02) {
@@ -204,8 +203,8 @@ int CPU::getCacheSize_Bytes() {
     if (line.starts_with("cache size")) {
       try {
         stream.close();
-        return std::stoi(line.substr(line.find(": ")+2, line.length()-3)) * 1000;
-      } catch (std::invalid_argument &e) {
+        return std::stoi(line.substr(line.find(": ") + 2, line.length() - 3)) * 1000;
+      } catch (std::invalid_argument& e) {
         return -1;
       }
     }
@@ -215,23 +214,22 @@ int CPU::getCacheSize_Bytes() {
 #elif defined(__APPLE__)
   return -1;
 #elif defined(_WIN32) || defined(_WIN64)
-  std::vector<int> cacheSize {};
+  std::vector<int> cacheSize{};
   wmi::queryWMI("Win32_Processor", "L3CacheSize", cacheSize);
-  if (cacheSize.empty()) { return -1; }
+  if (cacheSize.empty()) {
+    return -1;
+  }
   return cacheSize[0];
 #else
   return -1;
 #endif
 }
 
-
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
 // Helper function for linux: parses /proc/cpuinfo. socket_id == physical_id.
 // _____________________________________________________________________________________________________________________
-std::optional<CPU> getCPU(uint8_t socket_id) {
-  return {};
-}
+std::optional<CPU> getCPU(uint8_t socket_id) { return {}; }
 
 // ===== Socket ========================================================================================================
 // _____________________________________________________________________________________________________________________
@@ -243,15 +241,11 @@ Socket::Socket(uint8_t id) : _id(id) {
 }
 
 // _____________________________________________________________________________________________________________________
-Socket::Socket(uint8_t id, const class CPU& cpu) : _id(id) {
-  _cpu = cpu;
-}
+Socket::Socket(uint8_t id, const class CPU& cpu) : _id(id) { _cpu = cpu; }
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
-std::vector<Socket> getAllSockets() {
-  return {};
-}
+std::vector<Socket> getAllSockets() { return {}; }
 
 }  // namespace hwinfo
 

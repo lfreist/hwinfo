@@ -11,34 +11,39 @@
  * @param input
  */
 inline void strip(std::string& input) {
-  if (input.empty()) { return; }
+  if (input.empty()) {
+    return;
+  }
   // optimization for input size == 1
   if (input.size() == 1) {
     if (input[0] == ' ' || input[0] == '\t' || input[0] == '\n') {
       input = "";
       return;
-    }
-    else {
+    } else {
       return;
     }
   }
   size_t start_index = 0;
   while (true) {
     char c = input[start_index];
-    if (c != ' ' && c != '\t' && c != '\n') { break; }
+    if (c != ' ' && c != '\t' && c != '\n') {
+      break;
+    }
     start_index++;
   }
   size_t end_index = input.size() - 1;
   while (true) {
     char c = input[end_index];
-    if (c != ' ' && c != '\t' && c != '\n') { break; }
+    if (c != ' ' && c != '\t' && c != '\n') {
+      break;
+    }
     end_index--;
   }
   if (end_index <= start_index) {
     input.assign("");
     return;
   }
-  input.assign(input.begin()+start_index, input.begin()+end_index+1);
+  input.assign(input.begin() + start_index, input.begin() + end_index + 1);
 }
 
 /**
@@ -66,10 +71,12 @@ inline unsigned count_substring(const std::string& input, const std::string& sub
 inline std::vector<std::string> split(const std::string& input, const std::string& delimiter) {
   std::vector<std::string> result;
   size_t shift = 0;
-  while(true) {
+  while (true) {
     size_t match = input.find(delimiter, shift);
-    result.emplace_back(input.substr(shift, match-shift));
-    if (match == std::string::npos) { break; }
+    result.emplace_back(input.substr(shift, match - shift));
+    if (match == std::string::npos) {
+      break;
+    }
     shift = match + delimiter.size();
   }
   return result;
@@ -84,10 +91,12 @@ inline std::vector<std::string> split(const std::string& input, const std::strin
 inline std::vector<std::string> split(const std::string& input, const char delimiter) {
   std::vector<std::string> result;
   size_t shift = 0;
-  while(true) {
+  while (true) {
     size_t match = input.find(delimiter, shift);
-    if (match == std::string::npos) { break; }
-    result.emplace_back(input.substr(shift, match-shift));
+    if (match == std::string::npos) {
+      break;
+    }
+    result.emplace_back(input.substr(shift, match - shift));
     shift = match + 1;
   }
   return result;
@@ -104,11 +113,15 @@ inline std::vector<std::string> split(const std::string& input, const char delim
 inline std::string split_get_index(const std::string& input, const std::string& delimiter, int index) {
   unsigned occ = count_substring(input, delimiter) + 1;
   index = index < 0 ? static_cast<int>(occ + index) : index;
-  if (occ <= index) { return ""; }
+  if (occ <= index) {
+    return "";
+  }
 
   std::string::size_type start_index = 0;
   while (true) {
-    if (index == 0) { break; }
+    if (index == 0) {
+      break;
+    }
     start_index = input.find(delimiter, start_index) + delimiter.size();
     index--;
   }
@@ -123,6 +136,4 @@ inline std::string split_get_index(const std::string& input, const std::string& 
  * Convert windows wstring to string
  * @return
  */
-inline std::string wstring_to_string() {
-  return "";
-}
+inline std::string wstring_to_string() { return ""; }

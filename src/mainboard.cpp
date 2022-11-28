@@ -1,22 +1,21 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#include <fstream>
-
-#include "hwinfo/WMIwrapper.h"
-
 #include "hwinfo/mainboard.h"
 
+#include <fstream>
+#include <utility>
+
+#include "hwinfo/WMIwrapper.h"
 
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-MainBoard::MainBoard(const std::string &vendor,
-                     const std::string &product,
-                     const std::string &version,
-                     const std::string &serialNumber)
-  : _vendor(vendor), _name(product), _version(version), _serialNumber(serialNumber) {
-}
+MainBoard::MainBoard(std::string vendor, std::string product, std::string version, std::string serialNumber)
+    : _vendor(std::move(vendor)),
+      _name(std::move(product)),
+      _version(std::move(version)),
+      _serialNumber(std::move(serialNumber)) {}
 
 // _____________________________________________________________________________________________________________________
 std::string& MainBoard::vendor() {

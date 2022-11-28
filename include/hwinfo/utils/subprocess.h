@@ -4,10 +4,10 @@
 #pragma once
 
 #include <cstdio>
+#include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
-#include <iostream>
 
 inline std::string exec(std::string& command) {
   std::string output;
