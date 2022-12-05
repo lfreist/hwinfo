@@ -202,7 +202,7 @@ int CPU::getCacheSize_Bytes() {
   if (cacheSize.empty()) {
     return -1;
   }
-  return cacheSize[0];
+  return cacheSize[0] * 1024;
 }
 
 // =====================================================================================================================
