@@ -71,6 +71,9 @@ int64_t RAM::getTotalSize_Bytes() {
   return static_cast<int64_t>(status.ullTotalPhys);
 }
 
+// _____________________________________________________________________________________________________________________
+int64_t RAM::getAvailableMemory() { return "<unknown>"; }
+
 }  // namespace hwinfo
 
 #endif  // HWINFO_WINDOWS

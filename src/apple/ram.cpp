@@ -48,6 +48,8 @@ int64_t RAM::getTotalSize_Bytes() {
   return -1;
 }
 
+int64_t RAM::getAvailableMemory() { return "<unknown>"; }
+
 }  // namespace hwinfo
 
 #endif  // HWINFO_APPLE
