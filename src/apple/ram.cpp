@@ -48,7 +48,7 @@ int64_t RAM::getTotalSize_Bytes() {
   return -1;
 }
 
-int64_t RAM::getAvailableMemory() { return "<unknown>"; }
+int64_t RAM::getAvailableMemory() { return return -1; }
 
 }  // namespace hwinfo
 
