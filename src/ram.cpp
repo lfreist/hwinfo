@@ -63,4 +63,12 @@ int64_t RAM::totalSize_Bytes() {
   return _totalSize_Bytes;
 }
 
+// _____________________________________________________________________________________________________________________
+int64_t RAM::availableMemory() {
+    if (_totalFreeSize_Bytes == -1) {
+        _totalFreeSize_Bytes = getAvailableMemory();
+    }
+    return _totalFreeSize_Bytes;
+}
+
 }  // namespace hwinfo

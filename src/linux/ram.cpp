@@ -36,6 +36,16 @@ int64_t RAM::getTotalSize_Bytes() {
   return -1;
 }
 
+// _____________________________________________________________________________________________________________________
+int64_t RAM::getAvailableMemory() {
+  long pages = sysconf(_SC_AVPHYS_PAGES);
+  long page_size = sysconf(_SC_PAGESIZE);
+  if (0 <= pages && 0 <= page_size) {
+    return pages * page_size;
+  }
+  return -1;
+}
+
 }  // namespace hwinfo
 
 #endif  // HWINFO_UNIX
