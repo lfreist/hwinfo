@@ -155,7 +155,6 @@ Disk 0:
     # file: <project-root>/CMakeLists.txt
     
     add_subdirectory(third_party/hwinfo)
-    include_directories(third_party/hwinfo/include)
     ```
 3. Include `hwinfo` into your `.cpp/.h` files:
     ```c++
