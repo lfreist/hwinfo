@@ -22,9 +22,8 @@ std::vector<Disk> getAllDisks() {
     return {};
   }
   for (const auto& v : res) {
-    std::wstring tmp(v);
     disks.push_back(Disk());
-    disks.back()._vendor = {tmp.begin(), tmp.end()};
+    disks.back()._vendor = WString2String(v);
   }
   res.clear();
   wmi::queryWMI("Win32_DiskDrive", "Model", res);
@@ -32,8 +31,7 @@ std::vector<Disk> getAllDisks() {
     if (i >= disks.size()) {
       break;
     }
-    std::wstring tmp(res[i]);
-    disks[i]._model = {tmp.begin(), tmp.end()};
+    disks[i]._model = WString2String(res[i]);
   }
   res.clear();
   wmi::queryWMI("Win32_DiskDrive", "SerialNumber", res);
@@ -42,7 +40,7 @@ std::vector<Disk> getAllDisks() {
       break;
     }
     std::wstring tmp(res[i]);
-    disks[i]._serialNumber = {tmp.begin(), tmp.end()};
+    disks[i]._serialNumber = WString2String(res[i]);
   }
   std::vector<uint64_t> res2;
   // this returns a random same number for all disks...

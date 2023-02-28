@@ -12,6 +12,7 @@
 
 #include "hwinfo/WMIwrapper.h"
 #include "hwinfo/ram.h"
+#include "hwinfo/utils/stringutils.h"
 
 namespace hwinfo {
 
@@ -23,8 +24,7 @@ std::string RAM::getVendor() {
   if (!ret) {
     return "<unknown>";
   }
-  std::wstring tmp(ret);
-  return {tmp.begin(), tmp.end()};
+  return {WString2String(ret);
 }
 
 // _____________________________________________________________________________________________________________________
@@ -35,8 +35,7 @@ std::string RAM::getName() {
   if (!ret) {
     return "<unknown>";
   }
-  std::wstring tmp(ret);
-  return {tmp.begin(), tmp.end()};
+  return {WString2String(ret);
 }
 
 // _____________________________________________________________________________________________________________________
@@ -47,8 +46,7 @@ std::string RAM::getModel() {
   if (!ret) {
     return "<unknown>";
   }
-  std::wstring tmp(ret);
-  return {tmp.begin(), tmp.end()};
+  return {WString2String(ret);
 }
 
 // _____________________________________________________________________________________________________________________

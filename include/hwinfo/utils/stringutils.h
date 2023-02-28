@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <codecvt>
+#include <locale>
 #include <string>
 
 /**
@@ -137,3 +139,20 @@ inline std::string split_get_index(const std::string& input, const std::string& 
  * @return
  */
 inline std::string wstring_to_string() { return ""; }
+
+/**
+ * Convert wstring to string
+ * @return
+ */
+inline std::string WString2String(const std::wstring& ws) {
+  std::string strLocale = setlocale(LC_ALL, "");
+  const wchar_t* wchSrc = ws.c_str();
+  size_t nDestSize = wcstombs(NULL, wchSrc, 0) + 1;
+  char* chDest = new char[nDestSize];
+  memset(chDest, 0, nDestSize);
+  wcstombs(chDest, wchSrc, nDestSize);
+  std::string strResult = chDest;
+  delete[] chDest;
+  setlocale(LC_ALL, strLocale.c_str());
+  return strResult;
+}
