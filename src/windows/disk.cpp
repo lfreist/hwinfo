@@ -42,16 +42,14 @@ std::vector<Disk> getAllDisks() {
     std::wstring tmp(res[i]);
     disks[i]._serialNumber = wstring_to_std_tring(res[i]);
   }
-  std::vector<uint64_t> res2;
-  // this returns a random same number for all disks...
-  wmi::queryWMI("Win32_DiskDrive", "Size", res2);
+  std::vector<const wchar_t*> sizes;
+  // it will return L"Size" Str
+  wmi::queryWMI("Win32_DiskDrive", "Size", sizes);
   for (int i = 0; i < res.size(); ++i) {
     if (i >= disks.size()) {
       break;
     }
-    // TODO: fix this error
-    // disks[i]._size_Bytes = res2[i];
-    disks[i]._size_Bytes = -1;
+    disks[i]._size_Bytes = std::stoll(wstring_to_std_tring(sizes[i]));
   }
   return disks;
 }
