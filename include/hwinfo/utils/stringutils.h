@@ -144,7 +144,7 @@ inline std::string wstring_to_string() { return ""; }
  * Convert wstring to string
  * @return
  */
-inline std::string wstring_to_std_tring(const std::wstring& ws) {
+inline std::string wstring_to_std_string(const std::wstring& ws) {
   std::string str_locale = setlocale(LC_ALL, "");
   const wchar_t* wch_src = ws.c_str();
   size_t n_dest_size = wcstombs(NULL, wch_src, 0) + 1;
