@@ -24,7 +24,7 @@ std::string RAM::getVendor() {
   if (!ret) {
     return "<unknown>";
   }
-  return {wstring_to_std_string(ret);
+  return wstring_to_std_string(ret);
 }
 
 // _____________________________________________________________________________________________________________________
@@ -35,7 +35,7 @@ std::string RAM::getName() {
   if (!ret) {
     return "<unknown>";
   }
-  return {wstring_to_std_string(ret);
+  return wstring_to_std_string(ret);
 }
 
 // _____________________________________________________________________________________________________________________
@@ -46,7 +46,7 @@ std::string RAM::getModel() {
   if (!ret) {
     return "<unknown>";
   }
-  return {wstring_to_std_string(ret);
+  return wstring_to_std_string(ret);
 }
 
 // _____________________________________________________________________________________________________________________
