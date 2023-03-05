@@ -70,7 +70,7 @@ int64_t RAM::getTotalSize_Bytes() {
 }
 
 // _____________________________________________________________________________________________________________________
-int64_t RAM::getAvailableMemory() { 
+int64_t RAM::getAvailableMemory() {
   std::vector<wchar_t*> memories{};
   // Number of kilobytes of physical memory currently unused and available.
   wmi::queryWMI("CIM_OperatingSystem", "FreePhysicalMemory", memories);
@@ -79,6 +79,8 @@ int64_t RAM::getAvailableMemory() {
     return std::stoll(wstring_to_std_string(memories[0])) * 1024;
   }
   return -1;
+}
+
 }  // namespace hwinfo
 
 #endif  // HWINFO_WINDOWS

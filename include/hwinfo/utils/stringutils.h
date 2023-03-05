@@ -4,9 +4,9 @@
 #pragma once
 
 #include <codecvt>
+#include <cstring>
 #include <locale>
 #include <string>
-#include <cstring>
 
 /**
  * remove all white spaces (' ', '\t', '\n') from start and end of input
