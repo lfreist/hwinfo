@@ -70,7 +70,8 @@ int64_t RAM::getTotalSize_Bytes() {
 }
 
 // _____________________________________________________________________________________________________________________
-int64_t RAM::getAvailableMemory() {
+int64_t RAM::getAvailableMemory() { 
+  // it will return L"FreePhysicalMemory" Str
   std::vector<wchar_t*> memories{};
   // Number of kilobytes of physical memory currently unused and available.
   wmi::queryWMI("CIM_OperatingSystem", "FreePhysicalMemory", memories);
