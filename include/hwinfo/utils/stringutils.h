@@ -6,6 +6,7 @@
 #include <codecvt>
 #include <locale>
 #include <string>
+#include <cstring>
 
 /**
  * remove all white spaces (' ', '\t', '\n') from start and end of input
