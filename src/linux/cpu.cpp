@@ -54,7 +54,7 @@ std::string CPU::getVendor() {
     return "<unknown>";
   }
   while (getline(stream, line)) {
-    if (line.starts_with("vendor_id")) {
+    if (starts_with(line, "vendor_id")) {
       stream.close();
       return line.substr(line.find(": ") + 2, line.length());
     }
@@ -100,7 +100,7 @@ std::string CPU::getModelName() {
     return "<unknown>";
   }
   while (getline(stream, line)) {
-    if (line.starts_with("model name")) {
+    if (starts_with(line, "model name")) {
       stream.close();
       return line.substr(line.find(": ") + 2, line.length());
     }
@@ -224,7 +224,7 @@ int CPU::getRegularClockSpeed_kHz() {
     return -1;
   }
   while (getline(stream, line)) {
-    if (line.starts_with("cpu MHz")) {
+    if (starts_with(line, "cpu MHz")) {
       try {
         stream.close();
         return static_cast<int>(std::stof(line.substr(line.find(": ") + 2, line.length()))) * 1000;
@@ -244,7 +244,7 @@ int CPU::getCacheSize_Bytes() {
     return -1;
   }
   while (getline(stream, line)) {
-    if (line.starts_with("cache size")) {
+    if (starts_with(line, "cache size")) {
       try {
         stream.close();
         return std::stoi(line.substr(line.find(": ") + 2, line.length() - 3)) * 1000;
