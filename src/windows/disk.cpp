@@ -22,9 +22,8 @@ std::vector<Disk> getAllDisks() {
     return {};
   }
   for (const auto& v : res) {
-    std::wstring tmp(v);
     disks.push_back(Disk());
-    disks.back()._vendor = {tmp.begin(), tmp.end()};
+    disks.back()._vendor = wstring_to_std_string(v);
   }
   res.clear();
   wmi::queryWMI("Win32_DiskDrive", "Model", res);
@@ -32,8 +31,7 @@ std::vector<Disk> getAllDisks() {
     if (i >= disks.size()) {
       break;
     }
-    std::wstring tmp(res[i]);
-    disks[i]._model = {tmp.begin(), tmp.end()};
+    disks[i]._model = wstring_to_std_string(res[i]);
   }
   res.clear();
   wmi::queryWMI("Win32_DiskDrive", "SerialNumber", res);
@@ -42,18 +40,16 @@ std::vector<Disk> getAllDisks() {
       break;
     }
     std::wstring tmp(res[i]);
-    disks[i]._serialNumber = {tmp.begin(), tmp.end()};
+    disks[i]._serialNumber = wstring_to_std_string(res[i]);
   }
-  std::vector<uint64_t> res2;
-  // this returns a random same number for all disks...
-  wmi::queryWMI("Win32_DiskDrive", "Size", res2);
+  std::vector<const wchar_t*> sizes;
+  // it will return L"Size" Str
+  wmi::queryWMI("Win32_DiskDrive", "Size", sizes);
   for (int i = 0; i < res.size(); ++i) {
     if (i >= disks.size()) {
       break;
     }
-    // TODO: fix this error
-    // disks[i]._size_Bytes = res2[i];
-    disks[i]._size_Bytes = -1;
+    disks[i]._size_Bytes = std::stoll(wstring_to_std_string(sizes[i]));
   }
   return disks;
 }
