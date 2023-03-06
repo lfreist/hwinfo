@@ -17,6 +17,7 @@
 
 #include "hwinfo/cpu.h"
 #include "hwinfo/cpuid.h"
+#include "hwinfo/utils/stringutils.h"
 
 namespace hwinfo {
 

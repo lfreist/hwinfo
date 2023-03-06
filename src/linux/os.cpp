@@ -13,6 +13,7 @@
 #include <string>
 
 #include "hwinfo/os.h"
+#include "hwinfo/utils/stringutils.h"
 
 namespace hwinfo {
 
