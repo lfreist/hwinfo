@@ -7,6 +7,7 @@
 #include <cstring>
 #include <locale>
 #include <string>
+#include <vector>
 
 /**
  * remove all white spaces (' ', '\t', '\n') from start and end of input
@@ -156,4 +157,19 @@ inline std::string wstring_to_std_string(const std::wstring& ws) {
   delete[] ch_dest;
   setlocale(LC_ALL, str_locale.c_str());
   return result_text;
+}
+
+/**
+ * Replace the std::string::starts_with function only available in C++20 and above.
+ * @param str
+ * @param prefix
+ * @return
+ */
+template <typename string_type, typename prefix_type>
+inline bool starts_with(const string_type& str, const prefix_type& prefix) {
+#ifdef __cpp_lib_starts_ends_with
+  return str.starts_with(prefix);
+#else
+  return str.rfind(prefix, 0) == 0;
+#endif
 }

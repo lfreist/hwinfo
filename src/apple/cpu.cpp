@@ -17,6 +17,7 @@
 
 #include "hwinfo/cpu.h"
 #include "hwinfo/cpuid.h"
+#include "hwinfo/utils/stringutils.h"
 
 namespace hwinfo {
 
@@ -200,7 +201,7 @@ int CPU::getCacheSize_Bytes() {
     return -1;
   }
   while (getline(stream, line)) {
-    if (line.starts_with("cache size")) {
+    if (starts_with(line, "cache size")) {
       try {
         stream.close();
         return std::stoi(line.substr(line.find(": ") + 2, line.length() - 3)) * 1000;
