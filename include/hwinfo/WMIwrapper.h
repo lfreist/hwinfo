@@ -15,7 +15,8 @@
 #include <vector>
 #pragma comment(lib, "wbemuuid.lib")
 
-namespace hwinfo::wmi {
+namespace hwinfo {
+namespace wmi {
 
 template <typename T>
 inline bool queryWMI(const std::string& WMIClass, std::string field, std::vector<T>& value,
@@ -106,6 +107,7 @@ inline bool queryWMI(const std::string& WMIClass, std::string field, std::vector
   return true;
 }
 
-}  // namespace hwinfo::wmi
+}  // namespace wmi
+}  // namespace hwinfo
 
 #endif
