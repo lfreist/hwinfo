@@ -20,6 +20,13 @@ struct InstructionSet {
   bool _isAVX2 = false;
 
   bool _init_ = false;
+
+  InstructionSet() = default;
+
+  explicit InstructionSet(bool isHtt, bool isSse, bool isSse2, bool isSse3, bool isSse41, bool isSse42, bool isAvx,
+                          bool isAvx2, bool init)
+      : _isHTT(isHtt), _isSSE(isSse), _isSSE2(isSse2), _isSSE3(isSse3), _isSSE41(isSse41), _isSSE42(isSse42),
+        _isAVX(isAvx), _isAVX2(isAvx2), _init_(init) {}
 };
 
 class CPU {
@@ -27,7 +34,7 @@ class CPU {
 
  public:
   CPU() = default;
-  CPU(int id);
+  explicit CPU(int id);
   ~CPU() = default;
 
   std::string& modelName();
