@@ -8,6 +8,7 @@ add_library(HWinfo
         mainboard.cpp
         disk.cpp
         # apple specific definitions
+        apple/utils/filesystem.cpp
         apple/battery.cpp
         apple/cpu.cpp
         apple/gpu.cpp
@@ -16,6 +17,7 @@ add_library(HWinfo
         apple/mainboard.cpp
         apple/disk.cpp
         # linux specific definitions
+        linux/utils/filesystem.cpp
         linux/battery.cpp
         linux/cpu.cpp
         linux/gpu.cpp
@@ -24,6 +26,7 @@ add_library(HWinfo
         linux/mainboard.cpp
         linux/disk.cpp
         # windows specific definitions
+        windows/utils/filesystem.cpp
         windows/battery.cpp
         windows/cpu.cpp
         windows/gpu.cpp

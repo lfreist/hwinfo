@@ -5,8 +5,6 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <filesystem>
-
 #include "hwinfo/WMIwrapper.h"
 #include "hwinfo/disk.h"
 #include "hwinfo/utils/stringutils.h"

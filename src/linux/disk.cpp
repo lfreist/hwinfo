@@ -5,11 +5,11 @@
 
 #ifdef HWINFO_UNIX
 
-#include <filesystem>
 #include <fstream>
 
 #include "hwinfo/disk.h"
 #include "hwinfo/utils/stringutils.h"
+#include "hwinfo/utils/filesystem.h"
 
 namespace hwinfo {
 
@@ -21,9 +21,9 @@ std::vector<Disk> getAllDisks() {
   std::string vendor;
   std::string model;
   std::string serialNumber;
-  for (const auto& entry : std::filesystem::directory_iterator(base_path)) {
-    std::string path = entry.path().string() + "/device/";
-    if (!std::filesystem::exists(std::filesystem::path(path))) {
+  for (const auto& entry : filesystem::getDirectoryEntries(base_path)) {
+    std::string path = base_path + "/" + entry + "/device/";
+    if (!filesystem::exists(path)) {
       continue;
     }
     std::ifstream f(path + "vendor");
