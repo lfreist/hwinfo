@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -30,7 +31,7 @@ struct InstructionSet {
 };
 
 class CPU {
-  friend std::optional<CPU> getCPU(uint8_t socket_id);
+  friend std::unique_ptr<CPU> getCPU(uint8_t socket_id);
 
  public:
   CPU() = default;
@@ -82,7 +83,7 @@ class Socket {
   class CPU _cpu;
 };
 
-std::optional<CPU> getCPU(uint8_t socket_id);
+std::unique_ptr<CPU> getCPU(uint8_t socket_id);
 
 std::vector<Socket> getAllSockets();
 
