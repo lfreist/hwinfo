@@ -21,5 +21,9 @@ add_subdirectory(src)
 
 if (${MAIN_PROJECT})
     add_subdirectory(examples)
+
+    include(CTest)
     add_subdirectory(test)
+
+    add_test(Example examples/Example)
 endif()
