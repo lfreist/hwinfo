@@ -27,5 +27,5 @@ jobs:
 
     - name: Run Example
       working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}} --verbose
+      run: ctest --verbose
       
