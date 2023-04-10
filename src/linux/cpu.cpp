@@ -261,7 +261,7 @@ int CPU::getCacheSize_Bytes() {
 // _____________________________________________________________________________________________________________________
 // Helper function for linux: parses /proc/cpuinfo. socket_id == physical_id.
 // _____________________________________________________________________________________________________________________
-std::optional<CPU> getCPU(uint8_t socket_id) {
+std::unique_ptr<CPU> getCPU(uint8_t socket_id) {
   std::ifstream cpuinfo("/proc/cpuinfo");
   if (!cpuinfo.is_open()) {
     return {};
@@ -302,14 +302,14 @@ std::optional<CPU> getCPU(uint8_t socket_id) {
   if (cpu_block.empty()) {
     return {};
   }
-  CPU cpu;
-  cpu._modelName = cpu_block["model name"];
-  cpu._vendor = cpu_block["vendor_id"];
-  cpu._cacheSize_Bytes = std::stoi(split(cpu_block["cache size"], ' ')[0]) * 1024;
-  cpu._numPhysicalCores = std::stoi(cpu_block["cpu cores"]);
-  cpu._numLogicalCores = std::stoi(cpu_block["siblings"]);
-  cpu._maxClockSpeed_kHz = static_cast<int>(std::stod(cpu_block["cpu MHz"]) * 1000);
-  cpu._regularClockSpeed_kHz = static_cast<int>(std::stod(cpu_block["cpu MHz"]) * 1000);
+  std::unique_ptr<CPU> cpu(new CPU());
+  cpu->_modelName = cpu_block["model name"];
+  cpu->_vendor = cpu_block["vendor_id"];
+  cpu->_cacheSize_Bytes = std::stoi(split(cpu_block["cache size"], ' ')[0]) * 1024;
+  cpu->_numPhysicalCores = std::stoi(cpu_block["cpu cores"]);
+  cpu->_numLogicalCores = std::stoi(cpu_block["siblings"]);
+  cpu->_maxClockSpeed_kHz = static_cast<int>(std::stod(cpu_block["cpu MHz"]) * 1000);
+  cpu->_regularClockSpeed_kHz = static_cast<int>(std::stod(cpu_block["cpu MHz"]) * 1000);
 
   InstructionSet instruction_set;
   std::vector<std::string> flags{"htt", "sse", "sse1", "sse2", "sse3", "sse4_1", "sse4_2", "avx", "avx2"};
@@ -323,7 +323,7 @@ std::optional<CPU> getCPU(uint8_t socket_id) {
   instruction_set._isAVX2 = (cpu_block["flags"].find(" avx2 ") != std::string::npos);
   instruction_set._init_ = true;
 
-  cpu._instructionSet = instruction_set;
+  cpu->_instructionSet = instruction_set;
   return cpu;
 }
 
@@ -331,8 +331,8 @@ std::optional<CPU> getCPU(uint8_t socket_id) {
 // _____________________________________________________________________________________________________________________
 Socket::Socket(uint8_t id) : _id(id) {
   auto cpu = getCPU(_id);
-  if (cpu.has_value()) {
-    _cpu = cpu.value();
+  if (cpu != nullptr) {
+    _cpu = *cpu;
   }
 }
 
@@ -346,10 +346,10 @@ std::vector<Socket> getAllSockets() {
   int id = 0;
   while (true) {
     auto cpu = getCPU(id);
-    if (!cpu.has_value()) {
+    if (cpu == nullptr) {
       break;
     }
-    sockets.emplace_back(id++, std::move(cpu.value()));
+    sockets.emplace_back(id++, *cpu);
   }
   return sockets;
 }

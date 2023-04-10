@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -20,14 +21,28 @@ struct InstructionSet {
   bool _isAVX2 = false;
 
   bool _init_ = false;
+
+  InstructionSet() = default;
+
+  explicit InstructionSet(bool isHtt, bool isSse, bool isSse2, bool isSse3, bool isSse41, bool isSse42, bool isAvx,
+                          bool isAvx2, bool init)
+      : _isHTT(isHtt),
+        _isSSE(isSse),
+        _isSSE2(isSse2),
+        _isSSE3(isSse3),
+        _isSSE41(isSse41),
+        _isSSE42(isSse42),
+        _isAVX(isAvx),
+        _isAVX2(isAvx2),
+        _init_(init) {}
 };
 
 class CPU {
-  friend std::optional<CPU> getCPU(uint8_t socket_id);
+  friend std::unique_ptr<CPU> getCPU(uint8_t socket_id);
 
  public:
   CPU() = default;
-  CPU(int id);
+  explicit CPU(int id);
   ~CPU() = default;
 
   std::string& modelName();
@@ -75,7 +90,7 @@ class Socket {
   class CPU _cpu;
 };
 
-std::optional<CPU> getCPU(uint8_t socket_id);
+std::unique_ptr<CPU> getCPU(uint8_t socket_id);
 
 std::vector<Socket> getAllSockets();
 

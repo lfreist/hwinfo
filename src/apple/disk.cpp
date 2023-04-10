@@ -5,7 +5,6 @@
 
 #ifdef HWINFO_APPLE
 
-#include <filesystem>
 #include <fstream>
 
 #include "hwinfo/disk.h"
