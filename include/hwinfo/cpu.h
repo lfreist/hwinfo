@@ -26,8 +26,15 @@ struct InstructionSet {
 
   explicit InstructionSet(bool isHtt, bool isSse, bool isSse2, bool isSse3, bool isSse41, bool isSse42, bool isAvx,
                           bool isAvx2, bool init)
-      : _isHTT(isHtt), _isSSE(isSse), _isSSE2(isSse2), _isSSE3(isSse3), _isSSE41(isSse41), _isSSE42(isSse42),
-        _isAVX(isAvx), _isAVX2(isAvx2), _init_(init) {}
+      : _isHTT(isHtt),
+        _isSSE(isSse),
+        _isSSE2(isSse2),
+        _isSSE3(isSse3),
+        _isSSE41(isSse41),
+        _isSSE42(isSse42),
+        _isAVX(isAvx),
+        _isAVX2(isAvx2),
+        _init_(init) {}
 };
 
 class CPU {

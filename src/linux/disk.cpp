@@ -8,8 +8,8 @@
 #include <fstream>
 
 #include "hwinfo/disk.h"
-#include "hwinfo/utils/stringutils.h"
 #include "hwinfo/utils/filesystem.h"
+#include "hwinfo/utils/stringutils.h"
 
 namespace hwinfo {
 

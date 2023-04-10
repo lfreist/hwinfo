@@ -2,9 +2,10 @@
 
 #ifdef HWINFO_UNIX
 
-#include <cstring>
 #include <dirent.h>
 #include <sys/stat.h>
+
+#include <cstring>
 #include <vector>
 
 #include "hwinfo/utils/filesystem.h"

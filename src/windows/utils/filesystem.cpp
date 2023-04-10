@@ -1,10 +1,8 @@
 #include "hwinfo/platform.h"
 
-#ifdef HWINFO_UNIX
+#ifdef HWINFO_WINDOWS
 
-#include <cstring>
-#include <dirent.h>
-#include <sys/stat.h>
+#include <string>
 #include <vector>
 
 #include "hwinfo/utils/filesystem.h"
@@ -19,4 +17,4 @@ std::vector<std::string> hwinfo::filesystem::getDirectoryEntries(const std::stri
   return {};
 }
 
-#endif  // HWINFO_UNIX
+#endif  // HWINFO_WINDOWS
