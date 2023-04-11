@@ -20,6 +20,9 @@ namespace hwinfo {
 std::string RAM::getVendor() {
   std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_PhysicalMemory", "Manufacturer", names);
+  if (names.empty()) {
+    return "<unknown>";
+  }
   auto ret = names[0];
   if (!ret) {
     return "<unknown>";
@@ -31,6 +34,9 @@ std::string RAM::getVendor() {
 std::string RAM::getName() {
   std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_PhysicalMemory", "Name", names);
+  if (names.empty()) {
+    return "<unknown>";
+  }
   auto ret = names[0];
   if (!ret) {
     return "<unknown>";
@@ -42,6 +48,9 @@ std::string RAM::getName() {
 std::string RAM::getModel() {
   std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_PhysicalMemory", "PartNumber", names);
+  if (names.empty()) {
+    return "<unknown>";
+  }
   auto ret = names[0];
   if (!ret) {
     return "<unknown>";
@@ -53,6 +62,9 @@ std::string RAM::getModel() {
 std::string RAM::getSerialNumber() {
   std::vector<const wchar_t*> names{};
   wmi::queryWMI("WIN32_PhysicalMemory", "SerialNumber", names);
+  if (names.empty()) {
+    return "<unknown>";
+  }
   auto ret = names[0];
   if (!ret) {
     return "<unknown>";
@@ -76,6 +88,9 @@ int64_t RAM::getAvailableMemory() {
   // Number of kilobytes of physical memory currently unused and available.
   wmi::queryWMI("CIM_OperatingSystem", "FreePhysicalMemory", memories);
   if (memories.size() > 0) {
+    if (memories.front() == nullptr) {
+      return -1;
+    }
     // keep it as totalSize_Bytes
     return std::stoll(wstring_to_std_string(memories[0])) * 1024;
   }

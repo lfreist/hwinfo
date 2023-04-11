@@ -29,7 +29,7 @@ int CPU::currentClockSpeed_kHz() {
 std::string CPU::getVendor() {
   std::vector<const wchar_t*> vendor{};
   wmi::queryWMI("Win32_Processor", "Manufacturer", vendor);
-  if (vendor.empty()) {
+  if (vendor.empty() || vendor.front() == nullptr) {
 #if defined(HWINFO_X86)
     std::string v;
     uint32_t regs[4]{0};
@@ -51,7 +51,7 @@ std::string CPU::getVendor() {
 std::string CPU::getModelName() {
   std::vector<const wchar_t*> vendor{};
   wmi::queryWMI("Win32_Processor", "Name", vendor);
-  if (vendor.empty()) {
+  if (vendor.empty() || vendor.front() == nullptr) {
 #if defined(HWINFO_X86)
     std::string model;
     uint32_t regs[4]{};

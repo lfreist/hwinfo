@@ -89,7 +89,8 @@ inline bool queryWMI(const std::string& WMIClass, std::string field, std::vector
     } else if (std::is_same<T, unsigned long long>::value) {
       value.push_back((T)vtProp.ullVal);
     } else {
-      value.push_back((T)((bstr_t)vtProp.bstrVal).copy());
+      BSTR val = SysAllocString(vtProp.bstrVal);
+      // value.push_back(val);
     }
 
     VariantClear(&vtProp);

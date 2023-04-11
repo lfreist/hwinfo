@@ -16,7 +16,7 @@ std::vector<Disk> getAllDisks() {
   std::vector<Disk> disks;
   std::vector<const wchar_t*> res{};
   wmi::queryWMI("Win32_DiskDrive", "Manufacturer", res);
-  if (res.empty()) {
+  if (res.empty() || res.front() == nullptr) {
     return {};
   }
   for (const auto& v : res) {

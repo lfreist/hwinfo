@@ -10,6 +10,7 @@
 #include "hwinfo/WMIwrapper.h"
 #include "hwinfo/battery.h"
 
+#include <iostream>
 namespace hwinfo {
 
 // =====================================================================================================================
@@ -43,7 +44,7 @@ std::vector<Battery> getAllBatteries() {
   std::vector<Battery> batteries;
   std::vector<const wchar_t*> res{};
   wmi::queryWMI("Win32_Battery", "Name", res);
-  if (res.empty() || res.at(0) == nullptr) {
+  if (res.empty() || res.front() == nullptr) {
     return {};
   }
   std::cout << res.size() << std::endl;

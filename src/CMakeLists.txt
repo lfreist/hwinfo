@@ -36,4 +36,8 @@ add_library(HWinfo
         windows/disk.cpp
         )
 
+if (WIN32 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    target_link_libraries(HWinfo PUBLIC "wbemuuid")
+endif ()
+
 add_library(${PROJECT_NAME}::HWinfo ALIAS HWinfo)
