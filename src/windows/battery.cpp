@@ -7,10 +7,11 @@
 
 #ifdef HWINFO_WINDOWS
 
+#include <iostream>
+
 #include "hwinfo/WMIwrapper.h"
 #include "hwinfo/battery.h"
 
-#include <iostream>
 namespace hwinfo {
 
 // =====================================================================================================================
