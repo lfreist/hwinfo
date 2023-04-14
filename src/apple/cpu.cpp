@@ -73,12 +73,14 @@ std::string CPU::getModelName() {
   }
   return model;
 #else
-  char* model_2[1024];
-  size_t size = sizeof(model_2);
-  if (sysctlbyname("machdep.cpu.brand_string", model_2, &size, NULL, 0) < 0) {
-    perror("sysctl");
+  size_t size = 1024;
+  std::string model;
+  model.resize(size);
+  if (sysctlbyname("machdep.cpu.brand_string", model.data(), &size, NULL, 0) < 0) {
+    model.resize(size);
+    return model;
   }
-  return std::string(model);
+  return "<unknown>";
 #endif
 }
 
@@ -194,36 +196,7 @@ int CPU::getRegularClockSpeed_kHz() {
 }
 
 int CPU::getCacheSize_Bytes() {
-#if defined(unix) || defined(__unix) || defined(__unix__)
-  std::string line;
-  std::ifstream stream("/proc/cpuinfo");
-  if (!stream) {
-    return -1;
-  }
-  while (getline(stream, line)) {
-    if (starts_with(line, "cache size")) {
-      try {
-        stream.close();
-        return std::stoi(line.substr(line.find(": ") + 2, line.length() - 3)) * 1000;
-      } catch (std::invalid_argument& e) {
-        return -1;
-      }
-    }
-  }
-  stream.close();
   return -1;
-#elif defined(__APPLE__)
-  return -1;
-#elif defined(_WIN32) || defined(_WIN64)
-  std::vector<int> cacheSize{};
-  wmi::queryWMI("Win32_Processor", "L3CacheSize", cacheSize);
-  if (cacheSize.empty()) {
-    return -1;
-  }
-  return cacheSize[0];
-#else
-  return -1;
-#endif
 }
 
 // =====================================================================================================================
