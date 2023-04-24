@@ -48,7 +48,7 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 |                  | Name               |   ❌    |   ❌   |   ✔️    | `RAM::getName()`                                                      |
 |                  | Serial Number      |   ❌    |   ❌   |   ✔️    | `RAM::get()`                                                          |
 |                  | Total Memory Size  |   ✔️   |  ✔️   |   ✔️    | `RAM::getTotalSizes_Bytes()`                                          |
-|                  | Free Memory Size   |   ✔️   |   ❌   |    ❌    | `-`                                                                   |
+|                  | Free Memory Size   |   ✔️   |   ❌   |    ✔️    | `RAM::getAvailableMemory()`                                                                   |
 | Mainboard        | Vendor             |   ✔️   |   ❌   |   ✔️    | `MainBoard::getVendor()`                                              |
 |                  | Model              |   ✔️   |   ❌   |   ✔️    | `MainBoard::getName()`                                                |
 |                  | Version            |   ✔️   |   ❌   |   ✔️    | `MainBoard::getVersion()`                                             |

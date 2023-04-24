@@ -83,18 +83,10 @@ int64_t RAM::getTotalSize_Bytes() {
 
 // _____________________________________________________________________________________________________________________
 int64_t RAM::getAvailableMemory() {
-  // it will return L"FreePhysicalMemory" Str
-  std::vector<wchar_t*> memories{};
-  // Number of kilobytes of physical memory currently unused and available.
-  wmi::queryWMI("CIM_OperatingSystem", "FreePhysicalMemory", memories);
-  if (memories.size() > 0) {
-    if (memories.front() == nullptr) {
-      return -1;
-    }
-    // keep it as totalSize_Bytes
-    return std::stoll(wstring_to_std_string(memories[0])) * 1024;
-  }
-  return -1;
+  MEMORYSTATUSEX status;
+  status.dwLength = sizeof(status);
+  GlobalMemoryStatusEx(&status);
+  return static_cast<int64_t>(status.ullAvailPhys);
 }
 
 }  // namespace hwinfo
