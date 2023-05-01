@@ -37,6 +37,7 @@ std::vector<Disk> getAllDisks() {
   std::cout << "mark 4\n" << std::flush;
   res.clear();
   wmi::queryWMI("Win32_DiskDrive", "SerialNumber", res);
+  std::cout << disks.size() << " " << res.size() << std::endl;
   for (int i = 0; i < res.size(); ++i) {
     if (i >= disks.size()) {
       break;
