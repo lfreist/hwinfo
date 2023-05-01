@@ -43,6 +43,7 @@ std::vector<Disk> getAllDisks() {
       break;
     }
     std::cout << i << std::endl;
+    std::cout << res[i] << std::endl;
     std::wstring tmp(res[i]);
     std::cout << wstring_to_std_string(tmp) << std::endl;
     disks[i]._serialNumber = wstring_to_std_string(res[i]);
