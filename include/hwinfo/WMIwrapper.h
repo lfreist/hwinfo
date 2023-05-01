@@ -89,8 +89,14 @@ inline bool queryWMI(const std::string& WMIClass, std::string field, std::vector
     } else if (std::is_same<T, unsigned long long>::value) {
       value.push_back((T)vtProp.ullVal);
     } else {
-      BSTR val = SysAllocString(vtProp.bstrVal);
-      // value.push_back(val);
+      // TODO: this might cause issues with MinGW. fix this in another way than using the macros
+#if defined(__MINGW32__) || defined(__MINGW64__)
+      ;
+#else
+      value.push_back((T)((bstr_t)vtProp.bstrVal).copy());
+      // BSTR val = SysAllocString(vtProp.bstrVal);
+      // value.push_back((bstr_t)val);
+#endif
     }
 
     VariantClear(&vtProp);
