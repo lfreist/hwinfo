@@ -13,7 +13,6 @@
 #include <string>
 #include <type_traits>
 #include <vector>
-#include <iostream>
 #pragma comment(lib, "wbemuuid.lib")
 
 namespace hwinfo {
@@ -67,7 +66,6 @@ inline bool queryWMI(const std::string& WMIClass, std::string field, std::vector
   }
   IWbemClassObject* pclsObj = nullptr;
   ULONG uReturn = 0;
-  std::cout << "test0\n";
   while (pEnumerator) {
     pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
 
@@ -95,9 +93,7 @@ inline bool queryWMI(const std::string& WMIClass, std::string field, std::vector
 #if defined(__MINGW32__) || defined(__MINGW64__)
       ;
 #else
-      std::cout << "test\n";
       value.push_back((T)((bstr_t)vtProp.bstrVal).copy());
-      std::cout << "test2\n";
       // BSTR val = SysAllocString(vtProp.bstrVal);
       // value.push_back((bstr_t)val);
 #endif
@@ -106,7 +102,6 @@ inline bool queryWMI(const std::string& WMIClass, std::string field, std::vector
     VariantClear(&vtProp);
     pclsObj->Release();
   }
-  std::cout << "testxx\n";
 
   if (value.empty()) {
     value.resize(1);

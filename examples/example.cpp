@@ -105,7 +105,9 @@ int main(int argc, char** argv) {
   }
   else {
     std::cout << "No Batteries installed or detected" << std::endl;
+    std::cout << "mark 0\n" << std::endl;
   }
+  std::cout << "mark 0.1\n" << std::endl;
 
   std::cout << "mark 1\n";
   std::vector<hwinfo::Disk> disks = hwinfo::getAllDisks();

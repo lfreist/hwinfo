@@ -9,6 +9,8 @@
 #include "hwinfo/disk.h"
 #include "hwinfo/utils/stringutils.h"
 
+#include <iostream>
+
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
