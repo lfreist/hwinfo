@@ -42,9 +42,9 @@ std::vector<Disk> getAllDisks() {
     if (i >= disks.size()) {
       break;
     }
+    std::cout << i << std::endl;
     std::wstring tmp(res[i]);
     std::cout << wstring_to_std_string(tmp) << std::endl;
-    std::cout << i << std::endl;
     disks[i]._serialNumber = wstring_to_std_string(res[i]);
   }
   std::cout << "mark 5\n" << std::flush;
