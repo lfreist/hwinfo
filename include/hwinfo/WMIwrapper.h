@@ -13,6 +13,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <iostream>
 #pragma comment(lib, "wbemuuid.lib")
 
 namespace hwinfo {
