@@ -16,6 +16,9 @@ namespace hwinfo {
 std::string MainBoard::getVendor() {
   std::vector<const wchar_t*> manufacturer{};
   wmi::queryWMI("Win32_BaseBoard", "Manufacturer", manufacturer);
+  if (manufacturer.empty()) {
+    return "<unknown>";
+  }
   auto ret = manufacturer[0];
   if (!ret) {
     return "<unknown>";
@@ -28,6 +31,9 @@ std::string MainBoard::getVendor() {
 std::string MainBoard::getName() {
   std::vector<const wchar_t*> name{};
   wmi::queryWMI("Win32_BaseBoard", "Product", name);
+  if (name.empty()) {
+    return "<unknown>";
+  }
   auto ret = name[0];
   if (!ret) {
     return "<unknown>";
@@ -40,6 +46,9 @@ std::string MainBoard::getName() {
 std::string MainBoard::getVersion() {
   std::vector<const wchar_t*> version{};
   wmi::queryWMI("Win32_BaseBoard", "Version", version);
+  if (version.empty()) {
+    return "<unknown>";
+  }
   auto ret = version[0];
   if (!ret) {
     return "<unknown>";
@@ -52,6 +61,9 @@ std::string MainBoard::getVersion() {
 std::string MainBoard::getSerialNumber() {
   std::vector<const wchar_t*> serialNumber{};
   wmi::queryWMI("Win32_BaseBoard", "SerialNumber", serialNumber);
+  if (serialNumber.empty()) {
+    return "<unknown>";
+  }
   auto ret = serialNumber[0];
   if (!ret) {
     return "<unknown>";
