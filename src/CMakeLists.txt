@@ -71,6 +71,7 @@ set_property(TARGET HWinfo
 add_library(${PROJECT_NAME}::HWinfo ALIAS HWinfo)
 
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 install(TARGETS HWinfo
     EXPORT HWinfoTargets
@@ -82,7 +83,6 @@ install(EXPORT HWinfoTargets
   DESTINATION lib/cmake/HWinfo
 )
 
-include(CMakePackageConfigHelpers)
 configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/config.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/HWinfoConfig.cmake"
     INSTALL_DESTINATION "lib/cmake/hwinfo"
