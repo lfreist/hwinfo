@@ -74,12 +74,10 @@ std::string CPU::getModelName() {
   return model;
 #else
   size_t size = 1024;
-  std::string model;
-  model.resize(size);
-  if (sysctlbyname("machdep.cpu.brand_string", model.data(), &size, NULL, 0) < 0) {
-    model.resize(size);
-    return model;
-  }
+  char model[size];
+  if (sysctlbyname("machdep.cpu.brand_string", model, &size, NULL, 0) < 0)
+    return std::string(model);
+
   return "<unknown>";
 #endif
 }
