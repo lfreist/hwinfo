@@ -31,9 +31,21 @@ std::string read_drm_by_path(const std::string& path) {
 std::vector<int> get_frequencies(const std::string drm_path) {
   // {min, current, max}
   std::vector<int> freqs(3);
-  freqs[0] = std::stoi(read_drm_by_path(drm_path + "gt_min_freq_mhz"));
-  freqs[1] = std::stoi(read_drm_by_path(drm_path + "gt_cur_freq_mhz"));
-  freqs[2] = std::stoi(read_drm_by_path(drm_path + "gt_max_freq_mhz"));
+  try {
+    freqs[0] = std::stoi(read_drm_by_path(drm_path + "gt_min_freq_mhz"));
+  } catch (const std::invalid_argument& e) {
+    freqs[0] = -1;
+  }
+  try {
+    freqs[1] = std::stoi(read_drm_by_path(drm_path + "gt_cur_freq_mhz"));
+  } catch (const std::invalid_argument& e) {
+    freqs[0] = -1;
+  }
+  try {
+    freqs[2] = std::stoi(read_drm_by_path(drm_path + "gt_max_freq_mhz"));
+  } catch (const std::invalid_argument& e) {
+    freqs[0] = -1;
+  }
   return freqs;
 }
 

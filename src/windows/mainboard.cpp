@@ -74,10 +74,10 @@ std::string getSerialNumber() {
 
 // _____________________________________________________________________________________________________________________
 MainBoard::MainBoard() {
-_vendor = getVendor();
-_name = getName();
-_version = getVersion();
-_serialNumber = getSerialNumber();
+  _vendor = getVendor();
+  _name = getName();
+  _version = getVersion();
+  _serialNumber = getSerialNumber();
 }
 
 }  // namespace hwinfo
