@@ -18,37 +18,39 @@ namespace hwinfo {
 std::vector<Disk> getAllDisks() {
   std::vector<Disk> disks;
   const std::string base_path("/sys/class/block/");
+  std::string vendor;
+  std::string model;
+  std::string serialNumber;
   for (const auto& entry : filesystem::getDirectoryEntries(base_path)) {
-    Disk disk;
     std::string path = base_path + "/" + entry + "/device/";
     if (!filesystem::exists(path)) {
       continue;
     }
     std::ifstream f(path + "vendor");
     if (f) {
-      getline(f, disk._vendor);
+      getline(f, vendor);
     } else {
-      disk._vendor = "<unknown>";
+      vendor = "<unknown>";
     }
     f.close();
     f.open(path + "model");
     if (f) {
-      getline(f, disk._model);
+      getline(f, model);
     } else {
-      disk._model = "<unknown>";
+      vendor = "<unknown>";
     }
     f.close();
     f.open(path + "serial");
     if (f) {
-      getline(f, disk._serialNumber);
+      getline(f, serialNumber);
     } else {
-      disk._serialNumber = "<unknown>";
+      serialNumber = "<unknown>";
     }
     f.close();
-    strip(disk._vendor);
-    strip(disk._model);
-    strip(disk._serialNumber);
-    disk._size_Bytes = -1;
+    strip(vendor);
+    strip(model);
+    strip(serialNumber);
+    int64_t size = -1;
     /*
     struct statvfs buf {};
     std::string mount_path("/dev/");
@@ -57,8 +59,7 @@ std::vector<Disk> getAllDisks() {
       size = static_cast<int64_t>(buf.f_bsize * buf.f_bfree);
     }
     */
-
-    disks.push_back(std::move(disk));
+    disks.emplace_back(vendor, model, serialNumber, size);
   }
   return disks;
 }

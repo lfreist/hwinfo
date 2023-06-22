@@ -18,24 +18,57 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-const std::string& RAM::vendor() const { return _vendor; }
+RAM::RAM(std::string& vendor, std::string& name, std::string& model, std::string& serialNumber, int64_t size_Bytes)
+    : _vendor(vendor), _name(name), _model(model), _serialNumber(serialNumber) {
+  _totalSize_Bytes = size_Bytes;
+}
 
 // _____________________________________________________________________________________________________________________
-const std::string& RAM::name() const { return _name; }
+std::string& RAM::vendor() {
+  if (_vendor.empty()) {
+    _vendor = getVendor();
+  }
+  return _vendor;
+}
 
 // _____________________________________________________________________________________________________________________
-const std::string& RAM::model() const { return _model; }
+std::string& RAM::name() {
+  if (_name.empty()) {
+    _name = getName();
+  }
+  return _name;
+}
 
 // _____________________________________________________________________________________________________________________
-const std::string& RAM::serialNumber() const { return _serialNumber; }
+std::string& RAM::model() {
+  if (_model.empty()) {
+    _model = getModel();
+  }
+  return _model;
+}
 
 // _____________________________________________________________________________________________________________________
-int64_t RAM::total_Bytes() const { return _total_Bytes; }
+std::string& RAM::serialNumber() {
+  if (_serialNumber.empty()) {
+    _serialNumber = getSerialNumber();
+  }
+  return _serialNumber;
+}
 
 // _____________________________________________________________________________________________________________________
-int64_t RAM::free_Bytes() const { return _free_Bytes; }
+int64_t RAM::totalSize_Bytes() {
+  if (_totalSize_Bytes == -1) {
+    _totalSize_Bytes = getTotalSize_Bytes();
+  }
+  return _totalSize_Bytes;
+}
 
 // _____________________________________________________________________________________________________________________
-int64_t RAM::available_Bytes() const { return _available_Bytes; }
+int64_t RAM::availableMemory() {
+  if (_totalFreeSize_Bytes == -1) {
+    _totalFreeSize_Bytes = getAvailableMemory();
+  }
+  return _totalFreeSize_Bytes;
+}
 
 }  // namespace hwinfo
