@@ -80,7 +80,11 @@ uint32_t Battery::getEnergyFull() const {
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
-    return std::stoi(value);
+    try {
+      return std::stoi(value);
+    } catch (const std::invalid_argument& e) {
+      return 0;
+    }
   }
   return 0;
 }
@@ -94,7 +98,11 @@ uint32_t Battery::energyNow() const {
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
-    return std::stoi(value);
+    try {
+      return std::stoi(value);
+    } catch (const std::invalid_argument& e) {
+      return 0;
+    }
   }
   return 0;
 }
