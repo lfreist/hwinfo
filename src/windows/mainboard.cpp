@@ -13,7 +13,7 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::string getVendor() {
+std::string MainBoard::getVendor() {
   std::vector<const wchar_t*> manufacturer{};
   wmi::queryWMI("Win32_BaseBoard", "Manufacturer", manufacturer);
   if (manufacturer.empty()) {
@@ -28,7 +28,7 @@ std::string getVendor() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string getName() {
+std::string MainBoard::getName() {
   std::vector<const wchar_t*> name{};
   wmi::queryWMI("Win32_BaseBoard", "Product", name);
   if (name.empty()) {
@@ -43,7 +43,7 @@ std::string getName() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string getVersion() {
+std::string MainBoard::getVersion() {
   std::vector<const wchar_t*> version{};
   wmi::queryWMI("Win32_BaseBoard", "Version", version);
   if (version.empty()) {
@@ -58,7 +58,7 @@ std::string getVersion() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string getSerialNumber() {
+std::string MainBoard::getSerialNumber() {
   std::vector<const wchar_t*> serialNumber{};
   wmi::queryWMI("Win32_BaseBoard", "SerialNumber", serialNumber);
   if (serialNumber.empty()) {
@@ -70,14 +70,6 @@ std::string getSerialNumber() {
   }
   std::wstring tmp(ret);
   return {tmp.begin(), tmp.end()};
-}
-
-// _____________________________________________________________________________________________________________________
-MainBoard::MainBoard() {
-_vendor = getVendor();
-_name = getName();
-_version = getVersion();
-_serialNumber = getSerialNumber();
 }
 
 }  // namespace hwinfo

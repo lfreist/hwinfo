@@ -7,7 +7,6 @@
 
 #include <string>
 #include <vector>
-#include <algorithm>
 
 #include "hwinfo/WMIwrapper.h"
 #pragma comment(lib, "wbemuuid.lib")
@@ -17,70 +16,58 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::vector<std::string> getVendor() {
+std::string GPU::getVendor() {
   std::vector<const wchar_t*> vendor{};
   wmi::queryWMI("WIN32_VideoController", "AdapterCompatibility", vendor);
-  std::vector<std::string> ret{};
-  ret.reserve(vendor.size());
-  for (auto& v : vendor) {
-      std::wstring tmp(v);
-      ret.emplace_back(tmp.begin(), tmp.end());
+  if (vendor.empty()) {
+    return "<unknown>";
   }
-  return ret;
+  auto& ret = vendor[0];
+  if (!ret) {
+    return "<unknown>";
+  }
+  std::wstring tmp(ret);
+  return {tmp.begin(), tmp.end()};
 }
 
 // _____________________________________________________________________________________________________________________
-std::vector<std::string> getName() {
-    std::vector<const wchar_t*> names{};
-    wmi::queryWMI("WIN32_VideoController", "Name", names);
-    std::vector<std::string> ret{};
-    ret.reserve(names.size());
-    for (auto& v : names) {
-        std::wstring tmp(v);
-        ret.emplace_back(tmp.begin(), tmp.end());
-    }
-    return ret;
+std::string GPU::getName() {
+  std::vector<const wchar_t*> names{};
+  wmi::queryWMI("WIN32_VideoController", "Name", names);
+  if (names.empty()) {
+    return "<unknown>";
+  }
+  auto ret = names[0];
+  if (!ret) {
+    return "<unknown>";
+  }
+  std::wstring tmp(ret);
+  return {tmp.begin(), tmp.end()};
 }
 
 // _____________________________________________________________________________________________________________________
-std::vector<std::string> getDriverVersion() {
-    std::vector<const wchar_t*> driverVersion{};
-    wmi::queryWMI("WIN32_VideoController", "DriverVersion", driverVersion);
-    std::vector<std::string> ret{};
-    ret.reserve(driverVersion.size());
-    for (auto& v : driverVersion) {
-        std::wstring tmp(v);
-        ret.emplace_back(tmp.begin(), tmp.end());
-    }
-    return ret;
+std::string GPU::getDriverVersion() {
+  std::vector<const wchar_t*> driverVersion{};
+  wmi::queryWMI("WIN32_VideoController", "DriverVersion", driverVersion);
+  if (driverVersion.empty()) {
+    return "<unknown>";
+  }
+  auto ret = driverVersion[0];
+  if (!ret) {
+    return "<unknown>";
+  }
+  std::wstring tmp(ret);
+  return {tmp.begin(), tmp.end()};
 }
 
 // _____________________________________________________________________________________________________________________
-std::vector<int64_t> getMemory_Bytes() {
+int64_t GPU::getMemory_Bytes() {
   std::vector<unsigned long long> memory{};
   wmi::queryWMI("WIN32_VideoController", "AdapterRam", memory);
-  std::vector<int64_t> ret;
-  ret.reserve(memory.size());
-  for (auto v : memory) {
-      ret.push_back(static_cast<int64_t>(memory[0]) * 2);
+  if (memory.empty()) {
+    return -1;
   }
-  return ret;
-}
-
-// _____________________________________________________________________________________________________________________
-std::vector<GPU> getAllGPUs() {
-    auto vendors = getVendor();
-    auto names = getName();
-    auto driver = getDriverVersion();
-    auto memory = getMemory_Bytes();
-    size_t min = 0xffff;
-    min = std::min(min, vendors.size());
-    std::vector<GPU> gpus;
-    for (int i = 0; i < vendors.size()) {
-        GPU gpu;
-        gpu._name = names[i];
-        gpu._vendor = vendors[i];
-    }
+  return static_cast<int64_t>(memory[0] * 2);
 }
 
 }  // namespace hwinfo
