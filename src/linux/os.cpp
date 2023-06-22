@@ -20,12 +20,12 @@ namespace hwinfo {
 // _____________________________________________________________________________________________________________________
 std::string OS::getFullName() {
   std::string line;
-  std::ifstream stream("/etc/os-release");
+  std::ifstream stream("/etc/lsb-release");
   if (!stream) {
     return "Linux <unknown version>";
   }
   while (getline(stream, line)) {
-    if (starts_with(line, "PRETTY_NAME")) {
+    if (starts_with(line, "DISTRIB_DESCRIPTION")) {
       line = line.substr(line.find('=') + 1, line.length());
       // remove \" at begin and end of the substring result
       return {line.begin() + 1, line.end() - 1};
@@ -38,15 +38,13 @@ std::string OS::getFullName() {
 // _____________________________________________________________________________________________________________________
 std::string OS::getName() {
   std::string line;
-  std::ifstream stream("/etc/os-release");
+  std::ifstream stream("/etc/lsb-release");
   if (!stream) {
     return "Linux";
   }
   while (getline(stream, line)) {
-    if (starts_with(line, "NAME")) {
-      line = line.substr(line.find('=') + 1, line.length());
-      // remove \" at begin and end of the substring result
-      return {line.begin() + 1, line.end() - 1};
+    if (starts_with(line, "DISTRIB_ID")) {
+      return line.substr(line.find('=') + 1, line.length());
     }
   }
   stream.close();
@@ -56,15 +54,13 @@ std::string OS::getName() {
 // _____________________________________________________________________________________________________________________
 std::string OS::getVersion() {
   std::string line;
-  std::ifstream stream("/etc/os-release");
+  std::ifstream stream("/etc/lsb-release");
   if (!stream) {
     return "<unknown version>";
   }
   while (getline(stream, line)) {
-    if (starts_with(line, "VERSION_ID")) {
-      line = line.substr(line.find('=') + 1, line.length());
-      // remove \" at begin and end of the substring result
-      return {line.begin() + 1, line.end() - 1};
+    if (starts_with(line, "DISTRIB_RELEASE")) {
+      return line.substr(line.find('=') + 1, line.length());
     }
   }
   stream.close();
