@@ -9,26 +9,32 @@
 namespace hwinfo {
 
 class GPU {
+  friend std::vector<GPU> getAllGPUs();
+
  public:
-  GPU() = default;
-  GPU(const std::string& vendor, const std::string& name, const std::string& driverVersion, int64_t memory_Bytes);
   ~GPU() = default;
 
   std::string& vendor();
   std::string& name();
   std::string& driverVersion();
-  int64_t memory_Bytes();
-
-  static std::string getVendor();
-  static std::string getName();
-  static std::string getDriverVersion();
-  static int64_t getMemory_Bytes();
+  int64_t memory_Bytes() const;
+  int64_t min_frequency_MHz() const;
+  int64_t current_frequency_MHz() const;
+  int64_t max_frequency_MHz() const;
+  int id() const;
 
  private:
-  std::string _vendor;
-  std::string _name;
-  std::string _driverVersion;
-  int64_t _memory_Bytes = -1;
+  GPU() = default;
+  std::string _vendor{};
+  std::string _name{};
+  std::string _driverVersion{};
+  int64_t _memory_Bytes{0};
+  int64_t _maxFrequency_MHz{0};
+  int64_t _minFrequency_MHz{0};
+  int64_t _currentFrequency_MHz{0};
+  int _id{0};
 };
+
+std::vector<GPU> getAllGPUs();
 
 }  // namespace hwinfo

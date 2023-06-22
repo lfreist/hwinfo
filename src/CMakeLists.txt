@@ -1,5 +1,6 @@
 add_library(HWinfo
         # platform independent definitions
+        PCIMapper.cpp
         battery.cpp
         cpu.cpp
         gpu.cpp

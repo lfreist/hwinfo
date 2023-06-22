@@ -15,9 +15,17 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(MAIN_PROJECT ON)
 endif()
 
+
 include_directories(${PROJECT_SOURCE_DIR}/include/)
 
+add_subdirectory(extern/nlohmann-json)
+include_directories(extern/nlohmann-json/include/)
+
 add_subdirectory(src)
+
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+    file(COPY "extern/pci.ids" DESTINATION "$ENV{HOME}/.hwinfo/")
+endif ()
 
 if (${MAIN_PROJECT})
     add_subdirectory(examples)
