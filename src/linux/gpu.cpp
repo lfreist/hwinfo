@@ -9,13 +9,8 @@
 #include <hwinfo/PCIMapper.h>
 #include <hwinfo/gpu.h>
 #include <hwinfo/utils/filesystem.h>
-#include <hwinfo/utils/stringutils.h>
 
-#include <cstdlib>
 #include <fstream>
-#include <iostream>
-#include <nlohmann/json.hpp>
-#include <regex>
 #include <string>
 #include <vector>
 

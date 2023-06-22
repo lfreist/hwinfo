@@ -18,9 +18,6 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/include/)
 
-add_subdirectory(extern/nlohmann-json)
-include_directories(extern/nlohmann-json/include/)
-
 add_subdirectory(src)
 
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
