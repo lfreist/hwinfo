@@ -1,7 +1,7 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include "hwinfo/platform.h"
+#include <hwinfo/platform.h>
 
 #ifdef HWINFO_WINDOWS
 
@@ -12,9 +12,11 @@
 #include "hwinfo/WMIwrapper.h"
 #pragma comment(lib, "wbemuuid.lib")
 
-#include "hwinfo/gpu.h"
+#include <hwinfo/gpu.h>
+#include <hwinfo/utils/utils.h>
 
 namespace hwinfo {
+namespace gpu {
 
 // _____________________________________________________________________________________________________________________
 std::vector<std::string> getVendor() {
@@ -23,6 +25,9 @@ std::vector<std::string> getVendor() {
   std::vector<std::string> ret{};
   ret.reserve(vendor.size());
   for (auto& v : vendor) {
+    if (v == nullptr) {
+      continue ;
+    }
     std::wstring tmp(v);
     ret.emplace_back(tmp.begin(), tmp.end());
   }
@@ -36,6 +41,9 @@ std::vector<std::string> getName() {
   std::vector<std::string> ret{};
   ret.reserve(names.size());
   for (auto& v : names) {
+    if (v == nullptr) {
+      continue ;
+    }
     std::wstring tmp(v);
     ret.emplace_back(tmp.begin(), tmp.end());
   }
@@ -49,6 +57,9 @@ std::vector<std::string> getDriverVersion() {
   std::vector<std::string> ret{};
   ret.reserve(driverVersion.size());
   for (auto& v : driverVersion) {
+    if (v == nullptr) {
+      continue ;
+    }
     std::wstring tmp(v);
     ret.emplace_back(tmp.begin(), tmp.end());
   }
@@ -62,25 +73,29 @@ std::vector<int64_t> getMemory_Bytes() {
   std::vector<int64_t> ret;
   ret.reserve(memory.size());
   for (auto v : memory) {
-    ret.push_back(static_cast<int64_t>(memory[0]) * 2);
+    ret.push_back(static_cast<int64_t>(v) * 2);
   }
   return ret;
 }
 
+}  // namespace gpu
+
 // _____________________________________________________________________________________________________________________
 std::vector<GPU> getAllGPUs() {
-  auto vendors = getVendor();
-  auto names = getName();
-  auto driver = getDriverVersion();
-  auto memory = getMemory_Bytes();
-  size_t min = 0xffff;
-  min = std::min(min, vendors.size());
+  auto vendors = gpu::getVendor();
+  auto names = gpu::getName();
+  auto driver = gpu::getDriverVersion();
+  auto memory = gpu::getMemory_Bytes();
   std::vector<GPU> gpus;
-  for (int i = 0; i < vendors.size()) {
+  for (size_t i = 0; i < vendors.size(); ++i) {
     GPU gpu;
-    gpu._name = names[i];
-    gpu._vendor = vendors[i];
+    gpu._name = utils::get_value(names, i);
+    gpu._vendor = utils::get_value(vendors, i);
+    gpu._driverVersion = utils::get_value(driver, i);
+    gpu._memory_Bytes = utils::get_value(memory, i);
+    gpus.push_back(std::move(gpu));
   }
+  return gpus;
 }
 
 }  // namespace hwinfo

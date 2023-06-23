@@ -5,230 +5,148 @@
 
 #ifdef HWINFO_WINDOWS
 
+#include <hwinfo/WMIwrapper.h>
+#include <hwinfo/cpu.h>
+#include <hwinfo/cpuid.h>
+#include <hwinfo/utils/utils.h>
+
 #include <algorithm>
 #include <string>
 #include <vector>
 
-#include "hwinfo/WMIwrapper.h"
-#include "hwinfo/cpu.h"
-#include "hwinfo/cpuid.h"
-
 namespace hwinfo {
+namespace cpu {
 
 // _____________________________________________________________________________________________________________________
-int CPU::currentClockSpeed_kHz() {
-  std::vector<int64_t> speed{};
-  wmi::queryWMI("Win32_Processor", "CurrentClockSpeed", speed);
-  if (speed.empty()) {
-    return -1;
-  }
-  return speed[0];
-}
-
-// _____________________________________________________________________________________________________________________
-std::string CPU::getVendor() {
-  std::vector<const wchar_t*> vendor{};
-  wmi::queryWMI("Win32_Processor", "Manufacturer", vendor);
-  if (vendor.empty() || vendor.front() == nullptr) {
-#if defined(HWINFO_X86)
-    std::string v;
-    uint32_t regs[4]{0};
-    cpuid::cpuid(0, 0, regs);
-    v += std::string((const char*)&regs[1], 4);
-    v += std::string((const char*)&regs[3], 4);
-    v += std::string((const char*)&regs[2], 4);
-    return v;
-#else
-    return "<unknown>";
-#endif
-  }
-  std::wstring tmp(vendor[0]);
-  return {tmp.begin(), tmp.end()};
-  return "<unknown>";
-}
-
-// _____________________________________________________________________________________________________________________
-std::string CPU::getModelName() {
-  std::vector<const wchar_t*> vendor{};
-  wmi::queryWMI("Win32_Processor", "Name", vendor);
-  if (vendor.empty() || vendor.front() == nullptr) {
-#if defined(HWINFO_X86)
-    std::string model;
-    uint32_t regs[4]{};
-    for (unsigned i = 0x80000002; i < 0x80000005; ++i) {
-      cpuid::cpuid(i, 0, regs);
-      for (auto c : std::string((const char*)&regs[0], 4)) {
-        if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-          model += c;
-        }
-      }
-      for (auto c : std::string((const char*)&regs[1], 4)) {
-        if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-          model += c;
-        }
-      }
-      for (auto c : std::string((const char*)&regs[2], 4)) {
-        if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-          model += c;
-        }
-      }
-      for (auto c : std::string((const char*)&regs[3], 4)) {
-        if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-          model += c;
-        }
-      }
+std::vector<std::string> getVendor() {
+  std::vector<const wchar_t*> vendors{};
+  wmi::queryWMI("Win32_Processor", "Manufacturer", vendors);
+  std::vector<std::string> ret;
+  ret.reserve(vendors.size());
+  for (auto& v : vendors) {
+    if (v == nullptr) {
+      continue ;
     }
-    return model;
-#else
-    return "<unknown>";
-#endif
+    std::wstring tmp(v);
+    ret.emplace_back(tmp.begin(), tmp.end());
   }
-  std::wstring tmp(vendor[0]);
-  return {tmp.begin(), tmp.end()};
+  return ret;
 }
 
 // _____________________________________________________________________________________________________________________
-int CPU::getNumPhysicalCores() {
-  std::vector<int> cores{};
-  wmi::queryWMI("Win32_Processor", "NumberOfCores", cores);
-  if (cores.empty()) {
-#if defined(HWINFO_X86)
-    uint32_t regs[4]{};
-    std::string vendorId = getVendor();
-    std::for_each(vendorId.begin(), vendorId.end(), [](char& in) { in = ::toupper(in); });
-    cpuid::cpuid(0, 0, regs);
-    uint32_t HFS = regs[0];
-    if (vendorId.find("INTEL") != std::string::npos) {
-      if (HFS >= 11) {
-        for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-          uint32_t regs_2[4]{};
-          cpuid::cpuid(0x0b, lvl, regs_2);
-          uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
-          if (currLevel == 0x01) {
-            int numCores = getNumLogicalCores() / static_cast<int>(LVL_CORES & regs_2[1]);
-            if (numCores > 0) {
-              return numCores;
-            }
-          }
-        }
-      } else {
-        if (HFS >= 4) {
-          uint32_t regs_3[4]{};
-          cpuid::cpuid(4, 0, regs_3);
-          int numCores = getNumLogicalCores() / static_cast<int>(1 + ((regs_3[0] >> 26) & 0x3f));
-          if (numCores > 0) {
-            return numCores;
-          }
-        }
-      }
-    } else if (vendorId.find("AMD") != std::string::npos) {
-      if (HFS > 0) {
-        uint32_t regs_4[4]{};
-        cpuid::cpuid(0x80000000, 0, regs_4);
-        if (regs_4[0] >= 8) {
-          int numCores = 1 + (regs_4[2] & 0xff);
-          return numCores;
-        }
-      }
+std::vector<std::string> getModelName() {
+  std::vector<const wchar_t*> names{};
+  wmi::queryWMI("Win32_Processor", "Name", names);
+  std::vector<std::string> ret;
+  ret.reserve(names.size());
+  for (auto& v : names) {
+    if (v == nullptr) {
+      continue ;
     }
-    return -1;
-#else
-    return -1;
-#endif
+    std::wstring tmp(v);
+    ret.emplace_back(tmp.begin(), tmp.end());
   }
-  return cores[0];
+  return ret;
 }
 
 // _____________________________________________________________________________________________________________________
-int CPU::getNumLogicalCores() {
-  std::vector<int> cores{};
+std::vector<int64_t> getNumLogicalCores() {
+  std::vector<int64_t> cores{};
   wmi::queryWMI("Win32_Processor", "NumberOfLogicalProcessors", cores);
-  if (cores.empty()) {
-#if defined(HWINFO_X86)
-    std::string vendorId = getVendor();
-    std::for_each(vendorId.begin(), vendorId.end(), [](char& in) { in = ::toupper(in); });
-    uint32_t regs[4]{};
-    cpuid::cpuid(0, 0, regs);
-    uint32_t HFS = regs[0];
-    if (vendorId.find("INTEL") != std::string::npos) {
-      if (HFS >= 0xb) {
-        for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-          uint32_t regs_2[4]{};
-          cpuid::cpuid(0x0b, lvl, regs_2);
-          uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
-          if (currLevel == 0x02) {
-            return static_cast<int>(LVL_CORES & regs_2[1]);
-          }
-        }
-      }
-    } else if (vendorId.find("AMD") != std::string::npos) {
-      if (HFS > 0) {
-        cpuid::cpuid(1, 0, regs);
-        return static_cast<int>(regs[1] >> 16) & 0xff;
-      }
-      return 1;
-    }
-    return -1;
-#else
-    return -1;
-#endif
+  std::vector<int64_t> ret;
+  ret.reserve(cores.size());
+  for (auto& v : cores) {
+    ret.push_back(v);
   }
-  return cores[0];
+  return ret;
 }
 
 // _____________________________________________________________________________________________________________________
-int CPU::getMaxClockSpeed_kHz() {
-  std::vector<int64_t> speed{};
-  wmi::queryWMI("Win32_Processor", "MaxClockSpeed", speed);
-  if (speed.empty()) {
-    return -1;
+std::vector<int64_t> getNumPhysicalCores() {
+  std::vector<int64_t> cores{};
+  wmi::queryWMI("Win32_Processor", "NumberOfCores", cores);
+  std::vector<int64_t> ret;
+  ret.reserve(cores.size());
+  for (auto& v : cores) {
+    ret.push_back(v);
   }
-  return speed[0] * 1000;
+  return ret;
 }
 
 // _____________________________________________________________________________________________________________________
-int CPU::getRegularClockSpeed_kHz() {
+std::vector<int64_t> getMaxClockSpeed_MHz() {
+  std::vector<int64_t> speeds{};
+  wmi::queryWMI("Win32_Processor", "MaxClockSpeed", speeds);
+  std::vector<int64_t> ret;
+  ret.reserve(speeds.size());
+  for (auto& v : speeds) {
+    ret.push_back(v);
+  }
+  return ret;
+}
+
+// _____________________________________________________________________________________________________________________
+std::vector<int64_t> getRegularClockSpeed_MHz() {
+  std::vector<int64_t> speeds{};
+  wmi::queryWMI("Win32_Processor", "CurrentClockSpeed", speeds);
+  std::vector<int64_t> ret;
+  ret.reserve(speeds.size());
+  for (auto& v : speeds) {
+    ret.push_back(v);
+  }
+  return ret;
+}
+
+std::vector<int64_t> getCacheSize_Bytes() {
+  std::vector<int64_t> cacheSizes{};
+  wmi::queryWMI("Win32_Processor", "L3CacheSize", cacheSizes);
+  std::vector<int64_t> ret;
+  ret.reserve(cacheSizes.size());
+  for (auto& v : cacheSizes) {
+    ret.push_back(v * 1024);
+  }
+  return ret;
+}
+}  // namespace cpu
+
+// =====================================================================================================================
+// _____________________________________________________________________________________________________________________
+int64_t CPU::currentClockSpeed_MHz() const {
   std::vector<int64_t> speed{};
   wmi::queryWMI("Win32_Processor", "CurrentClockSpeed", speed);
   if (speed.empty()) {
     return -1;
   }
-  return speed[0] * 1000;
+  return speed[_core_id];
 }
 
-int CPU::getCacheSize_Bytes() {
-  std::vector<int64_t> cacheSize{};
-  wmi::queryWMI("Win32_Processor", "L3CacheSize", cacheSize);
-  if (cacheSize.empty()) {
-    return -1;
-  }
-  return cacheSize[0] * 1024;
-}
-
-// =====================================================================================================================
-// _____________________________________________________________________________________________________________________
-// Helper function for linux: parses /proc/cpuinfo. socket_id == physical_id.
-// _____________________________________________________________________________________________________________________
-std::unique_ptr<CPU> getCPU(uint8_t socket_id) { return {}; }
-
-// ===== Socket ========================================================================================================
-// _____________________________________________________________________________________________________________________
-Socket::Socket(uint8_t id) : _id(id) {
-  auto cpu = getCPU(_id);
-  if (cpu != nullptr) {
-    _cpu = *cpu;
-  }
-}
-
-// _____________________________________________________________________________________________________________________
-Socket::Socket(uint8_t id, const class CPU& cpu) : _id(id) { _cpu = cpu; }
-
-// =====================================================================================================================
 // _____________________________________________________________________________________________________________________
 std::vector<Socket> getAllSockets() {
   std::vector<Socket> sockets;
+  auto vendors = cpu::getVendor();
+  auto names = cpu::getModelName();
+  auto cache_sizes = cpu::getCacheSize_Bytes();
+  auto phys_cores = cpu::getNumPhysicalCores();
+  auto logical_cores = cpu::getNumLogicalCores();
+  auto max_speed = cpu::getMaxClockSpeed_MHz();
+  auto regular_speed = cpu::getRegularClockSpeed_MHz();
 
-  return {};
+  for (size_t i = 0; i < vendors.size(); ++i) {
+    CPU cpu;
+    cpu._core_id = static_cast<int>(i);
+    cpu._cacheSize_Bytes = utils::get_value(cache_sizes, i);
+    cpu._maxClockSpeed_MHz = utils::get_value(max_speed, i);
+    cpu._minClockSpeed_MHz = -1;
+    cpu._regularClockSpeed_MHz = utils::get_value(regular_speed, i);
+    cpu._modelName = utils::get_value(names, i);
+    cpu._vendor = utils::get_value(vendors, i);
+    cpu._numLogicalCores = static_cast<int>(utils::get_value(logical_cores, i));
+    cpu._numPhysicalCores = static_cast<int>(utils::get_value(phys_cores, i));
+    Socket socket(cpu);
+    sockets.push_back(std::move(socket));
+  }
+
+  return sockets;
 }
 
 }  // namespace hwinfo

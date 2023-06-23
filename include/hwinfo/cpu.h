@@ -20,13 +20,13 @@ class CPU {
 
   const std::string& modelName() const;
   const std::string& vendor() const;
-  int cacheSize_Bytes() const;
+  int64_t cacheSize_Bytes() const;
   int numPhysicalCores() const;
   int numLogicalCores() const;
-  int maxClockSpeed_MHz() const;
-  int regularClockSpeed_MHz() const;
-  int minClockSpeed_MHz() const;
-  int currentClockSpeed_MHz() const;
+  int64_t maxClockSpeed_MHz() const;
+  int64_t regularClockSpeed_MHz() const;
+  int64_t minClockSpeed_MHz() const;
+  int64_t currentClockSpeed_MHz() const;
   const std::vector<std::string>& flags() const;
   int id() const;
 
@@ -37,10 +37,10 @@ class CPU {
   std::string _vendor;
   int _numPhysicalCores{-1};
   int _numLogicalCores{-1};
-  int _maxClockSpeed_MHz{-1};
-  int _regularClockSpeed_MHz{-1};
-  int _minClockSpeed_MHz{-1};
-  int _cacheSize_Bytes{-1};
+  int64_t _maxClockSpeed_MHz{-1};
+  int64_t _regularClockSpeed_MHz{-1};
+  int64_t _minClockSpeed_MHz{-1};
+  int64_t _cacheSize_Bytes{-1};
   std::vector<std::string> _flags{};
 
   int _core_id{-1};

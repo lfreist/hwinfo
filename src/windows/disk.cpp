@@ -5,9 +5,9 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include "hwinfo/WMIwrapper.h"
-#include "hwinfo/disk.h"
-#include "hwinfo/utils/stringutils.h"
+#include <hwinfo/WMIwrapper.h>
+#include <hwinfo/disk.h>
+#include <hwinfo/utils/stringutils.h>
 
 namespace hwinfo {
 
@@ -21,7 +21,7 @@ std::vector<Disk> getAllDisks() {
   }
   for (const auto& v : res) {
     disks.push_back(Disk());
-    disks.back()._vendor = wstring_to_std_string(v);
+    disks.back()._vendor = utils::wstring_to_std_string(v);
   }
   res.clear();
   wmi::queryWMI("Win32_DiskDrive", "Model", res);
@@ -32,7 +32,7 @@ std::vector<Disk> getAllDisks() {
     if (i >= disks.size()) {
       break;
     }
-    disks[i]._model = wstring_to_std_string(res[i]);
+    disks[i]._model = utils::wstring_to_std_string(res[i]);
   }
   res.clear();
   wmi::queryWMI("Win32_DiskDrive", "SerialNumber", res);
@@ -44,7 +44,7 @@ std::vector<Disk> getAllDisks() {
       break;
     }
     std::wstring tmp(res[i]);
-    disks[i]._serialNumber = wstring_to_std_string(res[i]);
+    disks[i]._serialNumber = utils::wstring_to_std_string(res[i]);
   }
   std::vector<const wchar_t*> sizes;
   // it will return L"Size" Str
@@ -56,7 +56,7 @@ std::vector<Disk> getAllDisks() {
     if (i >= disks.size()) {
       break;
     }
-    disks[i]._size_Bytes = std::stoll(wstring_to_std_string(sizes[i]));
+    disks[i]._size_Bytes = std::stoll(utils::wstring_to_std_string(sizes[i]));
   }
   return disks;
 }
