@@ -11,6 +11,7 @@
 #include "hwinfo/mainboard.h"
 
 namespace hwinfo {
+namespace mainboard {
 
 // _____________________________________________________________________________________________________________________
 std::string getVendor() {
@@ -71,13 +72,14 @@ std::string getSerialNumber() {
   std::wstring tmp(ret);
   return {tmp.begin(), tmp.end()};
 }
+}  // namespace mainboard
 
 // _____________________________________________________________________________________________________________________
 MainBoard::MainBoard() {
-  _vendor = getVendor();
-  _name = getName();
-  _version = getVersion();
-  _serialNumber = getSerialNumber();
+  _vendor = mainboard::getVendor();
+  _name = mainboard::getName();
+  _version = mainboard::getVersion();
+  _serialNumber = mainboard::getSerialNumber();
 }
 
 }  // namespace hwinfo

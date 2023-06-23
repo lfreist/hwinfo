@@ -16,7 +16,7 @@
 
 namespace hwinfo {
 
-int get_freq_by_id_and_type(int proc_id, const std::string& type) {
+int64_t get_freq_by_id_and_type(int proc_id, const std::string& type) {
   std::string line;
   std::ifstream stream("/sys/devices/system/cpu/cpu" + std::to_string(proc_id) + "/cpufreq/" + type);
   if (!stream) {
@@ -25,7 +25,7 @@ int get_freq_by_id_and_type(int proc_id, const std::string& type) {
   getline(stream, line);
   stream.close();
   try {
-    return std::stoi(line) / 1000;
+    return std::stoll(line) / 1000;
   } catch (std::invalid_argument& e) {
     return -1;
   }

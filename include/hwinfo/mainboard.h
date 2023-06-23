@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "hwinfo/platform.h"
+#include <hwinfo/platform.h>
 
 namespace hwinfo {
 
