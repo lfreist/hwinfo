@@ -25,7 +25,7 @@ std::string OS::getFullName() {
     return "Linux <unknown version>";
   }
   while (getline(stream, line)) {
-    if (starts_with(line, "PRETTY_NAME")) {
+    if (utils::starts_with(line, "PRETTY_NAME")) {
       line = line.substr(line.find('=') + 1, line.length());
       // remove \" at begin and end of the substring result
       return {line.begin() + 1, line.end() - 1};
@@ -43,7 +43,7 @@ std::string OS::getName() {
     return "Linux";
   }
   while (getline(stream, line)) {
-    if (starts_with(line, "NAME")) {
+    if (utils::starts_with(line, "NAME")) {
       line = line.substr(line.find('=') + 1, line.length());
       // remove \" at begin and end of the substring result
       return {line.begin() + 1, line.end() - 1};
@@ -61,7 +61,7 @@ std::string OS::getVersion() {
     return "<unknown version>";
   }
   while (getline(stream, line)) {
-    if (starts_with(line, "VERSION_ID")) {
+    if (utils::starts_with(line, "VERSION_ID")) {
       line = line.substr(line.find('=') + 1, line.length());
       // remove \" at begin and end of the substring result
       return {line.begin() + 1, line.end() - 1};

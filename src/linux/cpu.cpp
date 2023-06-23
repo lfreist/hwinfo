@@ -45,22 +45,22 @@ std::vector<Socket> getAllSockets() {
   }
   std::string file((std::istreambuf_iterator<char>(cpuinfo)), (std::istreambuf_iterator<char>()));
   cpuinfo.close();
-  auto cpu_blocks_string = split(file, "\n\n");
+  auto cpu_blocks_string = utils::split(file, "\n\n");
   std::map<const std::string, const std::string> cpu_block;
   int physical_id = -1;
   bool next_add = false;
   for (const auto& block : cpu_blocks_string) {
     CPU cpu;
-    auto lines = split(block, '\n');
+    auto lines = utils::split(block, '\n');
     for (auto& line : lines) {
-      auto line_pairs = split(line, ":");
+      auto line_pairs = utils::split(line, ":");
       if (line_pairs.size() < 2) {
         continue;
       }
       auto name = line_pairs[0];
       auto value = line_pairs[1];
-      strip(name);
-      strip(value);
+      utils::strip(name);
+      utils::strip(value);
       if (name == "processor") {
         cpu._core_id = std::stoi(value);
       } else if (name == "vendor_id") {
@@ -68,7 +68,7 @@ std::vector<Socket> getAllSockets() {
       } else if (name == "model name") {
         cpu._modelName = value;
       } else if (name == "cache size") {
-        cpu._cacheSize_Bytes = std::stoi(split(value, " ")[0]) * 1024;
+        cpu._cacheSize_Bytes = std::stoi(utils::split(value, " ")[0]) * 1024;
       } else if (name == "physical id") {
         if (physical_id == std::stoi(value)) {
           continue;
@@ -79,7 +79,7 @@ std::vector<Socket> getAllSockets() {
       } else if (name == "cpu cores") {
         cpu._numPhysicalCores = std::stoi(value);
       } else if (name == "flags") {
-        cpu._flags = split(value, " ");
+        cpu._flags = utils::split(value, " ");
       }
     }
     if (next_add) {

@@ -23,7 +23,8 @@ PCIVendor::PCIVendor(std::string v_id, std::string v_name)
 
 // _____________________________________________________________________________________________________________________
 const PCIDevice& PCIVendor::operator[](const std::string& device_id) const {
-  std::string d_id = starts_with(device_id, "0x") ? std::string(device_id.begin() + 2, device_id.end()) : device_id;
+  std::string d_id =
+      utils::starts_with(device_id, "0x") ? std::string(device_id.begin() + 2, device_id.end()) : device_id;
   if (devices.find(d_id) == devices.end()) {
     return _invalid_device;
   }
@@ -43,23 +44,23 @@ PCIMapper::PCIMapper(const std::string& pci_ids_file) {
     if (!std::getline(f_pciid, line)) {
       break;
     }
-    if (starts_with(line, "#") || starts_with(line, "\n") || line.empty()) {
+    if (utils::starts_with(line, "#") || utils::starts_with(line, "\n") || line.empty()) {
       // empty line or comment
       continue;
     }
-    if (starts_with(line, "\t\t")) {
+    if (utils::starts_with(line, "\t\t")) {
       // subsystem entry
-      strip(line);
-      auto split_line = split(line, "  ");
+      utils::strip(line);
+      auto split_line = utils::split(line, "  ");
       if (split_line.size() != 2 || current_device == nullptr) {
         // parse error
         continue;
       }
       current_device->subsystems.insert({split_line[0], split_line[1]});
-    } else if (starts_with(line, "\t")) {
+    } else if (utils::starts_with(line, "\t")) {
       // device
-      strip(line);
-      auto split_line = split(line, "  ");
+      utils::strip(line);
+      auto split_line = utils::split(line, "  ");
       if (split_line.size() != 2 || current_vendor == nullptr) {
         // parse error
         continue;
@@ -68,8 +69,8 @@ PCIMapper::PCIMapper(const std::string& pci_ids_file) {
       current_device = &current_vendor->devices.at(split_line[0]);
     } else {
       // vendor
-      strip(line);
-      auto split_line = split(line, "  ");
+      utils::strip(line);
+      auto split_line = utils::split(line, "  ");
       if (split_line.size() != 2) {
         // parse error
         continue;
@@ -82,7 +83,8 @@ PCIMapper::PCIMapper(const std::string& pci_ids_file) {
 
 // _____________________________________________________________________________________________________________________
 const PCIVendor& PCIMapper::vendor_from_id(const std::string& vendor_id) const {
-  std::string v_id = starts_with(vendor_id, "0x") ? std::string(vendor_id.begin() + 2, vendor_id.end()) : vendor_id;
+  std::string v_id =
+      utils::starts_with(vendor_id, "0x") ? std::string(vendor_id.begin() + 2, vendor_id.end()) : vendor_id;
   if (_vendors.find(v_id) == _vendors.end()) {
     return _invalid_vendor;
   }

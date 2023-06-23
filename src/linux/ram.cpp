@@ -35,10 +35,10 @@ void get_from_sysconf(MemInfo& mi) {
 }
 
 void set_value(std::string& line, int64_t* dst) {
-  auto split_line = split(line, ":");
+  auto split_line = utils::split(line, ":");
   if (split_line.size() == 2) {
     auto& value = split_line[1];
-    strip(value);
+    utils::strip(value);
     auto space = value.find(' ');
     if (space != std::string::npos) {
       auto a = std::string(value.begin(), value.begin() + static_cast<int64_t>(space));
@@ -62,11 +62,11 @@ MemInfo parse_meminfo() {
         }
         return mi;
       }
-      if (starts_with(line, "MemTotal")) {
+      if (utils::starts_with(line, "MemTotal")) {
         set_value(line, &mi.total);
-      } else if (starts_with(line, "MemFree")) {
+      } else if (utils::starts_with(line, "MemFree")) {
         set_value(line, &mi.free);
-      } else if (starts_with(line, "MemAvailable")) {
+      } else if (utils::starts_with(line, "MemAvailable")) {
         set_value(line, &mi.available);
       }
     }

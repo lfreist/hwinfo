@@ -20,7 +20,7 @@ std::vector<Disk> getAllDisks() {
   const std::string base_path("/sys/class/block/");
   for (const auto& entry : filesystem::getDirectoryEntries(base_path)) {
     Disk disk;
-    std::string path = base_path + "/" + entry + "/device/";
+    std::string path(base_path + "/" + entry + "/device/");
     if (!filesystem::exists(path)) {
       continue;
     }
@@ -45,9 +45,9 @@ std::vector<Disk> getAllDisks() {
       disk._serialNumber = "<unknown>";
     }
     f.close();
-    strip(disk._vendor);
-    strip(disk._model);
-    strip(disk._serialNumber);
+    utils::strip(disk._vendor);
+    utils::strip(disk._model);
+    utils::strip(disk._serialNumber);
     disk._size_Bytes = -1;
     /*
     struct statvfs buf {};
