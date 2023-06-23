@@ -143,6 +143,7 @@ std::vector<Socket> getAllSockets() {
     cpu._numLogicalCores = static_cast<int>(utils::get_value(logical_cores, i));
     cpu._numPhysicalCores = static_cast<int>(utils::get_value(phys_cores, i));
     Socket socket(cpu);
+    socket._id = static_cast<int>(i);
     sockets.push_back(std::move(socket));
   }
 
