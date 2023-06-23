@@ -4,10 +4,14 @@
 #pragma once
 
 #include <codecvt>
+#include <cstdint>
 #include <cstring>
 #include <locale>
 #include <string>
 #include <vector>
+
+namespace hwinfo {
+namespace utils {
 
 /**
  * remove all white spaces (' ', '\t', '\n') from start and end of input
@@ -173,3 +177,6 @@ inline bool starts_with(const string_type& str, const prefix_type& prefix) {
   return str.rfind(prefix, 0) == 0;
 #endif
 }
+
+}  // namespace utils
+}  // namespace hwinfo
