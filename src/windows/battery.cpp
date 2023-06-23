@@ -48,7 +48,6 @@ std::vector<Battery> getAllBatteries() {
   if (res.empty() || res.front() == nullptr) {
     return {};
   }
-  std::cout << res.size() << std::endl;
   int8_t counter = 0;
   for (const auto& v : res) {
     std::wstring tmp(v);

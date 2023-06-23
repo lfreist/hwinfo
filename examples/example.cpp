@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
   auto sockets = hwinfo::getAllSockets();
   for (auto& s : sockets) {
     const auto& cpu = s.CPU();
-    std::cout << "Socket: " << s.id() << ":\n";
+    std::cout << "Socket " << s.id() << ":\n";
     std::cout << std::left << std::setw(20) << " vendor:";
     std::cout << cpu.vendor() << std::endl;
     std::cout << std::left << std::setw(20) << " model:";
