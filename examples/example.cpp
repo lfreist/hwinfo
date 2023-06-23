@@ -5,6 +5,7 @@
 #include <iomanip>
 
 #include "hwinfo/hwinfo.h"
+#include <hwinfo/PCIMapper.h>
 
 int main(int argc, char** argv) {
   std::cout << "hwinfo is an open source, MIT licensed project that implements a platform independent "
@@ -13,24 +14,31 @@ int main(int argc, char** argv) {
             << "a ticket at https://github.com/lfreist/hwinfo/issues.\n\n"
             << "Thanks for using hwinfo!" << std::endl;
   std::cout << std::endl << "Hardware Report:" << std::endl << std::endl;
-  hwinfo::CPU cpu;
   std::cout << "----------------------------------- CPU -----------------------------------" << std::endl;
-  std::cout << std::left << std::setw(20) << "vendor:";
-  std::cout << cpu.vendor() << std::endl;
-  std::cout << std::left << std::setw(20) << "model:";
-  std::cout << cpu.modelName() << std::endl;
-  std::cout << std::left << std::setw(20) << "physical cores:";
-  std::cout << cpu.numPhysicalCores() << std::endl;
-  std::cout << std::left << std::setw(20) << "logical cores:";
-  std::cout << cpu.numLogicalCores() << std::endl;
-  std::cout << std::left << std::setw(20) << "max frequency:";
-  std::cout << cpu.maxClockSpeed_kHz() << std::endl;
-  std::cout << std::left << std::setw(20) << "regular frequency:";
-  std::cout << cpu.regularClockSpeed_kHz() << std::endl;
-  std::cout << std::left << std::setw(20) << "current frequency:";
-  std::cout << hwinfo::CPU::currentClockSpeed_kHz() << std::endl;
-  std::cout << std::left << std::setw(20) << "cache size:";
-  std::cout << cpu.cacheSize_Bytes() << std::endl;
+  auto sockets = hwinfo::getAllSockets();
+  for (auto& s : sockets) {
+    const auto& cpu = s.CPU();
+    std::cout << "Socket " << s.id() << ":\n";
+    std::cout << std::left << std::setw(20) << " vendor:";
+    std::cout << cpu.vendor() << std::endl;
+    std::cout << std::left << std::setw(20) << " model:";
+    std::cout << cpu.modelName() << std::endl;
+    std::cout << std::left << std::setw(20) << " physical cores:";
+    std::cout << cpu.numPhysicalCores() << std::endl;
+    std::cout << std::left << std::setw(20) << " logical cores:";
+    std::cout << cpu.numLogicalCores() << std::endl;
+    std::cout << std::left << std::setw(20) << " max frequency:";
+    std::cout << cpu.maxClockSpeed_MHz() << std::endl;
+    std::cout << std::left << std::setw(20) << " regular frequency:";
+    std::cout << cpu.regularClockSpeed_MHz() << std::endl;
+    std::cout << std::left << std::setw(20) << " min frequency:";
+    std::cout << cpu.minClockSpeed_MHz() << std::endl;
+    std::cout << std::left << std::setw(20) << " current frequency:";
+    std::cout << cpu.currentClockSpeed_MHz() << std::endl;
+    std::cout << std::left << std::setw(20) << " cache size:";
+    std::cout << cpu.cacheSize_Bytes() << std::endl;
+  }
+
 
   hwinfo::OS os;
   std::cout << "----------------------------------- OS ------------------------------------" << std::endl;
@@ -47,16 +55,25 @@ int main(int argc, char** argv) {
   std::cout << std::left << std::setw(20) << "endianess:";
   std::cout << (os.isLittleEndian() ? "little endian" : "big endian") << std::endl;
 
-  hwinfo::GPU gpu;
+  auto gpus = hwinfo::getAllGPUs();
   std::cout << "----------------------------------- GPU -----------------------------------" << std::endl;
-  std::cout << std::left << std::setw(20) << "vendor:";
-  std::cout << gpu.vendor() << std::endl;
-  std::cout << std::left << std::setw(20) << "model:";
-  std::cout << gpu.name() << std::endl;
-  std::cout << std::left << std::setw(20) << "driverVersion:";
-  std::cout << gpu.driverVersion() << std::endl;
-  std::cout << std::left << std::setw(20) << "memory [MiB]:";
-  std::cout << static_cast<double>(gpu.memory_Bytes()) / 1024.0 / 1024.0 << std::endl;
+  for (auto& gpu : gpus) {
+    std::cout << "GPU " << gpu.id() << ":\n";
+    std::cout << std::left << std::setw(20) << "  vendor:";
+    std::cout << gpu.vendor() << std::endl;
+    std::cout << std::left << std::setw(20) << "  model:";
+    std::cout << gpu.name() << std::endl;
+    std::cout << std::left << std::setw(20) << "  driverVersion:";
+    std::cout << gpu.driverVersion() << std::endl;
+    std::cout << std::left << std::setw(20) << "  memory [MiB]:";
+    std::cout << static_cast<double>(gpu.memory_Bytes()) / 1024.0 / 1024.0 << std::endl;
+    std::cout << std::left << std::setw(20) << "  min frequency:";
+    std::cout << gpu.min_frequency_MHz() << std::endl;
+    std::cout << std::left << std::setw(20) << "  cur frequency:";
+    std::cout << gpu.current_frequency_MHz() << std::endl;
+    std::cout << std::left << std::setw(20) << "  max frequency:";
+    std::cout << gpu.max_frequency_MHz() << std::endl;
+  }
 
   hwinfo::RAM ram;
   std::cout << "----------------------------------- RAM -----------------------------------" << std::endl;
@@ -69,9 +86,11 @@ int main(int argc, char** argv) {
   std::cout << std::left << std::setw(20) << "serial-number:";
   std::cout << ram.serialNumber() << std::endl;
   std::cout << std::left << std::setw(20) << "size [MiB]:";
-  std::cout << static_cast<double>(ram.totalSize_Bytes()) / 1024.0 / 1024.0 << std::endl;
+  std::cout << ram.total_Bytes() / 1024 / 1024 << std::endl;
   std::cout << std::left << std::setw(20) << "free [MiB]:";
-  std::cout << static_cast<double>(ram.availableMemory()) / 1024.0 / 1024.0 << std::endl;
+  std::cout << ram.free_Bytes() / 1024 / 1024 << std::endl;
+  std::cout << std::left << std::setw(20) << "available [MiB]:";
+  std::cout << ram.available_Bytes() / 1024 / 1024 << std::endl;
 
   hwinfo::MainBoard main_board;
   std::cout << "------------------------------- Main Board --------------------------------" << std::endl;
