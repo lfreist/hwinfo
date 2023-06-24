@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "hwinfo/WMIwrapper.h"
+#include <hwinfo/WMIwrapper.h>
 #pragma comment(lib, "wbemuuid.lib")
 
 #include <hwinfo/gpu.h>
