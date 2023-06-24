@@ -32,7 +32,7 @@ int64_t get_freq_by_id_and_type(int proc_id, const std::string& type) {
 }
 
 // _____________________________________________________________________________________________________________________
-int CPU::currentClockSpeed_MHz() const { return get_freq_by_id_and_type(_core_id, "scaling_cur_freq"); }
+int64_t CPU::currentClockSpeed_MHz() const { return get_freq_by_id_and_type(_core_id, "scaling_cur_freq"); }
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
