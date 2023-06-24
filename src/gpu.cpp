@@ -1,19 +1,9 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include <regex>
+#include <hwinfo/gpu.h>
+
 #include <string>
-#include <vector>
-
-#if defined(unix) || defined(__unix) || defined(__unix__)
-#include "hwinfo/utils/subprocess.h"
-#elif defined(__APPLE__)
-#elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-#include "hwinfo/WMIwrapper.h"
-#pragma comment(lib, "wbemuuid.lib")
-#endif
-
-#include "hwinfo/gpu.h"
 
 namespace hwinfo {
 
