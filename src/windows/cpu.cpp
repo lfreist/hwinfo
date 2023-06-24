@@ -25,7 +25,7 @@ std::vector<std::string> getVendor() {
   ret.reserve(vendors.size());
   for (auto& v : vendors) {
     if (v == nullptr) {
-      continue ;
+      continue;
     }
     std::wstring tmp(v);
     ret.emplace_back(tmp.begin(), tmp.end());
@@ -41,7 +41,7 @@ std::vector<std::string> getModelName() {
   ret.reserve(names.size());
   for (auto& v : names) {
     if (v == nullptr) {
-      continue ;
+      continue;
     }
     std::wstring tmp(v);
     ret.emplace_back(tmp.begin(), tmp.end());

@@ -47,7 +47,7 @@ inline void strip(std::string& input) {
     }
     end_index--;
   }
-  if (end_index <= start_index) {
+  if (end_index < start_index) {
     input.assign("");
     return;
   }

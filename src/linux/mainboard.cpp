@@ -11,16 +11,18 @@
 
 namespace hwinfo {
 
-// _____________________________________________________________________________________________________________________
-std::string MainBoard::getVendor() {
-  std::string manufacturer;
-  for (const auto& path : _candidates) {
-    std::string full_path = path + "id/board_vendor";
+std::string get_dmi_by_name(const std::string& name) {
+  std::string value;
+  std::vector<std::string> candidates = {"/sys/devices/virtual/dmi/", "/sys/class/dmi/"};
+  for (const auto& path : candidates) {
+    std::string full_path(path);
+    full_path.append("id/");
+    full_path.append(name);
     std::ifstream f(full_path);
     if (f) {
-      getline(f, manufacturer);
-      if (!manufacturer.empty()) {
-        return manufacturer;
+      getline(f, value);
+      if (!value.empty()) {
+        return value;
       }
     }
   }
@@ -28,54 +30,12 @@ std::string MainBoard::getVendor() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string MainBoard::getName() {
-  std::string name;
-  for (const auto& path : _candidates) {
-    std::string full_path = path + "id/board_name";
-    std::ifstream f(full_path);
-    if (f) {
-      getline(f, name);
-      if (!name.empty()) {
-        return name;
-      }
-    }
-  }
-  return "<unknown>";
+MainBoard::MainBoard() {
+  _vendor = get_dmi_by_name("board_vendor");
+  _name = get_dmi_by_name("board_name");
+  _version = get_dmi_by_name("board_version");
+  _serialNumber = get_dmi_by_name("board_serial");
 }
-
-// _____________________________________________________________________________________________________________________
-std::string MainBoard::getVersion() {
-  std::string version;
-  for (const auto& path : _candidates) {
-    std::string full_path = path + "id/board_version";
-    std::ifstream f(full_path);
-    if (f) {
-      getline(f, version);
-      if (!version.empty()) {
-        return version;
-      }
-    }
-  }
-  return "<unknown>";
-}
-
-// _____________________________________________________________________________________________________________________
-std::string MainBoard::getSerialNumber() {
-  std::string serialNumber;
-  for (const auto& path : _candidates) {
-    std::string full_path = path + "id/board_serial";
-    std::ifstream f(full_path);
-    if (f) {
-      getline(f, serialNumber);
-      if (serialNumber.empty()) {
-        return serialNumber;
-      }
-    }
-  }
-  return "<unknown>";
-}
-
-std::vector<std::string> MainBoard::_candidates = {"/sys/devices/virtual/dmi/", "/sys/class/dmi/"};
 
 }  // namespace hwinfo
 

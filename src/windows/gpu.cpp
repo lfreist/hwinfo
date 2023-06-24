@@ -5,11 +5,11 @@
 
 #ifdef HWINFO_WINDOWS
 
+#include <hwinfo/WMIwrapper.h>
+
 #include <algorithm>
 #include <string>
 #include <vector>
-
-#include <hwinfo/WMIwrapper.h>
 #pragma comment(lib, "wbemuuid.lib")
 
 #include <hwinfo/gpu.h>
@@ -26,7 +26,7 @@ std::vector<std::string> getVendor() {
   ret.reserve(vendor.size());
   for (auto& v : vendor) {
     if (v == nullptr) {
-      continue ;
+      continue;
     }
     std::wstring tmp(v);
     ret.emplace_back(tmp.begin(), tmp.end());
@@ -42,7 +42,7 @@ std::vector<std::string> getName() {
   ret.reserve(names.size());
   for (auto& v : names) {
     if (v == nullptr) {
-      continue ;
+      continue;
     }
     std::wstring tmp(v);
     ret.emplace_back(tmp.begin(), tmp.end());
@@ -58,7 +58,7 @@ std::vector<std::string> getDriverVersion() {
   ret.reserve(driverVersion.size());
   for (auto& v : driverVersion) {
     if (v == nullptr) {
-      continue ;
+      continue;
     }
     std::wstring tmp(v);
     ret.emplace_back(tmp.begin(), tmp.end());
