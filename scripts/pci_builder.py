@@ -8,58 +8,52 @@ We use the pci.ids file (https://pci-ids.ucw.cz/v2.2/pci.ids) licenced under BSD
 
 import sys
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Generator
+from collections import OrderedDict
 
 
 @dataclass
 class PCIDevice:
     device_id: str = field(default_factory=str)
     device_name: str = field(default_factory=str)
-    subsystems: Dict[str, str] = field(default_factory=dict)
+    subsystems: OrderedDict[str, str] = field(default_factory=OrderedDict)
 
 
 @dataclass
 class PCIVendor:
     vendor_id: str = field(default_factory=str)
     vendor_name: str = field(default_factory=str)
-    devices: Dict[str, PCIDevice] = field(default_factory=dict)
+    devices: OrderedDict[str, PCIDevice] = field(default_factory=OrderedDict)
 
 
-class Parser:
+class PCIParser:
+
     def __init__(self, pci_ids_path: str):
         self.in_path = pci_ids_path
 
-    def parse(self):
-        pass
-
-    def get_vendors(self) -> PCIVendor:
+    def parse(self) -> OrderedDict[str, PCIVendor]:
+        result: OrderedDict[str, PCIVendor] = OrderedDict()
+        last_vendor_id: str = ""
+        last_device_id: str = ""
         for line in self.read_lines():
-            line = line.strip()
-            v_id, v_name = line.split("  ")
-            vendor: PCIVendor = PCIVendor(v_id, v_name)
-            vendor.devices = self.__next_devices()
-            yield vendor
-
-    def __next_devices(self) -> Dict[str, PCIDevice]:
-        device_done: bool = False
-        devices: Dict[str, PCIDevice] = {}
-        device_id: str
-        for line in self.read_lines():
-            if not line.startswith('\t') and not line.startswith("\t\t"):
-                # line is a new vendor
-                # TODO: we have a problem here... line is a vendor now and we cannot get this line again in the
-                #       get_vendors() method again. We need to parse the content of the pci.ids file in another way!
-                break
+            processed_line = line.strip()
+            _id, _info = processed_line.split("  ")
             if line.startswith('\t'):
-                line = line.strip()
-                device_id, d_name = line.split("  ")
-                devices[device_id] = PCIDevice(device_id, d_name)
-                devices[device_id].subsystems = self.__get_subsystems()
+                # device or subsystem
+                if line.startswith("\t\t"):
+                    # subsystem
+                    result[last_vendor_id].devices[last_device_id].subsystems[_id] = _info
+                else:
+                    # device
+                    result[last_vendor_id].devices[_id] = PCIDevice(_id, _info)
+                    last_device_id = _id
+            else:
+                # vendor
+                result[_id] = PCIVendor(_id, _info)
+                last_vendor_id = _id
+        return result
 
-    def __get_subsystems(self) -> Dict[str, str]:
-        pass
-
-    def read_lines(self):
+    def read_lines(self) -> Generator[str, None, None]:
         with open(self.in_path) as f:
             for line in f.readlines():
                 # skip all nonsense lines (comments and empty lines)
