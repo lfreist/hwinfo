@@ -19,6 +19,10 @@ include_directories(${PROJECT_SOURCE_DIR}/include/)
 
 add_subdirectory(src)
 
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+    file(COPY "scripts/pci.ids" DESTINATION "$ENV{HOME}/.hwinfo/")
+endif ()
+
 if (${MAIN_PROJECT})
     add_subdirectory(examples)
 
