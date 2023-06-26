@@ -8,13 +8,13 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::string& GPU::vendor() { return _vendor; }
+const std::string& GPU::vendor() const { return _vendor; }
 
 // _____________________________________________________________________________________________________________________
-std::string& GPU::name() { return _name; }
+const std::string& GPU::name() const { return _name; }
 
 // _____________________________________________________________________________________________________________________
-std::string& GPU::driverVersion() { return _driverVersion; }
+const std::string& GPU::driverVersion() const { return _driverVersion; }
 
 // _____________________________________________________________________________________________________________________
 int GPU::id() const { return _id; }

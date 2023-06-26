@@ -16,7 +16,9 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/include/)
+include_directories(extern/nlohmann/json/include/)
 
+add_subdirectory(extern/nlohmann/json)
 add_subdirectory(src)
 
 if (${MAIN_PROJECT})

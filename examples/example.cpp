@@ -4,7 +4,7 @@
 #include <iostream>
 #include <iomanip>
 
-#include "hwinfo/hwinfo.h"
+#include <hwinfo/hwinfo.h>
 #include <hwinfo/PCIMapper.h>
 
 int main(int argc, char** argv) {
@@ -146,7 +146,4 @@ int main(int argc, char** argv) {
   else {
     std::cout << "No Disks installed or detected" << std::endl;
   }
-
-  // call to get all CPU-Sockets:
-  hwinfo::getAllSockets();
 }

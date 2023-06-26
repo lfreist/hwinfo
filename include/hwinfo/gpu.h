@@ -14,9 +14,9 @@ class GPU {
  public:
   ~GPU() = default;
 
-  std::string& vendor();
-  std::string& name();
-  std::string& driverVersion();
+  const std::string& vendor() const;
+  const std::string& name() const;
+  const std::string& driverVersion() const;
   int64_t memory_Bytes() const;
   int64_t min_frequency_MHz() const;
   int64_t current_frequency_MHz() const;

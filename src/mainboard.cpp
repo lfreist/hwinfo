@@ -11,15 +11,15 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::string& MainBoard::vendor() { return _vendor; }
+const std::string& MainBoard::vendor() const { return _vendor; }
 
 // _____________________________________________________________________________________________________________________
-std::string& MainBoard::name() { return _name; }
+const std::string& MainBoard::name() const { return _name; }
 
 // _____________________________________________________________________________________________________________________
-std::string& MainBoard::version() { return _version; }
+const std::string& MainBoard::version() const { return _version; }
 
 // _____________________________________________________________________________________________________________________
-std::string& MainBoard::serialNumber() { return _serialNumber; }
+const std::string& MainBoard::serialNumber() const { return _serialNumber; }
 
 }  // namespace hwinfo
