@@ -1,11 +1,11 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include <iostream>
-#include <iomanip>
-
-#include <hwinfo/hwinfo.h>
 #include <hwinfo/PCIMapper.h>
+#include <hwinfo/hwinfo.h>
+
+#include <iomanip>
+#include <iostream>
 
 int main(int argc, char** argv) {
   std::cout << "hwinfo is an open source, MIT licensed project that implements a platform independent "
@@ -39,17 +39,16 @@ int main(int argc, char** argv) {
     std::cout << cpu.cacheSize_Bytes() << std::endl;
   }
 
-
   hwinfo::OS os;
   std::cout << "----------------------------------- OS ------------------------------------" << std::endl;
   std::cout << std::left << std::setw(20) << "Operating System:";
-  std::cout << os.fullName() <<std::endl;
+  std::cout << os.fullName() << std::endl;
   std::cout << std::left << std::setw(20) << "short name:";
-  std::cout << os.name() <<std::endl;
+  std::cout << os.name() << std::endl;
   std::cout << std::left << std::setw(20) << "version:";
-  std::cout << os.version() <<std::endl;
+  std::cout << os.version() << std::endl;
   std::cout << std::left << std::setw(20) << "kernel:";
-  std::cout << os.kernel() <<std::endl;
+  std::cout << os.kernel() << std::endl;
   std::cout << std::left << std::setw(20) << "architecture:";
   std::cout << (os.is32bit() ? "32 bit" : "64 bit") << std::endl;
   std::cout << std::left << std::setw(20) << "endianess:";
@@ -107,7 +106,7 @@ int main(int argc, char** argv) {
   std::cout << "------------------------------- Batteries ---------------------------------" << std::endl;
   if (!batteries.empty()) {
     int battery_counter = 0;
-    for (auto &battery: batteries) {
+    for (auto& battery : batteries) {
       std::cout << "Battery " << battery_counter++ << ":" << std::endl;
       std::cout << std::left << std::setw(20) << "  vendor:";
       std::cout << battery.vendor() << std::endl;
@@ -121,8 +120,7 @@ int main(int argc, char** argv) {
       std::cout << battery.capacity() << std::endl;
     }
     std::cout << "---------------------------------------------------------------------------" << std::endl;
-  }
-  else {
+  } else {
     std::cout << "No Batteries installed or detected" << std::endl;
   }
 
@@ -130,7 +128,7 @@ int main(int argc, char** argv) {
   std::cout << "--------------------------------- Disks -----------------------------------" << std::endl;
   if (!disks.empty()) {
     int disk_counter = 0;
-    for (const auto &disk: disks) {
+    for (const auto& disk : disks) {
       std::cout << "Disk " << disk_counter++ << ":" << std::endl;
       std::cout << std::left << std::setw(20) << "  vendor:";
       std::cout << disk.vendor() << std::endl;
@@ -142,8 +140,9 @@ int main(int argc, char** argv) {
       std::cout << disk.size_Bytes() << std::endl;
     }
     std::cout << "---------------------------------------------------------------------------" << std::endl;
-  }
-  else {
+  } else {
     std::cout << "No Disks installed or detected" << std::endl;
   }
+  hwinfo::Report reporter;
+  std::cout << reporter.json_str() << std::endl;
 }
