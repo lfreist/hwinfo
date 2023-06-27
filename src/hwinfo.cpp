@@ -18,8 +18,7 @@ nlohmann::json Report::json() const {
     json_report["CPU"][std::to_string(i)]["model"] = _system._sockets[i].CPU().modelName();
     json_report["CPU"][std::to_string(i)]["physical_cores"] = _system._sockets[i].CPU().numPhysicalCores();
     json_report["CPU"][std::to_string(i)]["logical_cores"] = _system._sockets[i].CPU().numLogicalCores();
-    json_report["CPU"][std::to_string(i)]["cache_size_MB"] =
-        _system._sockets[i].CPU().cacheSize_Bytes() / 1024;
+    json_report["CPU"][std::to_string(i)]["cache_size_MB"] = _system._sockets[i].CPU().cacheSize_Bytes() / 1024;
   }
   for (size_t i = 0; i < _system._gpus.size(); ++i) {
     json_report["GPU"][std::to_string(i)]["vendor"] = _system._gpus[i].vendor();
@@ -39,6 +38,11 @@ nlohmann::json Report::json() const {
   json_report["BaseBoard"]["vendor"] = _system._main_board.vendor();
   json_report["BaseBoard"]["model"] = _system._main_board.name();
   json_report["BaseBoard"]["version"] = _system._main_board.version();
+  json_report["RAM"]["vendor"] = _system._ram.vendor();
+  json_report["RAM"]["model"] = _system._ram.model();
+  json_report["RAM"]["total_size_MB"] = _system._ram.total_Bytes() / 1024;
+  json_report["RAM"]["free_size_MB"] = _system._ram.free_Bytes() / 1024;
+  json_report["RAM"]["available_size_MB"] = _system._ram.available_Bytes() / 1024;
 
   return json_report;
 }
