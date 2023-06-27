@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Setup gitmodules
+        run: git submodule update --init --recursive
+
       - name: Setup clang
         uses: egor-tensin/setup-clang@v1
 

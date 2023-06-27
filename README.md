@@ -3,7 +3,6 @@
 
 [![MacOS](https://github.com/lfreist/hwinfo/actions/workflows/build-macos.yml/badge.svg)](https://github.com/lfreist/hwinfo/actions/workflows/build-macos.yml)
 
-[![Windows (MinGW)](https://github.com/lfreist/hwinfo/actions/workflows/build-windows-mingw.yml/badge.svg)](https://github.com/lfreist/hwinfo/actions/workflows/build-windows-mingw.yml)
 [![Windows (Visual Studio)](https://github.com/lfreist/hwinfo/actions/workflows/build-windows-vs.yml/badge.svg)](https://github.com/lfreist/hwinfo/actions/workflows/build-windows-vs.yml)
 
 [![clang format](https://github.com/lfreist/hwinfo/actions/workflows/format-check.yml/badge.svg)](https://github.com/lfreist/hwinfo/actions/workflows/format-check.yml)
@@ -20,56 +19,56 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 
 ## Content
 
-* [Supported Components and API](#supported-components-and-api)
+* [Supported Components](#supported-components)
 * [Build hwinfo](#build-hwinfo)
 * [Example](#example)
 * [Include hwinfo to cmake project](#include-hwinfo-in-your-cmake-project)
 
-## Supported Components and API
+## Supported Components
 
 > **Note**
 >
 > The listed components that are not yet implemented (indicated with ❌) are in development and will be supported in
 > later releases. **You are welcome to start contributing and help improving this library!**
 
-| Component        | Info               | Linux  | Apple | Windows | API                                                                   |
-|------------------|:-------------------|:------:|:-----:|:-------:|:----------------------------------------------------------------------|
-| CPU              | Vendor             |   ✔️   |  ✔️   |   ✔️    | `CPU::getVendor()`                                                    |
-|                  | Model              |   ✔️   |  ✔️   |   ✔️    | `CPU::getModelName()`                                                 |
-|                  | Frequency          |   ✔️   |  ✔️   |   ✔️    | `CPU::getRegularClockSpeed_kHz()` </br> `CPU::getMaxClockSpeed_kHz()` |
-|                  | Physical Cores     |   ✔️   |  ✔️   |   ✔️    | `CPU::getNumPhysicalCores()`                                          |
-|                  | Logical Cores      |   ✔️   |  ✔️   |   ✔️    | `CPU::getNumLogicalCores()`                                           |
-|                  | Cache Size         |   ✔️   |  ✔️   |   ✔️    | `CPU::getCacheSize_Bytes()`                                           |
-| GPU              | Vendor             |   ✔️   |  ✔️   |   ✔️    | `GPU::getVendor()`                                                    |
-|                  | Model              |   ✔️   |  ✔️   |   ✔️    | `GPU::getName()`                                                      |
-|                  | Memory Size        |   ❌    |   ❌   |   ✔️    | `GPU::getMemory_Bytes()`                                              |
-| Memory (RAM)     | Vendor             |   ❌    |   ❌   |   ✔️    | `RAM::getVendor()`                                                    |
-|                  | Model              |   ❌    |   ❌   |   ✔️    | `RAM::getModel()`                                                     |
-|                  | Name               |   ❌    |   ❌   |   ✔️    | `RAM::getName()`                                                      |
-|                  | Serial Number      |   ❌    |   ❌   |   ✔️    | `RAM::get()`                                                          |
-|                  | Total Memory Size  |   ✔️   |  ✔️   |   ✔️    | `RAM::getTotalSizes_Bytes()`                                          |
-|                  | Free Memory Size   |   ✔️   |   ❌   |    ❌    | `-`                                                                   |
-| Mainboard        | Vendor             |   ✔️   |   ❌   |   ✔️    | `MainBoard::getVendor()`                                              |
-|                  | Model              |   ✔️   |   ❌   |   ✔️    | `MainBoard::getName()`                                                |
-|                  | Version            |   ✔️   |   ❌   |   ✔️    | `MainBoard::getVersion()`                                             |
-|                  | Serial-Number      |   ❌    |   ❌   |   ✔️    | `MainBoard::getSerialNumber()`                                        |
-|                  | Bios               |   ❌    |   ❌   |    ❌    | `-`                                                                   |
-| Disk             | Vendor             |   ✔️   |   ❌   |   ✔️    | `Disk::vendor()`*                                                     |
-|                  | Model              |   ✔️   |   ❌   |   ✔️    | `Disk::model()`*                                                      |
-|                  | Serial-Number      |   ❌    |   ❌   |   ✔️    | `Disk::serialNumber`*                                                 |
-|                  | Size               |   ❌    |   ❌   |    ❌    | `Disk::size_Bytes()`*                                                 |
-| Operating System | Name               |   ✔️   |  ✔️   |   ✔️    | `OS::getFullName()`                                                   |
-|                  | Short Name         |   ✔️   |  ✔️   |   ✔️    | `OS::getName()`                                                       |
-|                  | Version            |   ✔️   |  ✔️   |    ❌    | `OS::getVersion()`                                                    |
-|                  | Kernel             |   ✔️   |   ❌   |    ❌    | `OS::getKernel()`                                                     |
-|                  | Architecture (Bit) |   ✔️   |  ✔️   |   ✔️    | `OS::getIs32bit()` </br> `OS::getIs64bit()`                           |
-|                  | Endianess          |   ✔️   |  ✔️   |   ✔️    | `OS::getIsBigEndian()` </br> `OS::getIsLittleEndian()`                |
-| Battery          | Vendor             |   ✔️   |   ❌   |    ❌    | `Battery::vendor()`*                                                  |
-|                  | Model              |   ✔️   |   ❌   |    ❌    | `Battery::model()`*                                                   |
-|                  | Serial Number      |   ✔️   |   ❌   |    ❌    | `Battery::serialNumber()`*                                            |
-|                  | Technology         |   ✔️   |   ❌   |    ❌    | `Battery::technology()`*                                              |
-|                  | Capacity           |   ✔️   |   ❌   |   ️❌    | `Battery::capacity()`*                                                |
-|                  | Charging           |   ✔️   |   ❌   |    ❌    | `Battery::charging()` </br> `Battery::discharging()`*                 |
+| Component        | Info               | Linux | Apple | Windows |
+|------------------|:-------------------|:-----:|:-----:|:-------:|
+| CPU              | Vendor             |  ✔️   |  ✔️   |   ✔️    |
+|                  | Model              |  ✔️   |  ✔️   |   ✔️    |
+|                  | Frequency          |  ✔️   |  ✔️   |   ✔️    |
+|                  | Physical Cores     |  ✔️   |  ✔️   |   ✔️    |
+|                  | Logical Cores      |  ✔️   |  ✔️   |   ✔️    |
+|                  | Cache Size         |  ✔️   |  ✔️   |   ✔️    |
+| GPU              | Vendor             |  ✔️   |  ✔️   |   ✔️    |
+|                  | Model              |  ✔️   |  ✔️   |   ✔️    |
+|                  | Memory Size        |   ❌   |   ❌   |   ✔️    |
+| Memory (RAM)     | Vendor             |   ❌   |   ❌   |   ✔️    |
+|                  | Model              |   ❌   |   ❌   |   ✔️    |
+|                  | Name               |   ❌   |   ❌   |   ✔️    |
+|                  | Serial Number      |   ❌   |   ❌   |   ✔️    |
+|                  | Total Memory Size  |  ✔️   |  ✔️   |   ✔️    |
+|                  | Free Memory Size   |  ✔️   |   ❌   |    ❌    |
+| Mainboard        | Vendor             |  ✔️   |   ❌   |   ✔️    |
+|                  | Model              |  ✔️   |   ❌   |   ✔️    |
+|                  | Version            |  ✔️   |   ❌   |   ✔️    |
+|                  | Serial-Number      |   ❌   |   ❌   |   ✔️    |
+|                  | Bios               |   ❌   |   ❌   |    ❌    |
+| Disk             | Vendor             |  ✔️   |   ❌   |   ✔️    |
+|                  | Model              |  ✔️   |   ❌   |   ✔️    |
+|                  | Serial-Number      |   ❌   |   ❌   |   ✔️    |
+|                  | Size               |   ❌   |   ❌   |    ❌    |
+| Operating System | Name               |  ✔️   |  ✔️   |   ✔️    |
+|                  | Short Name         |  ✔️   |  ✔️   |   ✔️    |
+|                  | Version            |  ✔️   |  ✔️   |    ❌    |
+|                  | Kernel             |  ✔️   |   ❌   |    ❌    |
+|                  | Architecture (Bit) |  ✔️   |  ✔️   |   ✔️    |
+|                  | Endianess          |  ✔️   |  ✔️   |   ✔️    |
+| Battery          | Vendor             |  ✔️   |   ❌   |    ❌    |
+|                  | Model              |  ✔️   |   ❌   |    ❌    |
+|                  | Serial Number      |  ✔️   |   ❌   |    ❌    |
+|                  | Technology         |  ✔️   |   ❌   |    ❌    |
+|                  | Capacity           |  ✔️   |   ❌   |   ️❌    |
+|                  | Charging           |  ✔️   |   ❌   |    ❌    |
 
 > *Disks must be initialized using `getAllDisks()`
 >
