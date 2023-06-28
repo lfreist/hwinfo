@@ -143,6 +143,4 @@ int main(int argc, char** argv) {
   } else {
     std::cout << "No Disks installed or detected" << std::endl;
   }
-  hwinfo::Report reporter;
-  std::cout << reporter.json_str() << std::endl;
 }
