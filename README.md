@@ -20,6 +20,7 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 ## Content
 
 * [Supported Components](#supported-components)
+* [API](#API)
 * [Build hwinfo](#build-hwinfo)
 * [Example](#example)
 * [Include hwinfo to cmake project](#include-hwinfo-in-your-cmake-project)
@@ -70,9 +71,23 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 |                  | Capacity           |  ✔️   |   ❌   |   ️❌    |
 |                  | Charging           |  ✔️   |   ❌   |    ❌    |
 
-> *Disks must be initialized using `getAllDisks()`
->
-> *Batteries should be initialized using `getAllBatteries()` or an ID must be provided: `Battery::Battery(int8_t id)`
+## API
+This section describes, how you can get information about the supported components of your computer.
+
+### CPU
+hwinfo supports reading CPU information on boards with multiple sockets and CPUs installed.
+`getAllSockets()` returns a `std::vector<Socket>`. A `Socket` object represents a physical socket and holds information about the installed CPU. You can access these information via `Socket::CPU()` which retuns a `CPU` instance.
+The following methods are available for `CPU`:
+- `std::string CPU::vendor()`
+- `std::string CPU::modelName()`
+- `int64_t CPU::cacheSize_Bytes()`
+- `int CPU::numPhysicalCores()`
+- `int CPU::numLogicalCores()`
+- `int64_t CPU::maxClockSpeed_MHz`
+- `int64_t CPU::regularClockSpeed_MHz`
+- `int64_t CPU::minClockSpeed_MHz`
+- `int64_t CPU::currentClockSpeed_MHz`
+- `const std::vector<std::string>& CPU::flags()`
 
 ## Build `hwinfo`
 
