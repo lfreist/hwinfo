@@ -20,6 +20,7 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 ## Content
 
 * [Supported Components](#supported-components)
+* [API](#API)
 * [Build hwinfo](#build-hwinfo)
 * [Example](#example)
 * [Include hwinfo to cmake project](#include-hwinfo-in-your-cmake-project)
@@ -70,9 +71,54 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 |                  | Capacity           |  ✔️   |   ❌   |   ️❌    |
 |                  | Charging           |  ✔️   |   ❌   |    ❌    |
 
-> *Disks must be initialized using `getAllDisks()`
->
-> *Batteries should be initialized using `getAllBatteries()` or an ID must be provided: `Battery::Battery(int8_t id)`
+## API
+This section describes, how you can get information about the supported components of your computer.
+
+### CPU
+hwinfo supports reading CPU information on boards with multiple sockets and CPUs installed.
+`getAllSockets()` returns a `std::vector<Socket>`. A `Socket` object represents a physical socket and holds information about the installed CPU. You can access these information via `Socket::CPU()` which retuns a `CPU` instance.
+
+> Why not just retrieving a `std::vector<CPU>`?
+> The reason for this lies within how linux handles CPUs. For linux systems, the cores of a multi core CPU are considered as different physical CPUs.
+>Thus, I added the `Socket` layer to make clear, that multiple elements in the yielded `std::vector<Socket>` vector mean that there are two CPUs on two different sockets installed.
+
+The following methods are available for `CPU`:
+- `const std::string& CPU::vendor() const` "GenuineIntel"
+- `const std::string& CPU::modelName() const` "Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz"
+- `int64_t CPU::cacheSize_Bytes() const` 16384000
+- `int CPU::numPhysicalCores() const` 8
+- `int CPU::numLogicalCores() const` 16
+- `int64_t CPU::maxClockSpeed_MHz() const` 5100000
+- `int64_t CPU::regularClockSpeed_MHz() const` 3800000
+- `int64_t CPU::minClockSpeed_MHz() const` 1800000
+- `int64_t CPU::currentClockSpeed_MHz() const` 4700189
+- `const std::vector<std::string>& CPU::flags() cosnt` {"SSE", "AVX", ...}
+
+### GPU
+You can also get information about all installed GPUs using hwinfo.
+`getAllGPUs()` returns a `std::vector<GPU>`. A `GPU` object represents a physical GPU.
+
+The following methods are available for `GPU`:
+- `const std::string& GPU::vendor() const` "NVIDIA"
+- `const std::string& GPU::name() const` "NVIDIA GeForce RTX 3070 Ti"
+- `const std::string& GPU::driverVersion() const` "31.0.15.2698" (empty for linux)
+- `int64_t GPU::memory_Bytes() const` 8190000000
+- `int64_t GPU::min_frequency_MHz() const`
+- `int64_t GPU::current_frequency_MHz() const`
+- `int64_t GPU::max_frequency_MHz() const`
+- `int GPU::id() const` 0
+
+### RAM
+TODO
+
+### OS
+TODO
+
+### Baseboard
+TODO
+
+### Disk
+TODO
 
 ## Build `hwinfo`
 
@@ -99,46 +145,75 @@ The output should look similar to this one:
 Hardware Report:
 
 ----------------------------------- CPU -----------------------------------
-vendor:             GenuineIntel
-model:              Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz
-physical cores:     8
-logical cores:      16
-max frequency:      5100000
-regular frequency:  3800000
-current frequency:  4700189
-cache size:         16384000
+Socket 0:
+ vendor:            GenuineIntel
+ model:             Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz
+ physical cores:    8
+ logical cores:     16
+ max frequency:     3792
+ regular frequency: 3792
+ min frequency:     -1
+ current frequency: 3792
+ cache size:        16777216
 ----------------------------------- OS ------------------------------------
-Operating System:   Ubuntu 22.04 LTS
-short name:         Ubuntu
-version:            22.04
-kernel:             5.15.0-37-generic
+Operating System:   Microsoft Windows 11 Professional (build 22621)
+short name:         Windows
+version:            <unknown>
+kernel:             <unknown>
 architecture:       64 bit
 endianess:          little endian
 ----------------------------------- GPU -----------------------------------
-vendor:             NVIDIA Corporation
-model:              GeForce RTX 3070 Ti
-driverVersion:      <unknown>
-memory [MiB]:       -1
+GPU 0:
+  vendor:           NVIDIA
+  model:            NVIDIA GeForce RTX 3070 Ti
+  driverVersion:    31.0.15.2698
+  memory [MiB]:     8190
+  min frequency:    0
+  cur frequency:    0
+  max frequency:    0
 ----------------------------------- RAM -----------------------------------
-vendor:             <unknown>
-model:              <unknown>
-name:               <unknown>
-serial-number:      <unknown>
-size [MiB]:         64213.2
+vendor:             Corsair
+model:              CMK32GX4M2Z3600C18
+name:               Physical Memory
+serial-number:      ***
+size [MiB]:         65437
+free [MiB]:         54405
+available [MiB]:    54405
 ------------------------------- Main Board --------------------------------
 vendor:             ASUSTeK COMPUTER INC.
 name:               PRIME Z490-A
 version:            Rev 1.xx
-serial-number:      <unknown>
+serial-number:      ***
 ------------------------------- Batteries ---------------------------------
 No Batteries installed or detected
 --------------------------------- Disks -----------------------------------
 Disk 0:
-  vendor:           <unknown>
+  vendor:           (Standard disk drives)
+  model:            WD_BLACK SN850 Heatsink 1TB
+  serial-number:    ***.
+  size:             1000202273280
+Disk 1:
+  vendor:           (Standard disk drives)
+  model:            Intenso SSD Sata III
+  serial-number:    ***
+  size:             120031511040
+Disk 2:
+  vendor:           (Standard disk drives)
+  model:            KINGSTON SA400S37240G
+  serial-number:    ***
+  size:             240054796800
+Disk 3:
+  vendor:           (Standard disk drives)
   model:            WDS500G3X0C-00SJG0
-  serial-number:    2105EZ440111
-  size:             -1
+  serial-number:    ***.
+  size:             500105249280
+Disk 4:
+  vendor:           (Standard disk drives)
+  model:            ST750LM022 HN-M750MBB
+  serial-number:    ***
+  size:             750153761280
 ---------------------------------------------------------------------------
+
 ```
 
 ## Include `hwinfo` in your cmake project
