@@ -252,8 +252,13 @@ std::string OS::getKernel() { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
 bool OS::getIs64bit() {
-  BOOL bWow64Process = FALSE;
-  return IsWow64Process(GetCurrentProcess(), &bWow64Process) && bWow64Process;
+  BOOL isWow64 = FALSE;
+  IsWow64Process(GetCurrentProcess(), &isWow64);
+
+  if (sizeof(void*) == 8 || isWow64)
+    return true;
+  else
+    return false;
 }
 
 }  // namespace hwinfo
