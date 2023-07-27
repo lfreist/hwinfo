@@ -4,6 +4,7 @@
 #include <hwinfo/platform.h>
 
 #ifdef HWINFO_WINDOWS
+#ifndef USE_OCL
 
 #include <hwinfo/WMIwrapper.h>
 
@@ -100,4 +101,5 @@ std::vector<GPU> getAllGPUs() {
 
 }  // namespace hwinfo
 
+#endif  // USE_OCL
 #endif  // HWINFO_WINDOWS

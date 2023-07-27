@@ -42,4 +42,8 @@ if (WIN32 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     target_link_libraries(HWinfo PUBLIC "wbemuuid")
 endif ()
 
+if (NOT DEFINED NO_OCL)
+    target_link_libraries(HWinfo PUBLIC OpenCL::OpenCL)
+endif ()
+
 add_library(${PROJECT_NAME}::HWinfo ALIAS HWinfo)

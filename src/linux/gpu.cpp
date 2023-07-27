@@ -49,6 +49,7 @@ std::vector<int> get_frequencies(const std::string drm_path) {
   return freqs;
 }
 
+
 // _____________________________________________________________________________________________________________________
 std::vector<GPU> getAllGPUs() {
   std::vector<GPU> gpus{};
@@ -68,14 +69,23 @@ std::vector<GPU> getAllGPUs() {
     gpu._vendor = vendor.vendor_name;
     gpu._name = vendor[device_id].device_name;
     auto frequencies = get_frequencies(path);
-    gpu._minFrequency_MHz = frequencies[0];
-    gpu._currentFrequency_MHz = frequencies[1];
-    gpu._maxFrequency_MHz = frequencies[2];
+    gpu._frequency_MHz = frequencies[2];
     gpus.push_back(std::move(gpu));
     id++;
   }
+#ifdef USE_OCL
+  auto cl_gpus = get_cpu_cl_data();
+  if (cl_gpus.size() == gpus.size()) {
+    for (int i = 0; i < cl_gpus.size(); ++i) {
+      gpus[i]._memory_Bytes = cl_gpus[i].memory_Bytes;
+      gpus[i]._num_cores = cl_gpus[i].num_cores;
+      gpus[i]._driverVersion = cl_gpus[i].driver_version;
+    }
+  }
+#endif  // USE_OCL
   return gpus;
 }
+
 
 }  // namespace hwinfo
 

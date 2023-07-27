@@ -1,0 +1,6 @@
+[submodule "external/OpenCL"]
+	path = external/OpenCL
+	url = https://github.com/KhronosGroup/OpenCL-SDK.git
+[submodule "external/fmt"]
+	path = external/fmt
+	url = https://github.com/fmtlib/fmt.git

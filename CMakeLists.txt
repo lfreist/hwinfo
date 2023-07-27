@@ -15,6 +15,14 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(MAIN_PROJECT ON)
 endif()
 
+if (NOT DEFINED NO_OCL)
+    set(OPENCL_SDK_BUILD_SAMPLES OFF)
+    add_subdirectory(external/OpenCL)
+    include_directories(external/OpenCL/external/OpenCL-CLHPP/include)
+
+    add_compile_definitions(USE_OCL)
+endif ()
+
 include_directories(${PROJECT_SOURCE_DIR}/include/)
 
 add_subdirectory(src)

@@ -66,12 +66,8 @@ int main(int argc, char** argv) {
     std::cout << gpu.driverVersion() << std::endl;
     std::cout << std::left << std::setw(20) << "  memory [MiB]:";
     std::cout << static_cast<double>(gpu.memory_Bytes()) / 1024.0 / 1024.0 << std::endl;
-    std::cout << std::left << std::setw(20) << "  min frequency:";
-    std::cout << gpu.min_frequency_MHz() << std::endl;
-    std::cout << std::left << std::setw(20) << "  cur frequency:";
-    std::cout << gpu.current_frequency_MHz() << std::endl;
-    std::cout << std::left << std::setw(20) << "  max frequency:";
-    std::cout << gpu.max_frequency_MHz() << std::endl;
+    std::cout << std::left << std::setw(20) << "  frequency:";
+    std::cout << gpu.frequency_MHz() << std::endl;
   }
 
   hwinfo::RAM ram;
