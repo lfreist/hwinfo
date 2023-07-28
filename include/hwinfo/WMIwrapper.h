@@ -5,14 +5,14 @@
 
 #pragma once
 
+#define _WIN32_DCOM
 #include <WbemIdl.h>
-#include <Windows.h>
 #include <comdef.h>
-#include <ntddscsi.h>
 
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <iostream>
 #pragma comment(lib, "wbemuuid.lib")
 
 namespace hwinfo {
@@ -31,8 +31,8 @@ inline bool queryWMI(const std::string& WMIClass, std::string field, std::vector
   hres = CoInitializeSecurity(nullptr, -1, nullptr, nullptr, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE,
                               nullptr, EOAC_NONE, nullptr);
   if (FAILED(hres)) {
-    CoUninitialize();
-    return false;
+    //CoUninitialize();
+    //return false;
   }
   IWbemLocator* pLoc = nullptr;
   hres = CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&pLoc);

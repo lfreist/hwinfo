@@ -1,4 +1,4 @@
-add_library(HWinfo
+add_library(HWinfo STATIC
         hwinfo.cpp
         # platform independent definitions
         PCIMapper.cpp

@@ -4,7 +4,6 @@
 #include <hwinfo/platform.h>
 
 #ifdef HWINFO_WINDOWS
-#ifndef USE_OCL
 
 #include <hwinfo/WMIwrapper.h>
 
@@ -96,10 +95,18 @@ std::vector<GPU> getAllGPUs() {
     gpu._memory_Bytes = utils::get_value(memory, i);
     gpus.push_back(std::move(gpu));
   }
+#ifdef USE_OCL
+  auto cl_gpus = get_cpu_cl_data();
+  // Windows
+  auto min = min(cl_gpus.size(), gpus.size());
+  for (int i = 0; i < min; ++i) {
+    gpus[i]._num_cores = cl_gpus[i].num_cores;
+    gpus[i]._frequency_MHz = cl_gpus[i].frequency_MHz;
+  }
+#endif  // USE_OCL
   return gpus;
 }
 
 }  // namespace hwinfo
 
-#endif  // USE_OCL
 #endif  // HWINFO_WINDOWS
