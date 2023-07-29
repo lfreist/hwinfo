@@ -39,7 +39,10 @@ int GPU::num_cores() const { return _num_cores; }
 std::vector<GPU_CL> get_cpu_cl_data() {
   std::vector<GPU_CL> gpus;
   std::vector<cl::Platform> cl_platforms;
-  cl::Platform::get(&cl_platforms);
+  auto res = cl::Platform::get(&cl_platforms);
+  if (res != CL_SUCCESS) {
+    return {};
+  }
   int id = 0;
   for (auto& clp : cl_platforms) {
     std::vector<cl::Device> cl_devices;
