@@ -16,7 +16,7 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 endif()
 
 if (NOT DEFINED NO_OCL)
-    set(OPENCL_SDK_BUILD_SAMPLES OFF)
+    set(OPENCL_SDK_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
     add_subdirectory(external/OpenCL)
     include_directories(external/OpenCL/external/OpenCL-CLHPP/include)
 
