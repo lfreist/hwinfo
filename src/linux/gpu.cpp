@@ -49,7 +49,6 @@ std::vector<int> get_frequencies(const std::string drm_path) {
   return freqs;
 }
 
-
 // _____________________________________________________________________________________________________________________
 std::vector<GPU> getAllGPUs() {
   std::vector<GPU> gpus{};
@@ -85,7 +84,6 @@ std::vector<GPU> getAllGPUs() {
 #endif  // USE_OCL
   return gpus;
 }
-
 
 }  // namespace hwinfo
 
