@@ -38,27 +38,31 @@ int GPU::num_cores() const { return _num_cores; }
 
 std::vector<GPU_CL> get_cpu_cl_data() {
   std::vector<GPU_CL> gpus;
-  std::vector<cl::Platform> cl_platforms;
-  auto res = cl::Platform::get(&cl_platforms);
-  if (res != CL_SUCCESS) {
-    return {};
-  }
-  int id = 0;
-  for (auto& clp : cl_platforms) {
-    std::vector<cl::Device> cl_devices;
-    clp.getDevices(CL_DEVICE_TYPE_GPU, &cl_devices);
-    for (auto& cld : cl_devices) {
-      GPU_CL gpu;
-      cl::Context cl_context(cld);
-      gpu.id = id;
-      gpu.vendor = cld.getInfo<CL_DEVICE_VENDOR>();
-      gpu.name = cld.getInfo<CL_DEVICE_NAME>();
-      gpu.driver_version = cld.getInfo<CL_DRIVER_VERSION>();
-      gpu.memory_Bytes = cld.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
-      gpu.frequency_MHz = cld.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>();
-      gpu.num_cores = cld.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>();
-      gpus.push_back(gpu);
+  try {
+    std::vector<cl::Platform> cl_platforms;
+    auto res = cl::Platform::get(&cl_platforms);
+    if (res != CL_SUCCESS) {
+      return {};
     }
+    int id = 0;
+    for (auto& clp : cl_platforms) {
+      std::vector<cl::Device> cl_devices;
+      clp.getDevices(CL_DEVICE_TYPE_GPU, &cl_devices);
+      for (auto& cld : cl_devices) {
+        GPU_CL gpu;
+        cl::Context cl_context(cld);
+        gpu.id = id;
+        gpu.vendor = cld.getInfo<CL_DEVICE_VENDOR>();
+        gpu.name = cld.getInfo<CL_DEVICE_NAME>();
+        gpu.driver_version = cld.getInfo<CL_DRIVER_VERSION>();
+        gpu.memory_Bytes = cld.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
+        gpu.frequency_MHz = cld.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>();
+        gpu.num_cores = cld.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>();
+        gpus.push_back(gpu);
+      }
+    }
+  } catch (const cl::Error& cl_error) {
+    // print error message in logs?
   }
   return gpus;
 }
