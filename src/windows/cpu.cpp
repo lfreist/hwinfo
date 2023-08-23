@@ -112,6 +112,29 @@ std::vector<int64_t> getCacheSize_Bytes() {
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
 int64_t CPU::currentClockSpeed_MHz() const {
+  // Intel Turbo Boost Support -> https://stackoverflow.com/a/61808781
+  // It's actually a string which holds the percentage -> https://wutils.com/wmi/root/cimv2/win32_perfformatteddata_counters_processorinformation/instances.html
+  std::vector<bstr_t> performance{};
+  wmi::queryWMI("Win32_PerfFormattedData_Counters_ProcessorInformation", "PercentProcessorPerformance", performance);
+  if (!performance.empty())
+  {
+    const char* strValue = static_cast<const char*>(performance[_core_id]);
+    double performance_perc = strtod(strValue, nullptr);
+
+    if (performance_perc > 0)
+    {
+        std::vector<int64_t> maxSpeed{};
+        wmi::queryWMI("Win32_Processor", "MaxClockSpeed", maxSpeed);
+        if (maxSpeed.empty()) {
+          return -1;
+        }
+
+      // This basic calcuation does the trick...
+      return maxSpeed[_core_id] * performance_perc / 100;
+    }
+  }
+
+  // As Fallback we take the Win32_Processor.CurrentClockSpeed
   std::vector<int64_t> speed{};
   wmi::queryWMI("Win32_Processor", "CurrentClockSpeed", speed);
   if (speed.empty()) {
