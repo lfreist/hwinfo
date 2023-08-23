@@ -120,6 +120,16 @@ int64_t CPU::currentClockSpeed_MHz() const {
   return speed[_core_id];
 }
 
+int CPU::currentLoadPercentage() const {
+  std::vector<int> percentage{};
+  wmi::queryWMI("Win32_Processor", "LoadPercentage", percentage);
+  if (percentage.empty()) {
+    return -1;
+  }
+
+  return percentage[_core_id];
+}
+
 // _____________________________________________________________________________________________________________________
 std::vector<Socket> getAllSockets() {
   std::vector<Socket> sockets;

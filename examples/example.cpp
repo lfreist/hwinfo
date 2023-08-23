@@ -37,6 +37,8 @@ int main(int argc, char** argv) {
     std::cout << cpu.currentClockSpeed_MHz() << std::endl;
     std::cout << std::left << std::setw(20) << " cache size:";
     std::cout << cpu.cacheSize_Bytes() << std::endl;
+    std::cout << std::left << std::setw(20) << " average CPU Usage:";
+    std::cout << cpu.currentLoadPercentage() << std::endl;
   }
 
   hwinfo::OS os;
