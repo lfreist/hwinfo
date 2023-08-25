@@ -54,7 +54,6 @@ int main(int argc, char** argv) {
 #else
       usleep(ms_sleep * 1000);
 #endif
-      usleep(ms_sleep * 1000);
       std::cout << std::left << std::setw(20) << " average CPU Usage:";
       std::cout << cpu.currentLoadPercentage() << std::endl;
     }
