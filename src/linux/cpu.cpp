@@ -10,29 +10,80 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <unistd.h>
 
 #include "hwinfo/cpu.h"
 #include "hwinfo/utils/stringutils.h"
+#include "hwinfo/utils/filesystem.h"
 
 namespace hwinfo {
 
-int64_t get_freq_by_id_and_type(int proc_id, const std::string& type) {
-  std::string line;
-  std::ifstream stream("/sys/devices/system/cpu/cpu" + std::to_string(proc_id) + "/cpufreq/" + type);
-  if (!stream) {
-    return -1;
+// _____________________________________________________________________________________________________________________
+int64_t getMaxClockSpeed_MHz(const int& core_id) {
+  int64_t Hz;
+  filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/scaling_max_freq", Hz);
+  if (Hz > -1)
+  {
+    return Hz / 1000;
   }
-  getline(stream, line);
-  stream.close();
-  try {
-    return std::stoll(line) / 1000;
-  } catch (std::invalid_argument& e) {
-    return -1;
-  }
+
+  return -1;
 }
 
 // _____________________________________________________________________________________________________________________
-int64_t CPU::currentClockSpeed_MHz() const { return get_freq_by_id_and_type(_core_id, "scaling_cur_freq"); }
+int64_t getRegularClockSpeed_MHz(const int& core_id) {
+  int64_t Hz;
+  filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/base_frequency", Hz);
+  if (Hz > -1)
+  {
+    return Hz / 1000;
+  }
+
+  return -1;
+}
+
+int64_t getMinClockSpeed_MHz(const int& core_id) {
+  int64_t Hz;
+  filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/scaling_min_freq", Hz); 
+  if (Hz > -1)
+  {
+    return Hz / 1000;
+  }
+
+  return -1;
+}
+
+// _____________________________________________________________________________________________________________________
+int64_t CPU::currentClockSpeed_MHz() const {
+  int64_t Hz;
+  filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(_core_id) + "/cpufreq/scaling_cur_freq", Hz);
+  if (Hz > -1)
+  {
+    return Hz / 1000;
+  }
+
+  return -1;
+ }
+
+double CPU::currentLoadPercentage() const {
+  if (_last_sum_all_jiffies == -1 || _last_sum_work_jiffies == -1)
+  {
+    filesystem::get_jiffies(_last_sum_all_jiffies, _last_sum_work_jiffies);
+    usleep(1000 * 1000); // 1s
+  }
+
+  int64_t sum_all_jiffies;
+  int64_t sum_work_jiffies;
+  filesystem::get_jiffies(sum_all_jiffies, sum_work_jiffies);
+
+  double total_over_period = sum_all_jiffies - _last_sum_all_jiffies;
+  double work_over_period = sum_work_jiffies - _last_sum_work_jiffies;
+
+  _last_sum_all_jiffies = sum_all_jiffies;
+  _last_sum_work_jiffies = sum_work_jiffies;
+
+  return work_over_period / total_over_period * 100.0;
+}
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
@@ -83,9 +134,12 @@ std::vector<Socket> getAllSockets() {
       }
     }
     if (next_add) {
-      cpu._maxClockSpeed_MHz = get_freq_by_id_and_type(cpu._core_id, "scaling_max_freq");
-      cpu._minClockSpeed_MHz = get_freq_by_id_and_type(cpu._core_id, "scaling_min_freq");
-      cpu._regularClockSpeed_MHz = get_freq_by_id_and_type(cpu._core_id, "base_frequency");
+      cpu._maxClockSpeed_MHz = getMaxClockSpeed_MHz(cpu._core_id);
+      cpu._minClockSpeed_MHz = getMinClockSpeed_MHz(cpu._core_id);
+      cpu._regularClockSpeed_MHz = getRegularClockSpeed_MHz(cpu._core_id);
+      cpu._last_sum_all_jiffies = -1;
+      cpu._last_sum_work_jiffies = -1;
+      cpu.currentLoadPercentage();
       next_add = false;
       Socket socket(cpu);
       physical_id++;

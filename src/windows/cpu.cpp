@@ -143,14 +143,14 @@ int64_t CPU::currentClockSpeed_MHz() const {
   return speed[_core_id];
 }
 
-int CPU::currentLoadPercentage() const {
+double CPU::currentLoadPercentage() const {
   std::vector<int> percentage{};
   wmi::queryWMI("Win32_Processor", "LoadPercentage", percentage);
   if (percentage.empty()) {
-    return -1;
+    return -1.0;
   }
 
-  return percentage[_core_id];
+  return static_cast<double>(percentage[_core_id]);
 }
 
 // _____________________________________________________________________________________________________________________

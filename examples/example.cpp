@@ -7,6 +7,12 @@
 #include <iomanip>
 #include <iostream>
 
+#ifdef HWINFO_WINDOWS
+  #include <windows.h>
+#else
+  #include <unistd.h>
+#endif
+
 int main(int argc, char** argv) {
   std::cout << "hwinfo is an open source, MIT licensed project that implements a platform independent "
             << "hardware and system information gathering API for C++.\n\n"
@@ -39,6 +45,19 @@ int main(int argc, char** argv) {
     std::cout << cpu.cacheSize_Bytes() << std::endl;
     std::cout << std::left << std::setw(20) << " average CPU Usage:";
     std::cout << cpu.currentLoadPercentage() << std::endl;
+    int ms_sleep = 100;
+    int num_iterations = 10;
+    for(int i = 0; i < num_iterations; ++i)
+    {
+#ifdef HWINFO_WINDOWS
+      Sleep(ms_sleep);
+#else
+      usleep(ms_sleep * 1000);
+#endif
+      usleep(ms_sleep * 1000);
+      std::cout << std::left << std::setw(20) << " average CPU Usage:";
+      std::cout << cpu.currentLoadPercentage() << std::endl;
+    }
   }
 
   hwinfo::OS os;

@@ -197,6 +197,10 @@ int CPU::getRegularClockSpeed_kHz() {
 
 int CPU::getCacheSize_Bytes() { return -1; }
 
+double CPU::currentLoadPercentage() const {
+  return -1.0;
+}
+
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
 // Helper function for linux: parses /proc/cpuinfo. socket_id == physical_id.
