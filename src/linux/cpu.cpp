@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <unistd.h>
+#include <cmath>
 
 #include "hwinfo/cpu.h"
 #include "hwinfo/utils/stringutils.h"
@@ -66,15 +67,12 @@ int64_t CPU::currentClockSpeed_MHz() const {
  }
 
 double CPU::currentUtility_Percentage() const {
-  if (_last_sum_all_jiffies == -1 || _last_sum_work_jiffies == -1)
-  {
-    filesystem::get_jiffies(_last_sum_all_jiffies, _last_sum_work_jiffies);
-    usleep(1000 * 1000); // 1s
-  }
+  static int64_t _last_sum_all_jiffies{-1};
+  static int64_t _last_sum_work_jiffies{-1};
 
   int64_t sum_all_jiffies;
   int64_t sum_work_jiffies;
-  filesystem::get_jiffies(sum_all_jiffies, sum_work_jiffies);
+  filesystem::get_jiffies(sum_all_jiffies, sum_work_jiffies, 0);
 
   double total_over_period = sum_all_jiffies - _last_sum_all_jiffies;
   double work_over_period = sum_work_jiffies - _last_sum_work_jiffies;
@@ -82,15 +80,50 @@ double CPU::currentUtility_Percentage() const {
   _last_sum_all_jiffies = sum_all_jiffies;
   _last_sum_work_jiffies = sum_work_jiffies;
 
-  return work_over_period / total_over_period * 100.0;
+  const double& percentage = work_over_period / total_over_period * 100.0;
+  if (percentage < 0 || percentage > 100 || std::isnan(percentage))
+  {
+    return -1.0;
+  }
+  return percentage;
 }
 
 double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
-  return -1.0;
+
+  static std::vector<int64_t> _last_sum_all_jiffies_thread(0);
+  static std::vector<int64_t> _last_sum_work_jiffies_thread(0);
+  if (_last_sum_work_jiffies_thread.empty()) {
+    _last_sum_work_jiffies_thread.resize(_numLogicalCores);
+  }
+  if (_last_sum_all_jiffies_thread.empty()) {
+    _last_sum_all_jiffies_thread.resize(_numLogicalCores);
+  }
+
+  int64_t sum_all_jiffies;
+  int64_t sum_work_jiffies;
+  filesystem::get_jiffies(sum_all_jiffies, sum_work_jiffies, thread_index + 1);
+
+  double total_over_period = sum_all_jiffies - _last_sum_all_jiffies_thread[thread_index];
+  double work_over_period = sum_work_jiffies - _last_sum_work_jiffies_thread[thread_index];
+
+  _last_sum_all_jiffies_thread[thread_index] = sum_all_jiffies;
+  _last_sum_work_jiffies_thread[thread_index] = sum_work_jiffies;
+
+  const double& percentage = work_over_period / total_over_period * 100.0;
+  if (percentage < 0 || percentage > 100 || std::isnan(percentage))
+  {
+    return -1.0;
+  }
+  return percentage;
 }
 
 std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
-  return std::vector<double>();
+  std::vector<double> thread_utility(CPU::_numLogicalCores);
+  for(int thread_idx = 0; thread_idx < CPU::_numLogicalCores; ++thread_idx)
+  {
+    thread_utility[thread_idx] = currentThreadUtility_Percentage(thread_idx);
+  }
+  return thread_utility;
 }
 
 // =====================================================================================================================
@@ -145,9 +178,8 @@ std::vector<Socket> getAllSockets() {
       cpu._maxClockSpeed_MHz = getMaxClockSpeed_MHz(cpu._core_id);
       cpu._minClockSpeed_MHz = getMinClockSpeed_MHz(cpu._core_id);
       cpu._regularClockSpeed_MHz = getRegularClockSpeed_MHz(cpu._core_id);
-      cpu._last_sum_all_jiffies = -1;
-      cpu._last_sum_work_jiffies = -1;
       cpu.currentUtility_Percentage();
+      cpu.currentThreadsUtility_Percentage_MainThread();
       next_add = false;
       Socket socket(cpu);
       physical_id++;

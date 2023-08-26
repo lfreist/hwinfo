@@ -8,6 +8,8 @@
 #include <cstring>
 #include <vector>
 #include <fstream>
+#include <string>
+#include <limits>
 
 #include <sstream>
 #include <iterator>
@@ -74,32 +76,46 @@ void hwinfo::filesystem::get_specs_by_file_path(const std::string& path, double&
   }
 }
 
-void hwinfo::filesystem::get_jiffies(int64_t& total, int64_t& working)
+void hwinfo::filesystem::get_jiffies(int64_t& total, int64_t& working, const int& index)
 {
   //std::string text = "cpu  349585 0 30513 875546 0 935 0 0 0 0";
 
-std::ifstream filestat("/proc/stat");
+  std::ifstream filestat("/proc/stat");
+  if (!filestat.is_open())
+  {
+    return;
+  }
+       
 
-std::string line;
-std::getline(filestat, line);
+  filestat.seekg(0); // Move to the beginning of the file
+
+  for (int i = 0; i < index; ++i)
+  {
+    if (!filestat.ignore(std::numeric_limits<std::streamsize>::max(), '\n'))
+    {
+      break;
+    }
+  }
+  std::string line;
+  std::getline(filestat, line);
 
 
-std::istringstream iss(line);
-std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
+  std::istringstream iss(line);
+  std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
 
-const int& jiffies_0 = std::stoi( results[1] );
-const int& jiffies_1 = std::stoi( results[2] );
-const int& jiffies_2 = std::stoi( results[3] );
-const int& jiffies_3 = std::stoi( results[4] );
-const int& jiffies_4 = std::stoi( results[5] );
-const int& jiffies_5 = std::stoi( results[6] );
-const int& jiffies_6 = std::stoi( results[7] );
-const int& jiffies_7 = std::stoi( results[8] );
-const int& jiffies_8 = std::stoi( results[9] );
-const int& jiffies_9 = std::stoi( results[10] );
+  const int& jiffies_0 = std::stoi( results[1] );
+  const int& jiffies_1 = std::stoi( results[2] );
+  const int& jiffies_2 = std::stoi( results[3] );
+  const int& jiffies_3 = std::stoi( results[4] );
+  const int& jiffies_4 = std::stoi( results[5] );
+  const int& jiffies_5 = std::stoi( results[6] );
+  const int& jiffies_6 = std::stoi( results[7] );
+  const int& jiffies_7 = std::stoi( results[8] );
+  const int& jiffies_8 = std::stoi( results[9] );
+  const int& jiffies_9 = std::stoi( results[10] );
 
-total = jiffies_0 + jiffies_1 + jiffies_2 + jiffies_3 + jiffies_4 + jiffies_5 + jiffies_6 + jiffies_7 + jiffies_8 + jiffies_9;
-working = jiffies_0 + jiffies_1 + jiffies_2;
+  total = jiffies_0 + jiffies_1 + jiffies_2 + jiffies_3 + jiffies_4 + jiffies_5 + jiffies_6 + jiffies_7 + jiffies_8 + jiffies_9;
+  working = jiffies_0 + jiffies_1 + jiffies_2;
 }
 
 #endif  // HWINFO_UNIX

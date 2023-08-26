@@ -47,11 +47,6 @@ class CPU {
   std::vector<std::string> _flags{};
 
   int _core_id{-1};
-
-  #ifdef HWINFO_UNIX
-  mutable int64_t _last_sum_all_jiffies{-1};
-  mutable int64_t _last_sum_work_jiffies{-1};
-  #endif
 };
 
 class Socket {
