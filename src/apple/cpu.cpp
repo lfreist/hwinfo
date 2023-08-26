@@ -209,6 +209,10 @@ std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
   return std::vector<double>();
 }
 
+double CPU::currentTemperature_Celsius() const {
+ return -1.0;
+}
+
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
 // Helper function for linux: parses /proc/cpuinfo. socket_id == physical_id.

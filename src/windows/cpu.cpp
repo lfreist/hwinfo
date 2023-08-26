@@ -185,6 +185,10 @@ double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
   return threadUtility;
  }
 
+ double CPU::currentTemperature_Celsius() const {
+  return -1.0;
+ }
+
 // _____________________________________________________________________________________________________________________
 std::vector<Socket> getAllSockets() {
   std::vector<Socket> sockets;

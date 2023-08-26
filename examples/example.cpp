@@ -61,6 +61,8 @@ int main(int argc, char** argv) {
         std::cout << threads_utility[thread_idx] << std::endl;
       }
     }
+    std::cout << std::left << std::setw(20) << " CPU Temperature:";
+    std::cout << cpu.currentTemperature_Celsius() << std::endl;
   }
 
   hwinfo::OS os;

@@ -30,6 +30,7 @@ class CPU {
   double currentUtility_Percentage() const;
   double currentThreadUtility_Percentage(const int& thread_index) const;
   std::vector<double> currentThreadsUtility_Percentage_MainThread() const;
+  double currentTemperature_Celsius() const;
   const std::vector<std::string>& flags() const;
   int id() const;
 
