@@ -27,7 +27,9 @@ class CPU {
   int64_t regularClockSpeed_MHz() const;
   int64_t minClockSpeed_MHz() const;
   int64_t currentClockSpeed_MHz() const;
-  double currentLoadPercentage() const;
+  double currentUtility_Percentage() const;
+  double currentThreadUtility_Percentage(const int& thread_index) const;
+  std::vector<double> currentThreadsUtility_Percentage_MainThread() const;
   const std::vector<std::string>& flags() const;
   int id() const;
 

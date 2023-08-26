@@ -197,8 +197,16 @@ int CPU::getRegularClockSpeed_kHz() {
 
 int CPU::getCacheSize_Bytes() { return -1; }
 
-double CPU::currentLoadPercentage() const {
+double CPU::currentUtility_Percentage() const {
   return -1.0;
+}
+
+double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
+  return -1.0;
+}
+
+std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
+  return std::vector<double>();
 }
 
 // =====================================================================================================================

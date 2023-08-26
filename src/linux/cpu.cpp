@@ -65,7 +65,7 @@ int64_t CPU::currentClockSpeed_MHz() const {
   return -1;
  }
 
-double CPU::currentLoadPercentage() const {
+double CPU::currentUtility_Percentage() const {
   if (_last_sum_all_jiffies == -1 || _last_sum_work_jiffies == -1)
   {
     filesystem::get_jiffies(_last_sum_all_jiffies, _last_sum_work_jiffies);
@@ -83,6 +83,14 @@ double CPU::currentLoadPercentage() const {
   _last_sum_work_jiffies = sum_work_jiffies;
 
   return work_over_period / total_over_period * 100.0;
+}
+
+double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
+  return -1.0;
+}
+
+std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
+  return std::vector<double>();
 }
 
 // =====================================================================================================================
