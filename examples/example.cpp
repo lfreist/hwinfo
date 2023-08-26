@@ -49,9 +49,12 @@ int main(int argc, char** argv) {
     std::cout << cpu.currentUtility_Percentage() << std::endl;
     const int& num_threads = cpu.numLogicalCores();
     const std::vector<double>& threads_utility = cpu.currentThreadsUtility_Percentage_MainThread();
-    for (int thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
-      std::cout << std::left << std::setw(20) << " CPU Usage Thread " + std::to_string(thread_idx + 1) + ": ";
-      std::cout << threads_utility[thread_idx] << std::endl;
+    if (!threads_utility.empty())
+    {
+      for (int thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
+        std::cout << std::left << std::setw(20) << " CPU Usage Thread " + std::to_string(thread_idx + 1) + ": ";
+        std::cout << threads_utility[thread_idx] << std::endl;
+      }
     }
     int ms_sleep = 1000;
     int num_iterations = 10;
@@ -66,9 +69,12 @@ int main(int argc, char** argv) {
       std::cout << std::left << std::setw(20) << " CPU Usage Average:";
       std::cout << cpu.currentUtility_Percentage() << std::endl;
       const std::vector<double>& threads_utility = cpu.currentThreadsUtility_Percentage_MainThread();
-      for (int thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
-        std::cout << std::left << std::setw(20) << " CPU Usage Thread " + std::to_string(thread_idx + 1) + ": ";
-        std::cout << threads_utility[thread_idx] << std::endl;
+      if (!threads_utility.empty())
+      {
+        for (int thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
+          std::cout << std::left << std::setw(20) << " CPU Usage Thread " + std::to_string(thread_idx + 1) + ": ";
+          std::cout << threads_utility[thread_idx] << std::endl;
+        }
       }
     }
   }
