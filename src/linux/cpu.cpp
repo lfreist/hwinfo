@@ -147,7 +147,7 @@ std::vector<Socket> getAllSockets() {
       cpu._regularClockSpeed_MHz = getRegularClockSpeed_MHz(cpu._core_id);
       cpu._last_sum_all_jiffies = -1;
       cpu._last_sum_work_jiffies = -1;
-      cpu.currentLoadPercentage();
+      cpu.currentUtility_Percentage();
       next_add = false;
       Socket socket(cpu);
       physical_id++;
