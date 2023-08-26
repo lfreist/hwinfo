@@ -6,6 +6,13 @@
 
 #include <iomanip>
 #include <iostream>
+#include <vector>
+
+#ifdef HWINFO_WINDOWS
+  //#include <windows.h>
+#else
+  #include <unistd.h>
+#endif
 
 int main(int argc, char** argv) {
   std::cout << "hwinfo is an open source, MIT licensed project that implements a platform independent "
@@ -37,6 +44,23 @@ int main(int argc, char** argv) {
     std::cout << cpu.currentClockSpeed_MHz() << std::endl;
     std::cout << std::left << std::setw(20) << " cache size:";
     std::cout << cpu.cacheSize_Bytes() << std::endl;
+#ifdef HWINFO_UNIX
+     // Sleep 1 sec just for the start cause the usage needs to have a delta value which is depending on the unix file read
+     // it's just for the init, you don't need to wait if the delta is already created ...
+    usleep(1000 * 1000);
+#endif
+    std::cout << std::left << std::setw(20) << " Calculating Usage ..." << std::endl;
+    std::cout << std::left << std::setw(20) << " CPU Usage Average:";
+    std::cout << cpu.currentUtility_Percentage() << std::endl;
+    const int& num_threads = cpu.numLogicalCores();
+    const std::vector<double>& threads_utility = cpu.currentThreadsUtility_Percentage_MainThread();
+    if (!threads_utility.empty())
+    {
+      for (int thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
+        std::cout << std::left << std::setw(20) << " CPU Usage Thread " + std::to_string(thread_idx + 1) + ": ";
+        std::cout << threads_utility[thread_idx] << std::endl;
+      }
+    }
   }
 
   hwinfo::OS os;

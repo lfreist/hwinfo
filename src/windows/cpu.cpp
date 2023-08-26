@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <thread>
 
 namespace hwinfo {
 namespace cpu {
@@ -119,7 +120,7 @@ int64_t CPU::currentClockSpeed_MHz() const {
   if (!performance.empty())
   {
     const char* strValue = static_cast<const char*>(performance[_core_id]);
-    double performance_perc = strtod(strValue, nullptr);
+    double performance_perc = std::stod(strValue);
 
     if (performance_perc > 0)
     {
@@ -142,6 +143,47 @@ int64_t CPU::currentClockSpeed_MHz() const {
   }
   return speed[_core_id];
 }
+
+double CPU::currentUtility_Percentage() const {
+  std::vector<bstr_t> percentage{};
+  std::string& query = "Win32_PerfFormattedData_Counters_ProcessorInformation WHERE Name='" + std::to_string(_core_id) + ",_Total'";
+  wmi::queryWMI(query, "PercentProcessorUtility", percentage);
+  if (percentage.empty()) {
+    return -1.0;
+  }
+
+  const char* strValue = static_cast<const char*>(percentage[0]);
+  return std::stod(strValue);
+}
+
+double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
+  std::vector<bstr_t> percentage{};
+  std::string& query = "Win32_PerfFormattedData_Counters_ProcessorInformation WHERE Name='" + std::to_string(_core_id) + "," + std::to_string(thread_index) + "'";
+  wmi::queryWMI(query, "PercentProcessorUtility", percentage);
+  if (percentage.empty()) {
+    return -1.0;
+  }
+
+  const char* strValue = static_cast<const char*>(percentage[0]);
+  return std::stod(strValue);
+}
+
+ std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
+  std::vector<double> threadUtility(CPU::_numLogicalCores);
+  std::vector<std::thread> threads;
+
+  for (int thread_idx = 0; thread_idx < CPU::_numLogicalCores; ++thread_idx) {
+    threads.emplace_back([&, thread_idx]() {
+      threadUtility[thread_idx] = currentThreadUtility_Percentage(thread_idx);
+    });
+  }
+
+  // Join the threads
+  for (auto& thread : threads) {
+    thread.join();
+  }
+  return threadUtility;
+ }
 
 // _____________________________________________________________________________________________________________________
 std::vector<Socket> getAllSockets() {

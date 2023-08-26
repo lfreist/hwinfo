@@ -10,29 +10,121 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <unistd.h>
+#include <cmath>
 
 #include "hwinfo/cpu.h"
 #include "hwinfo/utils/stringutils.h"
+#include "hwinfo/utils/filesystem.h"
 
 namespace hwinfo {
 
-int64_t get_freq_by_id_and_type(int proc_id, const std::string& type) {
-  std::string line;
-  std::ifstream stream("/sys/devices/system/cpu/cpu" + std::to_string(proc_id) + "/cpufreq/" + type);
-  if (!stream) {
-    return -1;
+// _____________________________________________________________________________________________________________________
+int64_t getMaxClockSpeed_MHz(const int& core_id) {
+  int64_t Hz;
+  filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/scaling_max_freq", Hz);
+  if (Hz > -1)
+  {
+    return Hz / 1000;
   }
-  getline(stream, line);
-  stream.close();
-  try {
-    return std::stoll(line) / 1000;
-  } catch (std::invalid_argument& e) {
-    return -1;
-  }
+
+  return -1;
 }
 
 // _____________________________________________________________________________________________________________________
-int64_t CPU::currentClockSpeed_MHz() const { return get_freq_by_id_and_type(_core_id, "scaling_cur_freq"); }
+int64_t getRegularClockSpeed_MHz(const int& core_id) {
+  int64_t Hz;
+  filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/base_frequency", Hz);
+  if (Hz > -1)
+  {
+    return Hz / 1000;
+  }
+
+  return -1;
+}
+
+int64_t getMinClockSpeed_MHz(const int& core_id) {
+  int64_t Hz;
+  filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/scaling_min_freq", Hz); 
+  if (Hz > -1)
+  {
+    return Hz / 1000;
+  }
+
+  return -1;
+}
+
+// _____________________________________________________________________________________________________________________
+int64_t CPU::currentClockSpeed_MHz() const {
+  int64_t Hz;
+  filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(_core_id) + "/cpufreq/scaling_cur_freq", Hz);
+  if (Hz > -1)
+  {
+    return Hz / 1000;
+  }
+
+  return -1;
+ }
+
+double CPU::currentUtility_Percentage() const {
+  static int64_t _last_sum_all_jiffies{-1};
+  static int64_t _last_sum_work_jiffies{-1};
+
+  int64_t sum_all_jiffies;
+  int64_t sum_work_jiffies;
+  filesystem::get_jiffies(sum_all_jiffies, sum_work_jiffies, 0);
+
+  double total_over_period = sum_all_jiffies - _last_sum_all_jiffies;
+  double work_over_period = sum_work_jiffies - _last_sum_work_jiffies;
+
+  _last_sum_all_jiffies = sum_all_jiffies;
+  _last_sum_work_jiffies = sum_work_jiffies;
+
+  const double& percentage = work_over_period / total_over_period * 100.0;
+  if (percentage < 0 || percentage > 100 || std::isnan(percentage))
+  {
+    return -1.0;
+  }
+  return percentage;
+}
+
+double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
+
+  static std::vector<int64_t> _last_sum_all_jiffies_thread(0);
+  static std::vector<int64_t> _last_sum_work_jiffies_thread(0);
+  if (_last_sum_work_jiffies_thread.empty()) {
+    _last_sum_work_jiffies_thread.resize(_numLogicalCores);
+  }
+  if (_last_sum_all_jiffies_thread.empty()) {
+    _last_sum_all_jiffies_thread.resize(_numLogicalCores);
+  }
+
+  int64_t sum_all_jiffies;
+  int64_t sum_work_jiffies;
+  filesystem::get_jiffies(sum_all_jiffies, sum_work_jiffies, thread_index + 1);
+
+  double total_over_period = sum_all_jiffies - _last_sum_all_jiffies_thread[thread_index];
+  double work_over_period = sum_work_jiffies - _last_sum_work_jiffies_thread[thread_index];
+
+  _last_sum_all_jiffies_thread[thread_index] = sum_all_jiffies;
+  _last_sum_work_jiffies_thread[thread_index] = sum_work_jiffies;
+
+  const double& percentage = work_over_period / total_over_period * 100.0;
+  if (percentage < 0 || percentage > 100 || std::isnan(percentage))
+  {
+    return -1.0;
+  }
+  return percentage;
+}
+
+std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
+  std::vector<double> thread_utility(CPU::_numLogicalCores);
+  for(int thread_idx = 0; thread_idx < CPU::_numLogicalCores; ++thread_idx)
+  {
+    thread_utility[thread_idx] = currentThreadUtility_Percentage(thread_idx);
+  }
+  return thread_utility;
+}
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
@@ -83,9 +175,11 @@ std::vector<Socket> getAllSockets() {
       }
     }
     if (next_add) {
-      cpu._maxClockSpeed_MHz = get_freq_by_id_and_type(cpu._core_id, "scaling_max_freq");
-      cpu._minClockSpeed_MHz = get_freq_by_id_and_type(cpu._core_id, "scaling_min_freq");
-      cpu._regularClockSpeed_MHz = get_freq_by_id_and_type(cpu._core_id, "base_frequency");
+      cpu._maxClockSpeed_MHz = getMaxClockSpeed_MHz(cpu._core_id);
+      cpu._minClockSpeed_MHz = getMinClockSpeed_MHz(cpu._core_id);
+      cpu._regularClockSpeed_MHz = getRegularClockSpeed_MHz(cpu._core_id);
+      cpu.currentUtility_Percentage();
+      cpu.currentThreadsUtility_Percentage_MainThread();
       next_add = false;
       Socket socket(cpu);
       physical_id++;
