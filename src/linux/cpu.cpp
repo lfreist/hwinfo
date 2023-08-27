@@ -134,7 +134,7 @@ std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
   return thread_utility;
 }
 
-
+// CPU Temp -> Works | But requires Im_sensors
 // double CPU::currentTemperature_Celsius() const {
 //     if (!std::ifstream("/etc/sensors3.conf"))
 //     {
