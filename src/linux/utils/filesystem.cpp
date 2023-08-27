@@ -14,6 +14,7 @@
 #include <sstream>
 #include <iterator>
 
+#include "hwinfo/cpu.h"
 #include "hwinfo/utils/filesystem.h"
 
 bool hwinfo::filesystem::exists(const std::string& path) {
@@ -38,56 +39,33 @@ std::vector<std::string> hwinfo::filesystem::getDirectoryEntries(const std::stri
   return children;
 }
 
-void hwinfo::filesystem::get_specs_by_file_path(const std::string& path, int64_t& value) {
+int64_t hwinfo::filesystem::get_specs_by_file_path(const std::string& path) {
   std::string line;
   std::ifstream stream(path);
   
   if (!stream) {
-    value = -1;
-    return;
+    return -1;
   }
 
   getline(stream, line);
   stream.close();
 
   try {
-    value = static_cast<int64_t>(std::stoll(line)); // MHz ->  / 1000
+    return static_cast<int64_t>(std::stoll(line)); // MHz ->  / 1000
   } catch (std::invalid_argument& e) {
-    value = -1;
+    return -1;
   }
 }
 
-void hwinfo::filesystem::get_specs_by_file_path(const std::string& path, double& value) {
-  std::string line;
-  std::ifstream stream(path);
-  
-  if (!stream) {
-    value = -1.0;
-    return;
-  }
-
-  getline(stream, line);
-  stream.close();
-
-  try {
-    value = std::stod(line); // Convert to double
-  } catch (std::invalid_argument& e) {
-    value = -1.0;
-  }
-}
-
-void hwinfo::filesystem::get_jiffies(int64_t& total, int64_t& working, const int& index)
+hwinfo::Jiffies hwinfo::filesystem::get_jiffies(const int& index)
 {
   //std::string text = "cpu  349585 0 30513 875546 0 935 0 0 0 0";
 
   std::ifstream filestat("/proc/stat");
   if (!filestat.is_open())
   {
-    return;
+    return hwinfo::Jiffies();
   }
-       
-
-  filestat.seekg(0); // Move to the beginning of the file
 
   for (int i = 0; i < index; ++i)
   {
@@ -114,8 +92,10 @@ void hwinfo::filesystem::get_jiffies(int64_t& total, int64_t& working, const int
   const int& jiffies_8 = std::stoi( results[9] );
   const int& jiffies_9 = std::stoi( results[10] );
 
-  total = jiffies_0 + jiffies_1 + jiffies_2 + jiffies_3 + jiffies_4 + jiffies_5 + jiffies_6 + jiffies_7 + jiffies_8 + jiffies_9;
-  working = jiffies_0 + jiffies_1 + jiffies_2;
+  int64_t all = jiffies_0 + jiffies_1 + jiffies_2 + jiffies_3 + jiffies_4 + jiffies_5 + jiffies_6 + jiffies_7 + jiffies_8 + jiffies_9;
+  int64_t working = jiffies_0 + jiffies_1 + jiffies_2;
+
+  return hwinfo::Jiffies(all, working);
 }
 
 #endif  // HWINFO_UNIX

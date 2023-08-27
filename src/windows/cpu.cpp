@@ -164,17 +164,24 @@ double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
     return -1.0;
   }
 
+  if (SysStringLen(percentage[0]) == 0) {
+    return -1.0;
+  }
+
   const char* strValue = static_cast<const char*>(percentage[0]);
-  return std::stod(strValue);
+  if (strValue) {
+    return std::stod(strValue);
+  }
+  return -1.0;
 }
 
  std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
-  std::vector<double> threadUtility(CPU::_numLogicalCores);
+  std::vector<double> thread_utility(CPU::_numLogicalCores);
   std::vector<std::thread> threads;
 
   for (int thread_idx = 0; thread_idx < CPU::_numLogicalCores; ++thread_idx) {
     threads.emplace_back([&, thread_idx]() {
-      threadUtility[thread_idx] = currentThreadUtility_Percentage(thread_idx);
+      thread_utility[thread_idx] = currentThreadUtility_Percentage(thread_idx);
     });
   }
 
@@ -182,8 +189,13 @@ double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
   for (auto& thread : threads) {
     thread.join();
   }
-  return threadUtility;
+  return thread_utility;
  }
+
+// Might requires https://github.com/LibreHardwareMonitor/LibreHardwareMonitor | It's a good library, however you need to call the C# function in C++, but that's defenity something to conside, might be useful for GPU as well
+//  double CPU::currentTemperature_Celsius() const {
+//   return -1.0;
+//  }
 
 // _____________________________________________________________________________________________________________________
 std::vector<Socket> getAllSockets() {
