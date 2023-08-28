@@ -9,6 +9,7 @@
 
 #ifdef _MSC_VER
 #include <Windows.h>
+#include <intrin.h>
 #else
 #include <cpuid.h>
 #endif
