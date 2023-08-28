@@ -14,6 +14,7 @@
 #include <sstream>
 #include <iterator>
 
+#include "hwinfo/cpu.h"
 #include "hwinfo/utils/filesystem.h"
 
 bool hwinfo::filesystem::exists(const std::string& path) {
@@ -43,7 +44,7 @@ int64_t hwinfo::filesystem::get_specs_by_file_path(const std::string& path) {
   std::ifstream stream(path);
   
   if (!stream) {
-    return = -1;
+    return -1;
   }
 
   getline(stream, line);
@@ -52,18 +53,18 @@ int64_t hwinfo::filesystem::get_specs_by_file_path(const std::string& path) {
   try {
     return static_cast<int64_t>(std::stoll(line)); // MHz ->  / 1000
   } catch (std::invalid_argument& e) {
-    return = -1;
+    return -1;
   }
 }
 
-Jiffies hwinfo::filesystem::get_jiffies(const int& index)
+hwinfo::Jiffies hwinfo::filesystem::get_jiffies(const int& index)
 {
   //std::string text = "cpu  349585 0 30513 875546 0 935 0 0 0 0";
 
   std::ifstream filestat("/proc/stat");
   if (!filestat.is_open())
   {
-    return;
+    return hwinfo::Jiffies();
   }
 
   for (int i = 0; i < index; ++i)
@@ -94,7 +95,7 @@ Jiffies hwinfo::filesystem::get_jiffies(const int& index)
   int64_t all = jiffies_0 + jiffies_1 + jiffies_2 + jiffies_3 + jiffies_4 + jiffies_5 + jiffies_6 + jiffies_7 + jiffies_8 + jiffies_9;
   int64_t working = jiffies_0 + jiffies_1 + jiffies_2;
 
-  return Jiffies(all, working);
+  return hwinfo::Jiffies(all, working);
 }
 
 #endif  // HWINFO_UNIX

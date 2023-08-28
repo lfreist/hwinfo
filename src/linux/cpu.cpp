@@ -110,7 +110,7 @@ double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
     last.resize(_numLogicalCores);
   }
 
-  Jiffies current = filesystem::get_jiffies(sum_all_jiffies, sum_work_jiffies, thread_index + 1); // thread_index works only with 1 socket right now
+  Jiffies current = filesystem::get_jiffies(thread_index + 1); // thread_index works only with 1 socket right now
 
   double total_over_period = current.all - last[thread_index].all;
   double work_over_period = current.working - last[thread_index].working;
@@ -135,48 +135,48 @@ std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
 }
 
 
-double CPU::currentTemperature_Celsius() const {
-    if (!std::ifstream("/etc/sensors3.conf"))
-    {
-      std::cout << "The lm-sensors, the tool for monitoring your system's temperature, needs to be configured. Please set it up." << std::endl;
-      // Configure lm-sensors if not already configured
-      std::string detect_command = "sudo sensors-detect";
-      std::system(detect_command.c_str());
-    }
+// double CPU::currentTemperature_Celsius() const {
+//     if (!std::ifstream("/etc/sensors3.conf"))
+//     {
+//       std::cout << "The lm-sensors, the tool for monitoring your system's temperature, needs to be configured. Please set it up." << std::endl;
+//       // Configure lm-sensors if not already configured
+//       std::string detect_command = "sudo sensors-detect";
+//       std::system(detect_command.c_str());
+//     }
 
-    // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
-    //       I will not support it because I only have a 1 socket target device
-    const int Socked_id = 0;
+//     // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
+//     //       I will not support it because I only have a 1 socket target device
+//     const int Socked_id = 0;
 
-    // Command to get temperature data using 'sensors' command
-    std::string command = "sensors | grep 'Package id " + std::to_string(Socked_id) + "' | awk '{print $4}'";
+//     // Command to get temperature data using 'sensors' command
+//     std::string command = "sensors | grep 'Package id " + std::to_string(Socked_id) + "' | awk '{print $4}'";
 
-    // Open a pipe to execute the command and capture its output
-    FILE* pipe = popen(command.c_str(), "r");
-    if (!pipe) {
-        std::cerr << "Error executing command." << std::endl;
-        return -1.0; // Return a negative value to indicate an error
-    }
+//     // Open a pipe to execute the command and capture its output
+//     FILE* pipe = popen(command.c_str(), "r");
+//     if (!pipe) {
+//         std::cerr << "Error executing command." << std::endl;
+//         return -1.0; // Return a negative value to indicate an error
+//     }
 
-    char buffer[128];
-    std::string result = "";
+//     char buffer[128];
+//     std::string result = "";
     
-    // Read the output of the command into 'result'
-    while (!feof(pipe)) {
-        if (fgets(buffer, sizeof(buffer), pipe) != NULL) {
-            result += buffer;
-        }
-    }
+//     // Read the output of the command into 'result'
+//     while (!feof(pipe)) {
+//         if (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+//             result += buffer;
+//         }
+//     }
 
-    // Close the pipe
-    pclose(pipe);
+//     // Close the pipe
+//     pclose(pipe);
 
-    // Convert the result (string) to a double
-    double temperature = -1.0; // Default value in case of conversion failure
-    std::istringstream(result) >> temperature;
+//     // Convert the result (string) to a double
+//     double temperature = -1.0; // Default value in case of conversion failure
+//     std::istringstream(result) >> temperature;
     
-    return temperature;
-}
+//     return temperature;
+// }
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________

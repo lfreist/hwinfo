@@ -14,6 +14,11 @@ class Socket;
 #ifdef HWINFO_UNIX
 struct Jiffies
 {
+  Jiffies(){
+    working = -1;
+    all = -1;
+  }
+
   Jiffies(const int64_t& _all, const int64_t& _working) {
     all = _all;
     working = _working;
@@ -61,7 +66,7 @@ class CPU {
   std::vector<std::string> _flags{};
 
 #ifdef HWINFO_UNIX
-  bool _initialize_jiffies = false;
+  mutable bool _initialize_jiffies = false;
 #endif
 
   int _core_id{-1};
