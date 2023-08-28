@@ -26,8 +26,7 @@ namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 int64_t getMaxClockSpeed_MHz(const int& core_id) {
-  int64_t Hz;
-  filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/scaling_max_freq", Hz);
+  int64_t Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/scaling_max_freq");
   if (Hz > -1)
   {
     return Hz / 1000;
@@ -38,8 +37,7 @@ int64_t getMaxClockSpeed_MHz(const int& core_id) {
 
 // _____________________________________________________________________________________________________________________
 int64_t getRegularClockSpeed_MHz(const int& core_id) {
-  int64_t Hz;
-  filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/base_frequency", Hz);
+  int64_t Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/base_frequency");
   if (Hz > -1)
   {
     return Hz / 1000;
@@ -49,8 +47,7 @@ int64_t getRegularClockSpeed_MHz(const int& core_id) {
 }
 
 int64_t getMinClockSpeed_MHz(const int& core_id) {
-  int64_t Hz;
-  filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/scaling_min_freq", Hz); 
+  int64_t Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/scaling_min_freq"); 
   if (Hz > -1)
   {
     return Hz / 1000;
@@ -61,8 +58,7 @@ int64_t getMinClockSpeed_MHz(const int& core_id) {
 
 // _____________________________________________________________________________________________________________________
 int64_t CPU::currentClockSpeed_MHz() const {
-  int64_t Hz;
-  filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(_core_id) + "/cpufreq/scaling_cur_freq", Hz);
+  int64_t Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(_core_id) + "/cpufreq/scaling_cur_freq");
   if (Hz > -1)
   {
     return Hz / 1000;
@@ -72,22 +68,26 @@ int64_t CPU::currentClockSpeed_MHz() const {
  }
 
 double CPU::currentUtility_Percentage() const {
+  if (!_initialize_jiffies)
+  {
+    // Sleep 1 sec just for the start cause the usage needs to have a delta value which is depending on the unix file read
+    // it's just for the init, you don't need to wait if the delta is already created ...
+    usleep(1000 * 1000);
+    _initialize_jiffies = true;
+  }
+
    // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
    //       I will not support it because I only have a 1 socket target device
-  static int64_t _last_sum_all_jiffies{-1}; // Works only with 1 socket
-  static int64_t _last_sum_work_jiffies{-1};
+  static Jiffies last = Jiffies(); // Works only with 1 socket
 
-  int64_t sum_all_jiffies;
-  int64_t sum_work_jiffies;
-  filesystem::get_jiffies(sum_all_jiffies, sum_work_jiffies, 0);
+  Jiffies current = filesystem::get_jiffies(0);
 
-  double total_over_period = sum_all_jiffies - _last_sum_all_jiffies;
-  double work_over_period = sum_work_jiffies - _last_sum_work_jiffies;
+  double total_over_period = current.all - last.all;
+  double work_over_period = current.working - last.working;
 
-  _last_sum_all_jiffies = sum_all_jiffies;
-  _last_sum_work_jiffies = sum_work_jiffies;
+  last = current;
 
-  const double& percentage = work_over_period / total_over_period * 100.0;
+  const double percentage = work_over_period / total_over_period * 100.0;
   if (percentage < 0 || percentage > 100 || std::isnan(percentage))
   {
     return -1.0;
@@ -96,28 +96,28 @@ double CPU::currentUtility_Percentage() const {
 }
 
 double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
+  if (!_initialize_jiffies)
+  {
+    // Sleep 1 sec just for the start cause the usage needs to have a delta value which is depending on the unix file read
+    // it's just for the init, you don't need to wait if the delta is already created ...
+    usleep(1000 * 1000);
+    _initialize_jiffies = true;
+  }
   // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
   //       I will not support it because I only have a 1 socket target device
-  static std::vector<int64_t> _last_sum_all_jiffies_thread(0); // Works only with 1 socket
-  static std::vector<int64_t> _last_sum_work_jiffies_thread(0);
-  if (_last_sum_work_jiffies_thread.empty()) {
-    _last_sum_work_jiffies_thread.resize(_numLogicalCores);
-  }
-  if (_last_sum_all_jiffies_thread.empty()) {
-    _last_sum_all_jiffies_thread.resize(_numLogicalCores);
+  static std::vector<Jiffies> last(0); // Works only with 1 socket
+  if (last.empty()) {
+    last.resize(_numLogicalCores);
   }
 
-  int64_t sum_all_jiffies;
-  int64_t sum_work_jiffies;
-  filesystem::get_jiffies(sum_all_jiffies, sum_work_jiffies, thread_index + 1); // thread_index works only with 1 socket right now
+  Jiffies current = filesystem::get_jiffies(sum_all_jiffies, sum_work_jiffies, thread_index + 1); // thread_index works only with 1 socket right now
 
-  double total_over_period = sum_all_jiffies - _last_sum_all_jiffies_thread[thread_index];
-  double work_over_period = sum_work_jiffies - _last_sum_work_jiffies_thread[thread_index];
+  double total_over_period = current.all - last[thread_index].all;
+  double work_over_period = current.working - last[thread_index].working;
 
-  _last_sum_all_jiffies_thread[thread_index] = sum_all_jiffies;
-  _last_sum_work_jiffies_thread[thread_index] = sum_work_jiffies;
+  last[thread_index] = current;
 
-  const double& percentage = work_over_period / total_over_period * 100.0;
+  const double percentage = work_over_period / total_over_period * 100.0;
   if (percentage < 0 || percentage > 100 || std::isnan(percentage))
   {
     return -1.0;
@@ -146,7 +146,7 @@ double CPU::currentTemperature_Celsius() const {
 
     // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
     //       I will not support it because I only have a 1 socket target device
-    const int& Socked_id = 0;
+    const int Socked_id = 0;
 
     // Command to get temperature data using 'sensors' command
     std::string command = "sensors | grep 'Package id " + std::to_string(Socked_id) + "' | awk '{print $4}'";
@@ -230,8 +230,11 @@ std::vector<Socket> getAllSockets() {
       cpu._maxClockSpeed_MHz = getMaxClockSpeed_MHz(cpu._core_id);
       cpu._minClockSpeed_MHz = getMinClockSpeed_MHz(cpu._core_id);
       cpu._regularClockSpeed_MHz = getRegularClockSpeed_MHz(cpu._core_id);
+      // Lets initizalize the data of the utility
+      cpu._initialize_jiffies = true;
       cpu.currentUtility_Percentage();
       cpu.currentThreadsUtility_Percentage_MainThread();
+      cpu._initialize_jiffies = false;
       next_add = false;
       Socket socket(cpu);
       physical_id++;

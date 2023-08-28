@@ -17,12 +17,4 @@ std::vector<std::string> hwinfo::filesystem::getDirectoryEntries(const std::stri
   return {};
 }
 
-void hwinfo::filesystem::get_specs_by_file_path(const std::string& path, int64_t& value) {
-  value = -1;
-}
-
-void hwinfo::filesystem::get_specs_by_file_path(const std::string& path, double& value) {
-  value = -1.0;
-}
-
 #endif  // HWINFO_WINDOWS
