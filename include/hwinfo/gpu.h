@@ -49,7 +49,7 @@ class GPU {
 };
 
 std::vector<GPU> getAllGPUs();
-
+#ifdef USE_OCL
 std::vector<GPU_CL> get_cpu_cl_data();
-
+#endif
 }  // namespace hwinfo
