@@ -6,6 +6,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <vector>
 
 int main(int argc, char** argv) {
   std::cout << "hwinfo is an open source, MIT licensed project that implements a platform independent "
@@ -37,6 +38,17 @@ int main(int argc, char** argv) {
     std::cout << cpu.currentClockSpeed_MHz() << std::endl;
     std::cout << std::left << std::setw(20) << " cache size:";
     std::cout << cpu.cacheSize_Bytes() << std::endl;
+    std::cout << std::left << std::setw(20) << " Calculating Usage ..." << std::endl;
+    std::cout << std::left << std::setw(20) << " CPU Usage Average:";
+    std::cout << cpu.currentUtility_Percentage() << std::endl;
+    const std::vector<double> threads_utility = cpu.currentThreadsUtility_Percentage_MainThread();
+    const int num_utilities = threads_utility.size();
+    for (int thread_idx = 0; thread_idx < num_utilities; ++thread_idx) {
+      std::cout << std::left << std::setw(20) << " CPU Usage Thread " + std::to_string(thread_idx + 1) + ": ";
+      std::cout << threads_utility[thread_idx] << std::endl;
+    }
+    // std::cout << std::left << std::setw(20) << " CPU Temperature:";
+    // std::cout << cpu.currentTemperature_Celsius() << std::endl;
   }
 
   hwinfo::OS os;
