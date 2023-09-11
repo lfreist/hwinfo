@@ -12,8 +12,8 @@
 
 #include <algorithm>
 #include <string>
-#include <vector>
 #include <thread>
+#include <vector>
 
 namespace hwinfo {
 namespace cpu {
@@ -114,21 +114,20 @@ std::vector<int64_t> getCacheSize_Bytes() {
 // _____________________________________________________________________________________________________________________
 int64_t CPU::currentClockSpeed_MHz() const {
   // Intel Turbo Boost Support -> https://stackoverflow.com/a/61808781
-  // It's actually a string which holds the percentage -> https://wutils.com/wmi/root/cimv2/win32_perfformatteddata_counters_processorinformation/instances.html
+  // It's actually a string which holds the percentage ->
+  // https://wutils.com/wmi/root/cimv2/win32_perfformatteddata_counters_processorinformation/instances.html
   std::vector<bstr_t> performance{};
   wmi::queryWMI("Win32_PerfFormattedData_Counters_ProcessorInformation", "PercentProcessorPerformance", performance);
-  if (!performance.empty())
-  {
+  if (!performance.empty()) {
     const char* strValue = static_cast<const char*>(performance[_core_id]);
     double performance_perc = std::stod(strValue);
 
-    if (performance_perc > 0)
-    {
-        std::vector<int64_t> maxSpeed{};
-        wmi::queryWMI("Win32_Processor", "MaxClockSpeed", maxSpeed);
-        if (maxSpeed.empty()) {
-          return -1;
-        }
+    if (performance_perc > 0) {
+      std::vector<int64_t> maxSpeed{};
+      wmi::queryWMI("Win32_Processor", "MaxClockSpeed", maxSpeed);
+      if (maxSpeed.empty()) {
+        return -1;
+      }
 
       // This basic calcuation does the trick...
       return maxSpeed[_core_id] * performance_perc / 100;
@@ -146,7 +145,8 @@ int64_t CPU::currentClockSpeed_MHz() const {
 
 double CPU::currentUtility_Percentage() const {
   std::vector<bstr_t> percentage{};
-  std::string& query = "Win32_PerfFormattedData_Counters_ProcessorInformation WHERE Name='" + std::to_string(_core_id) + ",_Total'";
+  std::string& query =
+      "Win32_PerfFormattedData_Counters_ProcessorInformation WHERE Name='" + std::to_string(_core_id) + ",_Total'";
   wmi::queryWMI(query, "PercentProcessorUtility", percentage);
   if (percentage.empty()) {
     return -1.0;
@@ -158,7 +158,8 @@ double CPU::currentUtility_Percentage() const {
 
 double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
   std::vector<bstr_t> percentage{};
-  std::string& query = "Win32_PerfFormattedData_Counters_ProcessorInformation WHERE Name='" + std::to_string(_core_id) + "," + std::to_string(thread_index) + "'";
+  std::string& query = "Win32_PerfFormattedData_Counters_ProcessorInformation WHERE Name='" + std::to_string(_core_id) +
+                       "," + std::to_string(thread_index) + "'";
   wmi::queryWMI(query, "PercentProcessorUtility", percentage);
   if (percentage.empty()) {
     return -1.0;
@@ -175,14 +176,13 @@ double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
   return -1.0;
 }
 
- std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
+std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
   std::vector<double> thread_utility(CPU::_numLogicalCores);
   std::vector<std::thread> threads;
 
   for (int thread_idx = 0; thread_idx < CPU::_numLogicalCores; ++thread_idx) {
-    threads.emplace_back([&, thread_idx]() {
-      thread_utility[thread_idx] = currentThreadUtility_Percentage(thread_idx);
-    });
+    threads.emplace_back(
+        [&, thread_idx]() { thread_utility[thread_idx] = currentThreadUtility_Percentage(thread_idx); });
   }
 
   // Join the threads
@@ -190,9 +190,10 @@ double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
     thread.join();
   }
   return thread_utility;
- }
+}
 
-// Might requires https://github.com/LibreHardwareMonitor/LibreHardwareMonitor | It's a good library, however you need to call the C# function in C++, but that's defenity something to conside, might be useful for GPU as well
+// Might requires https://github.com/LibreHardwareMonitor/LibreHardwareMonitor | It's a good library, however you need
+// to call the C# function in C++, but that's defenity something to conside, might be useful for GPU as well
 //  double CPU::currentTemperature_Celsius() const {
 //   return -1.0;
 //  }

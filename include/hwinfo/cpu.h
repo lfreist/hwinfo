@@ -12,9 +12,8 @@ namespace hwinfo {
 class Socket;
 
 #ifdef HWINFO_UNIX
-struct Jiffies
-{
-  Jiffies(){
+struct Jiffies {
+  Jiffies() {
     working = -1;
     all = -1;
   }
@@ -46,11 +45,12 @@ class CPU {
   int64_t minClockSpeed_MHz() const;
   int64_t currentClockSpeed_MHz() const;
   double currentUtility_Percentage() const;
-  double currentThreadUtility_Percentage(const int& thread_index) const;
+  double currentThreadUtility_Percentage(int thread_index) const;
   std::vector<double> currentThreadsUtility_Percentage_MainThread() const;
   // double currentTemperature_Celsius() const;
   const std::vector<std::string>& flags() const;
   int id() const;
+  void init_jiffies() const;
 
  private:
   CPU() = default;
@@ -65,9 +65,7 @@ class CPU {
   int64_t _cacheSize_Bytes{-1};
   std::vector<std::string> _flags{};
 
-#ifdef HWINFO_UNIX
-  mutable bool _initialize_jiffies = false;
-#endif
+  mutable bool _jiffies_initialized = false;
 
   int _core_id{-1};
 };
@@ -81,7 +79,7 @@ class Socket {
   int id() const;
 
  private:
-  explicit Socket(class CPU cpu);
+  explicit Socket(class CPU& cpu);
   int _id{-1};
   class CPU _cpu;
 };

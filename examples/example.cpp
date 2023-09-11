@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
   std::cout << std::endl << "Hardware Report:" << std::endl << std::endl;
   std::cout << "----------------------------------- CPU -----------------------------------" << std::endl;
   auto sockets = hwinfo::getAllSockets();
-  for (auto& s : sockets) {
+  for (const auto& s : sockets) {
     const auto& cpu = s.CPU();
     std::cout << "Socket " << s.id() << ":\n";
     std::cout << std::left << std::setw(20) << " vendor:";
@@ -38,14 +38,12 @@ int main(int argc, char** argv) {
     std::cout << cpu.currentClockSpeed_MHz() << std::endl;
     std::cout << std::left << std::setw(20) << " cache size:";
     std::cout << cpu.cacheSize_Bytes() << std::endl;
-    std::cout << std::left << std::setw(20) << " Calculating Usage ..." << std::endl;
     std::cout << std::left << std::setw(20) << " CPU Usage Average:";
-    std::cout << cpu.currentUtility_Percentage() << std::endl;
-    const std::vector<double> threads_utility = cpu.currentThreadsUtility_Percentage_MainThread();
-    const int num_utilities = threads_utility.size();
-    for (int thread_idx = 0; thread_idx < num_utilities; ++thread_idx) {
-      std::cout << std::left << std::setw(20) << " CPU Usage Thread " + std::to_string(thread_idx + 1) + ": ";
-      std::cout << threads_utility[thread_idx] << std::endl;
+    std::cout << cpu.currentUtility_Percentage() << "%" << std::endl;
+    std::vector<double> threads_utility = cpu.currentThreadsUtility_Percentage_MainThread();
+    for (int thread_idx = 0; thread_idx < threads_utility.size(); ++thread_idx) {
+      std::cout << std::left << std::setw(20) << "   Thread " + std::to_string(thread_idx) + ": ";
+      std::cout << threads_utility[thread_idx] << "%" << std::endl;
     }
     // std::cout << std::left << std::setw(20) << " CPU Temperature:";
     // std::cout << cpu.currentTemperature_Celsius() << std::endl;

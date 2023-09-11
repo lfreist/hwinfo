@@ -17,9 +17,6 @@ std::vector<std::string> hwinfo::filesystem::getDirectoryEntries(const std::stri
   return {};
 }
 
-
-int64_t hwinfo::filesystem::get_specs_by_file_path(const std::string& path) {
-  return -1;
-}
+int64_t hwinfo::filesystem::get_specs_by_file_path(const std::string& path) { return -1; }
 
 #endif  // HWINFO_APPLE
