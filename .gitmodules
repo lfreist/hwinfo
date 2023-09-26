@@ -4,3 +4,6 @@
 [submodule "external/OpenCL"]
 	path = external/OpenCL
 	url = https://github.com/KhronosGroup/OpenCL-SDK.git
+[submodule "external/miss-opencl"]
+	path = external/miss-opencl
+	url = https://github.com/lfreist/miss-ocl

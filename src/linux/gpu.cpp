@@ -61,24 +61,31 @@ std::vector<GPU> getAllGPUs() {
     if (!filesystem::exists(path)) {
       break;
     }
-    std::string vendor_id = read_drm_by_path(path + "device/vendor");
-    std::string device_id = read_drm_by_path(path + "device/device");
-    const PCIVendor& vendor = pci[vendor_id];
-    const PCIDevice device = vendor[device_id];
+    gpu._vendor_id = read_drm_by_path(path + "device/vendor");
+    gpu._device_id = read_drm_by_path(path + "device/device");
+    if (gpu._vendor_id.empty() || gpu._device_id.empty()) {
+      id++;
+      continue;
+    }
+    const PCIVendor& vendor = pci[gpu._vendor_id];
+    const PCIDevice device = vendor[gpu._device_id];
     gpu._vendor = vendor.vendor_name;
-    gpu._name = vendor[device_id].device_name;
+    gpu._name = vendor[gpu._device_id].device_name;
     auto frequencies = get_frequencies(path);
     gpu._frequency_MHz = frequencies[2];
     gpus.push_back(std::move(gpu));
     id++;
   }
 #ifdef USE_OCL
-  auto cl_gpus = get_cpu_cl_data();
-  if (cl_gpus.size() == gpus.size()) {
-    for (int i = 0; i < cl_gpus.size(); ++i) {
-      gpus[i]._memory_Bytes = cl_gpus[i].memory_Bytes;
-      gpus[i]._num_cores = cl_gpus[i].num_cores;
-      gpus[i]._driverVersion = cl_gpus[i].driver_version;
+  auto cl_gpus = mcl::DeviceManager::get_list<mcl::Filter::GPU>();
+  for (auto& gpu : gpus) {
+    for (auto* cl_gpu : cl_gpus) {
+      if (cl_gpu->name().find(gpu._device_id)) {
+        gpu._driverVersion = cl_gpu->driver_version();
+        gpu._frequency_MHz = static_cast<int64_t>(cl_gpu->clock_frequency_MHz());
+        gpu._num_cores = static_cast<int>(cl_gpu->cores());
+        gpu._memory_Bytes = static_cast<int64_t>(cl_gpu->memory_Bytes());
+      }
     }
   }
 #endif  // USE_OCL

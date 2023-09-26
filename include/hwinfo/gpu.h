@@ -6,25 +6,15 @@
 #include <string>
 #include <vector>
 
-namespace hwinfo {
-
 #ifdef USE_OCL
-struct GPU_CL {
-  int id;
-  std::string vendor;
-  std::string name;
-  std::string driver_version;
-  int64_t frequency_MHz;
-  int num_cores;
-  int64_t memory_Bytes;
-};
+#define CL_HPP_TARGET_OPENCL_VERSION 200
+#include <missocl/opencl.h>
 #endif
+
+namespace hwinfo {
 
 class GPU {
   friend std::vector<GPU> getAllGPUs();
-#ifdef USE_OCL
-  friend std::vector<GPU_CL> get_cpu_cl_data();
-#endif
 
  public:
   ~GPU() = default;
@@ -46,10 +36,10 @@ class GPU {
   int64_t _frequency_MHz{0};
   int _num_cores{0};
   int _id{0};
+
+  std::string _vendor_id{};
+  std::string _device_id{};
 };
 
 std::vector<GPU> getAllGPUs();
-#ifdef USE_OCL
-std::vector<GPU_CL> get_cpu_cl_data();
-#endif
 }  // namespace hwinfo

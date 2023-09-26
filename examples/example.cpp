@@ -78,6 +78,8 @@ int main(int argc, char** argv) {
     std::cout << static_cast<double>(gpu.memory_Bytes()) / 1024.0 / 1024.0 << std::endl;
     std::cout << std::left << std::setw(20) << "  frequency:";
     std::cout << gpu.frequency_MHz() << std::endl;
+    std::cout << std::left << std::setw(20) << "  cores:";
+    std::cout << gpu.num_cores() << std::endl;
   }
 
   hwinfo::RAM ram;
