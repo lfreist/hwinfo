@@ -12,6 +12,9 @@
 hwinfo provides an easy-to-use and modern C++ API for retrieving hardware information of your systems components such as
 CPU, RAM, GPU, Disks, Mainboard, ...
 
+hwinfo builds using C++20. However, if your compiler does not support C++20, you can fall back to C++11 by setting the
+`NO_OCL` CMake variable (add `-DNO_OCL=ON` to the CMake command).
+
 > **Note**
 >
 > If you face any issues, find bugs or if your platform is not supported yet, do not hesitate
@@ -72,17 +75,23 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 |                  | Charging           |  ✔️   |   ❌   |    ❌    |
 
 ## API
+
 This section describes, how you can get information about the supported components of your computer.
 
 ### CPU
+
 hwinfo supports reading CPU information on boards with multiple sockets and CPUs installed.
-`getAllSockets()` returns a `std::vector<Socket>`. A `Socket` object represents a physical socket and holds information about the installed CPU. You can access these information via `Socket::CPU()` which retuns a `CPU` instance.
+`getAllSockets()` returns a `std::vector<Socket>`. A `Socket` object represents a physical socket and holds information
+about the installed CPU. You can access these information via `Socket::CPU()` which retuns a `CPU` instance.
 
 > Why not just retrieving a `std::vector<CPU>`?
-> The reason for this lies within how linux handles CPUs. For linux systems, the cores of a multi core CPU are considered as different physical CPUs.
->Thus, I added the `Socket` layer to make clear, that multiple elements in the yielded `std::vector<Socket>` vector mean that there are two CPUs on two different sockets installed.
+> The reason for this lies within how linux handles CPUs. For linux systems, the cores of a multi core CPU are
+> considered as different physical CPUs.
+> Thus, I added the `Socket` layer to make clear, that multiple elements in the yielded `std::vector<Socket>` vector
+> mean that there are two CPUs on two different sockets installed.
 
 The following methods are available for `CPU`:
+
 - `const std::string& CPU::vendor() const` "GenuineIntel"
 - `const std::string& CPU::modelName() const` "Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz"
 - `int64_t CPU::cacheSize_Bytes() const` 16384000
@@ -95,10 +104,12 @@ The following methods are available for `CPU`:
 - `const std::vector<std::string>& CPU::flags() cosnt` {"SSE", "AVX", ...}
 
 ### GPU
+
 You can also get information about all installed GPUs using hwinfo.
 `getAllGPUs()` returns a `std::vector<GPU>`. A `GPU` object represents a physical GPU.
 
 The following methods are available for `GPU`:
+
 - `const std::string& GPU::vendor() const` "NVIDIA"
 - `const std::string& GPU::name() const` "NVIDIA GeForce RTX 3070 Ti"
 - `const std::string& GPU::driverVersion() const` "31.0.15.2698" (empty for linux)
@@ -109,15 +120,19 @@ The following methods are available for `GPU`:
 - `int GPU::id() const` 0
 
 ### RAM
+
 TODO
 
 ### OS
+
 TODO
 
 ### Baseboard
+
 TODO
 
 ### Disk
+
 TODO
 
 ## Build `hwinfo`
@@ -129,10 +144,10 @@ TODO
     git clone https://github.com/lfreist/hwinfo
     ```
 2. Build using cmake:
-    ```
+    ```bash
     mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release .. && make -j $(nproc)
+    cmake -B build -DCMAKE_BUILD_TYPE=Release  # -DNO_OCL=ON (for C++11)
+    cmake --build build
     ```
 
 ## Example
