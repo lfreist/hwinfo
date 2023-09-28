@@ -25,7 +25,7 @@ if (NOT DEFINED NO_OCL)
     include_directories(external/miss-opencl/include)
     include_directories(external/miss-opencl/external/OpenCL/external/OpenCL-CLHPP/include)
     if (NOT TARGET miss-opencl_static)
-        add_subdirectory(external/miss-ocl)
+        add_subdirectory(external/miss-opencl)
     endif ()
 
     add_compile_definitions(USE_OCL)
