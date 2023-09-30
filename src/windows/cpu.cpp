@@ -145,7 +145,7 @@ int64_t CPU::currentClockSpeed_MHz() const {
 
 double CPU::currentUtility_Percentage() const {
   std::vector<bstr_t> percentage{};
-  std::string& query =
+  const std::string& query =
       "Win32_PerfFormattedData_Counters_ProcessorInformation WHERE Name='" + std::to_string(_core_id) + ",_Total'";
   wmi::queryWMI(query, "PercentProcessorUtility", percentage);
   if (percentage.empty()) {
@@ -156,9 +156,9 @@ double CPU::currentUtility_Percentage() const {
   return std::stod(strValue);
 }
 
-double CPU::currentThreadUtility_Percentage(const int& thread_index) const {
+double CPU::currentThreadUtility_Percentage(int thread_index) const {
   std::vector<bstr_t> percentage{};
-  std::string& query = "Win32_PerfFormattedData_Counters_ProcessorInformation WHERE Name='" + std::to_string(_core_id) +
+  const std::string& query = "Win32_PerfFormattedData_Counters_ProcessorInformation WHERE Name='" + std::to_string(_core_id) +
                        "," + std::to_string(thread_index) + "'";
   wmi::queryWMI(query, "PercentProcessorUtility", percentage);
   if (percentage.empty()) {
