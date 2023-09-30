@@ -8,6 +8,7 @@
 #include <hwinfo/WMIwrapper.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <vector>
 #pragma comment(lib, "wbemuuid.lib")
