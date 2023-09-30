@@ -15,6 +15,7 @@
 
 #include <hwinfo/gpu.h>
 #include <hwinfo/utils/utils.h>
+#include <hwinfo/utils/stringutils.h>
 
 namespace hwinfo {
 namespace gpu {
@@ -30,14 +31,7 @@ std::vector<std::string> getVendor() {
       continue;
     }
     std::wstring tmp(v);
-
-    std::string str;
-    size_t size;
-    str.resize(tmp.length());
-    wcstombs_s(&size, &str[0], str.size() + 1, tmp.c_str(), tmp.size());
-    ret.emplace_back(str);
-
-    //ret.emplace_back(tmp.begin(), tmp.end());
+    ret.emplace_back(utils::wstring_to_std_string(tmp));
   }
   return ret;
 }
@@ -53,14 +47,7 @@ std::vector<std::string> getName() {
       continue;
     }
     std::wstring tmp(v);
-
-    std::string str;
-    size_t size;
-    str.resize(tmp.length());
-    wcstombs_s(&size, &str[0], str.size() + 1, tmp.c_str(), tmp.size());
-    ret.emplace_back(str);
-
-    //ret.emplace_back(tmp.begin(), tmp.end());
+    ret.emplace_back(utils::wstring_to_std_string(tmp));
   }
   return ret;
 }
@@ -76,14 +63,7 @@ std::vector<std::string> getDriverVersion() {
       continue;
     }
     std::wstring tmp(v);
-
-    std::string str;
-    size_t size;
-    str.resize(tmp.length());
-    wcstombs_s(&size, &str[0], str.size() + 1, tmp.c_str(), tmp.size());
-    ret.emplace_back(str);
-
-    //ret.emplace_back(tmp.begin(), tmp.end());
+    ret.emplace_back(utils::wstring_to_std_string(tmp));
   }
   return ret;
 }
@@ -111,10 +91,10 @@ std::vector<GPU> getAllGPUs() {
   std::vector<GPU> gpus;
   for (size_t i = 0; i < vendors.size(); ++i) {
     GPU gpu;
-    gpu._name = utils::get_value(names, i);
-    gpu._vendor = utils::get_value(vendors, i);
-    gpu._driverVersion = utils::get_value(driver, i);
-    gpu._memory_Bytes = utils::get_value(memory, i);
+    gpu._name = ::utils::get_value(names, i);
+    gpu._vendor = ::utils::get_value(vendors, i);
+    gpu._driverVersion = ::utils::get_value(driver, i);
+    gpu._memory_Bytes = ::utils::get_value(memory, i);
     gpus.push_back(std::move(gpu));
   }
 #ifdef USE_OCL

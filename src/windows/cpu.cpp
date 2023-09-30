@@ -9,6 +9,7 @@
 #include <hwinfo/cpu.h>
 #include <hwinfo/cpuid.h>
 #include <hwinfo/utils/utils.h>
+#include <hwinfo/utils/stringutils.h>
 
 #include <algorithm>
 #include <string>
@@ -29,16 +30,7 @@ std::vector<std::string> getVendor() {
       continue;
     }
     std::wstring tmp(v);
-
-
-    std::string str;
-    size_t size;
-    str.resize(tmp.length());
-    wcstombs_s(&size, &str[0], str.size() + 1, tmp.c_str(), tmp.size());
-    ret.emplace_back(str);
-
-    //ret.emplace_back(tmp.begin(), tmp.end());
-
+    ret.emplace_back(utils::wstring_to_std_string(tmp));
   }
 
   return ret;
@@ -55,14 +47,7 @@ std::vector<std::string> getModelName() {
       continue;
     }
     std::wstring tmp(v);
-
-    std::string str;
-    size_t size;
-    str.resize(tmp.length());
-    wcstombs_s(&size, &str[0], str.size() + 1, tmp.c_str(), tmp.size());
-    ret.emplace_back(str);
-
-    //ret.emplace_back(tmp.begin(), tmp.end());
+    ret.emplace_back(utils::wstring_to_std_string(tmp));
   }
   return ret;
 }
@@ -214,7 +199,6 @@ std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
 //  double CPU::currentTemperature_Celsius() const {
 //   return -1.0;
 //  }
-
 // _____________________________________________________________________________________________________________________
 std::vector<Socket> getAllSockets() {
   std::vector<Socket> sockets;
@@ -229,14 +213,14 @@ std::vector<Socket> getAllSockets() {
   for (size_t i = 0; i < vendors.size(); ++i) {
     CPU cpu;
     cpu._core_id = static_cast<int>(i);
-    cpu._cacheSize_Bytes = utils::get_value(cache_sizes, i);
-    cpu._maxClockSpeed_MHz = utils::get_value(max_speed, i);
+    cpu._cacheSize_Bytes = ::utils::get_value(cache_sizes, i);
+    cpu._maxClockSpeed_MHz = ::utils::get_value(max_speed, i);
     cpu._minClockSpeed_MHz = -1;
-    cpu._regularClockSpeed_MHz = utils::get_value(regular_speed, i);
-    cpu._modelName = utils::get_value(names, i);
-    cpu._vendor = utils::get_value(vendors, i);
-    cpu._numLogicalCores = static_cast<int>(utils::get_value(logical_cores, i));
-    cpu._numPhysicalCores = static_cast<int>(utils::get_value(phys_cores, i));
+    cpu._regularClockSpeed_MHz = ::utils::get_value(regular_speed, i);
+    cpu._modelName = ::utils::get_value(names, i);
+    cpu._vendor = ::utils::get_value(vendors, i);
+    cpu._numLogicalCores = static_cast<int>(::utils::get_value(logical_cores, i));
+    cpu._numPhysicalCores = static_cast<int>(::utils::get_value(phys_cores, i));
     Socket socket(cpu);
     socket._id = static_cast<int>(i);
     sockets.push_back(std::move(socket));

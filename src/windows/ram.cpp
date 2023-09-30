@@ -71,15 +71,7 @@ std::string getSerialNumber() {
     return "<unknown>";
   }
   std::wstring tmp(ret);
-
-  std::string str;
-  size_t size;
-  str.resize(tmp.length());
-  wcstombs_s(&size, &str[0], str.size() + 1, tmp.c_str(), tmp.size());
-  //ret.emplace_back(str);
-  return str;
-
-  //return {tmp.begin(), tmp.end()};
+  return utils::wstring_to_std_string(ret);
 }
 
 // _____________________________________________________________________________________________________________________
