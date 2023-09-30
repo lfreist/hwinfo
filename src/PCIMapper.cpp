@@ -96,7 +96,16 @@ const PCIVendor& PCIMapper::operator[](const std::string& vendor_id) const { ret
 
 // _____________________________________________________________________________________________________________________
 PCIMapper PCI::getMapper() {
-  static std::string path(std::getenv("HOME"));
+
+  // Use the _dupenv_s function to get the value of an environment variable instead of getenv (unsafe).
+//  static std::string path(std::getenv("HOME"));
+
+  char* home_env;
+  size_t home_env_size;
+  _dupenv_s(&home_env, &home_env_size, "HOME");
+  static std::string path(home_env);
+  free(home_env);
+
   static PCIMapper mapper(path + "/.hwinfo/pci.ids");
   return mapper;
 }

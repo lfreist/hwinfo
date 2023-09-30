@@ -150,16 +150,38 @@ inline std::string wstring_to_string() { return ""; }
  * Convert wstring to string
  * @return
  */
+//inline std::string wstring_to_std_string(const std::wstring& ws) {
+//  std::string str_locale = setlocale(LC_ALL, "");
+//  const wchar_t* wch_src = ws.c_str();
+//  size_t n_dest_size = wcstombs(NULL, wch_src, 0) + 1;
+//  char* ch_dest = new char[n_dest_size];
+//  memset(ch_dest, 0, n_dest_size);
+//  wcstombs(ch_dest, wch_src, n_dest_size);
+//  std::string result_text = ch_dest;
+//  delete[] ch_dest;
+//  setlocale(LC_ALL, str_locale.c_str());
+//  return result_text;
+//}
+
+// Use the safe wcstombs_s function instead of wcstombs
 inline std::string wstring_to_std_string(const std::wstring& ws) {
   std::string str_locale = setlocale(LC_ALL, "");
   const wchar_t* wch_src = ws.c_str();
-  size_t n_dest_size = wcstombs(NULL, wch_src, 0) + 1;
+
+  size_t n_dest_size;
+  wcstombs_s(&n_dest_size, nullptr, 0, wch_src, 0);
+  n_dest_size++; // Increase by one for null terminator
+
   char* ch_dest = new char[n_dest_size];
   memset(ch_dest, 0, n_dest_size);
-  wcstombs(ch_dest, wch_src, n_dest_size);
+
+  size_t n_convert_size;
+  wcstombs_s(&n_convert_size, ch_dest, n_dest_size, wch_src, n_dest_size-1); // subtract one to ignore null terminator
+
   std::string result_text = ch_dest;
   delete[] ch_dest;
   setlocale(LC_ALL, str_locale.c_str());
+
   return result_text;
 }
 
