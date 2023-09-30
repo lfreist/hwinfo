@@ -52,7 +52,15 @@ std::vector<Battery> getAllBatteries() {
   for (const auto& v : res) {
     std::wstring tmp(v);
     batteries.emplace_back(counter++);
-    batteries.back()._model = {tmp.begin(), tmp.end()};
+
+    std::string str;
+    size_t size;
+    str.resize(tmp.length());
+    wcstombs_s(&size, &str[0], str.size() + 1, tmp.c_str(), tmp.size());
+    //ret.emplace_back(str);
+
+    batteries.back()._model = str;
+    //batteries.back()._model = {tmp.begin(), tmp.end()};
   }
   res.clear();
   return batteries;

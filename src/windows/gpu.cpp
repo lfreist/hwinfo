@@ -30,7 +30,14 @@ std::vector<std::string> getVendor() {
       continue;
     }
     std::wstring tmp(v);
-    ret.emplace_back(tmp.begin(), tmp.end());
+
+    std::string str;
+    size_t size;
+    str.resize(tmp.length());
+    wcstombs_s(&size, &str[0], str.size() + 1, tmp.c_str(), tmp.size());
+    ret.emplace_back(str);
+
+    //ret.emplace_back(tmp.begin(), tmp.end());
   }
   return ret;
 }
@@ -46,7 +53,14 @@ std::vector<std::string> getName() {
       continue;
     }
     std::wstring tmp(v);
-    ret.emplace_back(tmp.begin(), tmp.end());
+
+    std::string str;
+    size_t size;
+    str.resize(tmp.length());
+    wcstombs_s(&size, &str[0], str.size() + 1, tmp.c_str(), tmp.size());
+    ret.emplace_back(str);
+
+    //ret.emplace_back(tmp.begin(), tmp.end());
   }
   return ret;
 }
@@ -62,7 +76,14 @@ std::vector<std::string> getDriverVersion() {
       continue;
     }
     std::wstring tmp(v);
-    ret.emplace_back(tmp.begin(), tmp.end());
+
+    std::string str;
+    size_t size;
+    str.resize(tmp.length());
+    wcstombs_s(&size, &str[0], str.size() + 1, tmp.c_str(), tmp.size());
+    ret.emplace_back(str);
+
+    //ret.emplace_back(tmp.begin(), tmp.end());
   }
   return ret;
 }
