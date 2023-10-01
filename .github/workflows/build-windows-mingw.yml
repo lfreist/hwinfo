@@ -21,6 +21,6 @@ jobs:
           LIB: C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\x86_64-w64-mingw32\lib
         run: cmake --build ${{github.workspace}}\build
 
-      - name: Test
-        working-directory: ${{github.workspace}}\build
-        run: ctest -C Release
+      - name: Run Example
+        working-directory: ${{github.workspace}}/build
+        run: ctest --verbose

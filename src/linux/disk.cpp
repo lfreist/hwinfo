@@ -5,10 +5,10 @@
 
 #ifdef HWINFO_UNIX
 
-#include <filesystem>
 #include <fstream>
 
 #include "hwinfo/disk.h"
+#include "hwinfo/utils/filesystem.h"
 #include "hwinfo/utils/stringutils.h"
 
 namespace hwinfo {
@@ -18,39 +18,37 @@ namespace hwinfo {
 std::vector<Disk> getAllDisks() {
   std::vector<Disk> disks;
   const std::string base_path("/sys/class/block/");
-  std::string vendor;
-  std::string model;
-  std::string serialNumber;
-  for (const auto& entry : std::filesystem::directory_iterator(base_path)) {
-    std::string path = entry.path().string() + "/device/";
-    if (!std::filesystem::exists(std::filesystem::path(path))) {
+  for (const auto& entry : filesystem::getDirectoryEntries(base_path)) {
+    Disk disk;
+    std::string path(base_path + "/" + entry + "/device/");
+    if (!filesystem::exists(path)) {
       continue;
     }
     std::ifstream f(path + "vendor");
     if (f) {
-      getline(f, vendor);
+      getline(f, disk._vendor);
     } else {
-      vendor = "<unknown>";
+      disk._vendor = "<unknown>";
     }
     f.close();
     f.open(path + "model");
     if (f) {
-      getline(f, model);
+      getline(f, disk._model);
     } else {
-      vendor = "<unknown>";
+      disk._model = "<unknown>";
     }
     f.close();
     f.open(path + "serial");
     if (f) {
-      getline(f, serialNumber);
+      getline(f, disk._serialNumber);
     } else {
-      serialNumber = "<unknown>";
+      disk._serialNumber = "<unknown>";
     }
     f.close();
-    strip(vendor);
-    strip(model);
-    strip(serialNumber);
-    int64_t size = -1;
+    utils::strip(disk._vendor);
+    utils::strip(disk._model);
+    utils::strip(disk._serialNumber);
+    disk._size_Bytes = -1;
     /*
     struct statvfs buf {};
     std::string mount_path("/dev/");
@@ -59,7 +57,8 @@ std::vector<Disk> getAllDisks() {
       size = static_cast<int64_t>(buf.f_bsize * buf.f_bfree);
     }
     */
-    disks.emplace_back(vendor, model, serialNumber, size);
+
+    disks.push_back(std::move(disk));
   }
   return disks;
 }

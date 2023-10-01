@@ -15,12 +15,15 @@ jobs:
       - name: Setup Visual Studio
         uses: egor-tensin/vs-shell@v2
 
+      - name: Setup gitmodules
+        run: git submodule update --init --recursive
+
       - name: Configure CMake
-        run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=Release -UOPENCL_SDK_BUILD_SAMPLES
 
       - name: Build
         run: cmake --build ${{github.workspace}}\build
 
-      - name: Test
-        working-directory: ${{github.workspace}}\build
-        run: ctest -C Release
+      - name: Run Example
+        working-directory: ${{github.workspace}}/build
+        run: ctest --verbose

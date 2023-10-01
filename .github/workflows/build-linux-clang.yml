@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Setup gitmodules
+        run: git submodule update --init --recursive
+
       - name: Setup clang
         uses: egor-tensin/setup-clang@v1
 
@@ -21,6 +24,6 @@ jobs:
       - name: Build
         run: cmake --build ${{github.workspace}}/build
 
-      - name: Test
+      - name: Run Example
         working-directory: ${{github.workspace}}/build
-        run: ctest -C Release
+        run: ctest --verbose

@@ -3,38 +3,30 @@
 
 #pragma once
 
+#include <hwinfo/platform.h>
+
 #include <string>
 #include <vector>
-
-#include "hwinfo/platform.h"
 
 namespace hwinfo {
 
 class MainBoard {
+  friend std::string get_dmi_by_name(const std::string& name);
+
  public:
-  MainBoard() = default;
-  MainBoard(std::string vendor, std::string product, std::string version, std::string serialNumber);
+  MainBoard();
   ~MainBoard() = default;
 
-  std::string& vendor();
-  std::string& name();
-  std::string& version();
-  std::string& serialNumber();
-
-  static std::string getVendor();
-  static std::string getName();
-  static std::string getVersion();
-  static std::string getSerialNumber();
+  const std::string& vendor() const;
+  const std::string& name() const;
+  const std::string& version() const;
+  const std::string& serialNumber() const;
 
  private:
   std::string _vendor;
   std::string _name;
   std::string _version;
   std::string _serialNumber;
-
-#ifdef HWINFO_UNIX
-  static std::vector<std::string> _candidates;
-#endif
 };
 
 }  // namespace hwinfo

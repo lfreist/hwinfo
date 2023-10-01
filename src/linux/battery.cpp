@@ -5,10 +5,10 @@
 
 #ifdef HWINFO_UNIX
 
-#include <filesystem>
 #include <fstream>
 
 #include "hwinfo/battery.h"
+#include "hwinfo/utils/filesystem.h"
 
 namespace hwinfo {
 
@@ -80,7 +80,11 @@ uint32_t Battery::getEnergyFull() const {
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
-    return std::stoi(value);
+    try {
+      return std::stoi(value);
+    } catch (const std::invalid_argument& e) {
+      return 0;
+    }
   }
   return 0;
 }
@@ -94,7 +98,11 @@ uint32_t Battery::energyNow() const {
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
-    return std::stoi(value);
+    try {
+      return std::stoi(value);
+    } catch (const std::invalid_argument& e) {
+      return 0;
+    }
   }
   return 0;
 }
@@ -121,7 +129,7 @@ bool Battery::discharging() const { return !charging(); }
 std::vector<Battery> getAllBatteries() {
   std::vector<Battery> batteries;
   int8_t id = 0;
-  while (std::filesystem::exists(std::filesystem::path(base_path + "BAT" + std::to_string(id)))) {
+  while (filesystem::exists(base_path + "BAT" + std::to_string(id))) {
     batteries.emplace_back(id++);
   }
   return batteries;

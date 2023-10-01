@@ -7,6 +7,8 @@
 
 #ifdef HWINFO_WINDOWS
 
+#include <iostream>
+
 #include "hwinfo/WMIwrapper.h"
 #include "hwinfo/battery.h"
 
@@ -43,10 +45,9 @@ std::vector<Battery> getAllBatteries() {
   std::vector<Battery> batteries;
   std::vector<const wchar_t*> res{};
   wmi::queryWMI("Win32_Battery", "Name", res);
-  if (res.empty() || res.at(0) == nullptr) {
+  if (res.empty() || res.front() == nullptr) {
     return {};
   }
-  std::cout << res.size() << std::endl;
   int8_t counter = 0;
   for (const auto& v : res) {
     std::wstring tmp(v);

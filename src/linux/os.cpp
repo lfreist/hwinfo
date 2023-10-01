@@ -13,18 +13,19 @@
 #include <string>
 
 #include "hwinfo/os.h"
+#include "hwinfo/utils/stringutils.h"
 
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 std::string OS::getFullName() {
   std::string line;
-  std::ifstream stream("/etc/lsb-release");
+  std::ifstream stream("/etc/os-release");
   if (!stream) {
     return "Linux <unknown version>";
   }
   while (getline(stream, line)) {
-    if (line.starts_with("DISTRIB_DESCRIPTION")) {
+    if (utils::starts_with(line, "PRETTY_NAME")) {
       line = line.substr(line.find('=') + 1, line.length());
       // remove \" at begin and end of the substring result
       return {line.begin() + 1, line.end() - 1};
@@ -37,13 +38,15 @@ std::string OS::getFullName() {
 // _____________________________________________________________________________________________________________________
 std::string OS::getName() {
   std::string line;
-  std::ifstream stream("/etc/lsb-release");
+  std::ifstream stream("/etc/os-release");
   if (!stream) {
     return "Linux";
   }
   while (getline(stream, line)) {
-    if (line.starts_with("DISTRIB_ID")) {
-      return line.substr(line.find('=') + 1, line.length());
+    if (utils::starts_with(line, "NAME")) {
+      line = line.substr(line.find('=') + 1, line.length());
+      // remove \" at begin and end of the substring result
+      return {line.begin() + 1, line.end() - 1};
     }
   }
   stream.close();
@@ -53,13 +56,15 @@ std::string OS::getName() {
 // _____________________________________________________________________________________________________________________
 std::string OS::getVersion() {
   std::string line;
-  std::ifstream stream("/etc/lsb-release");
+  std::ifstream stream("/etc/os-release");
   if (!stream) {
     return "<unknown version>";
   }
   while (getline(stream, line)) {
-    if (line.starts_with("DISTRIB_RELEASE")) {
-      return line.substr(line.find('=') + 1, line.length());
+    if (utils::starts_with(line, "VERSION_ID")) {
+      line = line.substr(line.find('=') + 1, line.length());
+      // remove \" at begin and end of the substring result
+      return {line.begin() + 1, line.end() - 1};
     }
   }
   stream.close();

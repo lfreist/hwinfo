@@ -6,29 +6,40 @@
 #include <string>
 #include <vector>
 
+#ifdef USE_OCL
+#define CL_HPP_TARGET_OPENCL_VERSION 200
+#include <missocl/opencl.h>
+#endif
+
 namespace hwinfo {
 
 class GPU {
+  friend std::vector<GPU> getAllGPUs();
+
  public:
-  GPU() = default;
-  GPU(const std::string& vendor, const std::string& name, const std::string& driverVersion, int64_t memory_Bytes);
   ~GPU() = default;
 
-  std::string& vendor();
-  std::string& name();
-  std::string& driverVersion();
-  int64_t memory_Bytes();
-
-  static std::string getVendor();
-  static std::string getName();
-  static std::string getDriverVersion();
-  static int64_t getMemory_Bytes();
+  const std::string& vendor() const;
+  const std::string& name() const;
+  const std::string& driverVersion() const;
+  int64_t memory_Bytes() const;
+  int64_t frequency_MHz() const;
+  int num_cores() const;
+  int id() const;
 
  private:
-  std::string _vendor;
-  std::string _name;
-  std::string _driverVersion;
-  int64_t _memory_Bytes = -1;
+  GPU() = default;
+  std::string _vendor{};
+  std::string _name{};
+  std::string _driverVersion{};
+  int64_t _memory_Bytes{0};
+  int64_t _frequency_MHz{0};
+  int _num_cores{0};
+  int _id{0};
+
+  std::string _vendor_id{};
+  std::string _device_id{};
 };
 
+std::vector<GPU> getAllGPUs();
 }  // namespace hwinfo

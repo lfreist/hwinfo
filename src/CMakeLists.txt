@@ -1,5 +1,7 @@
-add_library(HWinfo
+add_library(HWinfo STATIC
+        hwinfo.cpp
         # platform independent definitions
+        PCIMapper.cpp
         battery.cpp
         cpu.cpp
         gpu.cpp
@@ -8,6 +10,7 @@ add_library(HWinfo
         mainboard.cpp
         disk.cpp
         # apple specific definitions
+        apple/utils/filesystem.cpp
         apple/battery.cpp
         apple/cpu.cpp
         apple/gpu.cpp
@@ -16,6 +19,7 @@ add_library(HWinfo
         apple/mainboard.cpp
         apple/disk.cpp
         # linux specific definitions
+        linux/utils/filesystem.cpp
         linux/battery.cpp
         linux/cpu.cpp
         linux/gpu.cpp
@@ -24,6 +28,7 @@ add_library(HWinfo
         linux/mainboard.cpp
         linux/disk.cpp
         # windows specific definitions
+        windows/utils/filesystem.cpp
         windows/battery.cpp
         windows/cpu.cpp
         windows/gpu.cpp
@@ -32,5 +37,13 @@ add_library(HWinfo
         windows/mainboard.cpp
         windows/disk.cpp
         )
+
+if (WIN32 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    target_link_libraries(HWinfo PUBLIC "wbemuuid")
+endif ()
+
+if (NOT DEFINED NO_OCL)
+    target_link_libraries(HWinfo PUBLIC miss-opencl_static)
+endif ()
 
 add_library(${PROJECT_NAME}::HWinfo ALIAS HWinfo)

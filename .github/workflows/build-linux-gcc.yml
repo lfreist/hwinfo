@@ -19,13 +19,16 @@ jobs:
     - name: Setup gcc
       uses: egor-tensin/setup-gcc@v1
 
+    - name: Setup gitmodules
+      run: git submodule update --init --recursive
+
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Test
+    - name: Run Example
       working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}}
+      run: ctest --verbose
       

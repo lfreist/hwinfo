@@ -19,7 +19,7 @@ jobs:
         uses: egor-tensin/setup-cygwin@v3
         with:
           platform: x64
-          packages: automake make cmake gcc-g++ doxygen graphviz libssl-devel libuuid-devel
+          packages: automake make cmake gcc-g++
 
       - name: Configure CMake
         run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=Release
@@ -27,6 +27,6 @@ jobs:
       - name: Build
         run: cmake --build ${{github.workspace}}\build
 
-      - name: Test
-        working-directory: ${{github.workspace}}\build
-        run: ctest -C Release
+      - name: Run Example
+        working-directory: ${{github.workspace}}/build
+        run: ctest -C ${{env.BUILD_TYPE}} --verbose

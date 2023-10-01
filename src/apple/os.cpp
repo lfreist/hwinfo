@@ -16,10 +16,11 @@ namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 std::string OS::getFullName() {
+  size_t size = 1024;
   std::string os_name;
-  os_name.resize(1024);
-  size_t size = sizeof(os_name);
-  if (sysctlbyname("kern.os", os_name.data(), &size, nullptr, 0) == 0) {
+  os_name.resize(size);
+  if (sysctlbyname("kern.os", (void*)(os_name.data()), &size, nullptr, 0) == 0) {
+    os_name.resize(size);  // trim the string to the actual size
     return os_name;
   }
   return "macOS <unknown version>";
@@ -27,10 +28,11 @@ std::string OS::getFullName() {
 
 // _____________________________________________________________________________________________________________________
 std::string OS::getName() {
+  size_t size = 1024;
   std::string os_name;
-  os_name.resize(1024);
-  size_t size = sizeof(os_name);
-  if (sysctlbyname("kern.os", os_name.data(), &size, nullptr, 0) == 0) {
+  os_name.resize(size);
+  if (sysctlbyname("kern.os", (void*)(os_name.data()), &size, nullptr, 0) == 0) {
+    os_name.resize(size);  // trim the string to the actual size
     return os_name;
   }
   return "macOS";
@@ -38,11 +40,12 @@ std::string OS::getName() {
 
 // _____________________________________________________________________________________________________________________
 std::string OS::getVersion() {
-  std::string os_name;
-  os_name.resize(1024);
-  size_t size = sizeof(os_name);
-  if (sysctlbyname("kern.osrelease", os_name.data(), &size, nullptr, 0) == 0) {
-    return os_name;
+  size_t size = 1024;
+  std::string os_version;
+  os_version.resize(size);
+  if (sysctlbyname("kern.osrelease", (void*)(os_version.data()), &size, nullptr, 0) == 0) {
+    os_version.resize(size);  // trim the string to the actual size
+    return os_version;
   }
   return "<unknown version>";
 }

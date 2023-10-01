@@ -1,356 +1,249 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#include "hwinfo/platform.h"
+#include <hwinfo/platform.h>
 
 #ifdef HWINFO_UNIX
 
+#include <unistd.h>
+
 #include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <fstream>
+#include <iostream>
 #include <map>
-#include <optional>
+#include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "hwinfo/cpu.h"
+#include "hwinfo/utils/filesystem.h"
 #include "hwinfo/utils/stringutils.h"
-
-#if defined(HWINFO_X86)
-#include "hwinfo/cpuid.h"
-#endif
 
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-int CPU::currentClockSpeed_kHz() {
-  std::string line;
-  std::ifstream stream("/sys/devices/system/cpu/cpu" + std::to_string(0) + "/cpufreq/scaling_cur_freq");
-  if (!stream) {
-    return -1;
+int64_t getMaxClockSpeed_MHz(const int& core_id) {
+  int64_t Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) +
+                                                  "/cpufreq/scaling_max_freq");
+  if (Hz > -1) {
+    return Hz / 1000;
   }
-  getline(stream, line);
-  stream.close();
-  try {
-    return std::stoi(line);
-  } catch (std::invalid_argument& e) {
-    return -1;
-  }
-}
 
-// _____________________________________________________________________________________________________________________
-std::string CPU::getVendor() {
-#if defined(HWINFO_X86)
-  std::string vendor;
-  uint32_t regs[4]{0};
-  cpuid::cpuid(0, 0, regs);
-  vendor += std::string((const char*)&regs[1], 4);
-  vendor += std::string((const char*)&regs[3], 4);
-  vendor += std::string((const char*)&regs[2], 4);
-  return vendor;
-#else
-  std::string line;
-  std::ifstream stream("/proc/cpuinfo");
-  if (!stream) {
-    return "<unknown>";
-  }
-  while (getline(stream, line)) {
-    if (line.starts_with("vendor_id")) {
-      stream.close();
-      return line.substr(line.find(": ") + 2, line.length());
-    }
-  }
-  return "<unknown>";
-  stream.close();
-#endif
-}
-
-// _____________________________________________________________________________________________________________________
-std::string CPU::getModelName() {
-#if defined(HWINFO_X86)
-  std::string model;
-  uint32_t regs[4]{};
-  for (unsigned i = 0x80000002; i < 0x80000005; ++i) {
-    cpuid::cpuid(i, 0, regs);
-    for (auto c : std::string((const char*)&regs[0], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
-    }
-    for (auto c : std::string((const char*)&regs[1], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
-    }
-    for (auto c : std::string((const char*)&regs[2], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
-    }
-    for (auto c : std::string((const char*)&regs[3], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
-    }
-  }
-  return model;
-#else
-  std::string line;
-  std::ifstream stream("/proc/cpuinfo");
-  if (!stream) {
-    return "<unknown>";
-  }
-  while (getline(stream, line)) {
-    if (line.starts_with("model name")) {
-      stream.close();
-      return line.substr(line.find(": ") + 2, line.length());
-    }
-  }
-  return "<unknown>";
-  stream.close();
-#endif
-}
-
-// _____________________________________________________________________________________________________________________
-int CPU::getNumPhysicalCores() {
-#if defined(HWINFO_X86)
-  uint32_t regs[4]{};
-  std::string vendorId = getVendor();
-  std::for_each(vendorId.begin(), vendorId.end(), [](char& in) { in = ::toupper(in); });
-  cpuid::cpuid(0, 0, regs);
-  uint32_t HFS = regs[0];
-  if (vendorId.find("INTEL") != std::string::npos) {
-    if (HFS >= 11) {
-      for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-        uint32_t regs_2[4]{};
-        cpuid::cpuid(0x0b, lvl, regs_2);
-        uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
-        if (currLevel == 0x01) {
-          int numCores = getNumLogicalCores() / static_cast<int>(LVL_CORES & regs_2[1]);
-          if (numCores > 0) {
-            return numCores;
-          }
-        }
-      }
-    } else {
-      if (HFS >= 4) {
-        uint32_t regs_3[4]{};
-        cpuid::cpuid(4, 0, regs_3);
-        int numCores = getNumLogicalCores() / static_cast<int>(1 + ((regs_3[0] >> 26) & 0x3f));
-        if (numCores > 0) {
-          return numCores;
-        }
-      }
-    }
-  } else if (vendorId.find("AMD") != std::string::npos) {
-    if (HFS > 0) {
-      uint32_t regs_4[4]{};
-      cpuid::cpuid(0x80000000, 0, regs_4);
-      if (regs_4[0] >= 8) {
-        int numCores = 1 + (regs_4[2] & 0xff);
-        if (numCores > 0) {
-          return numCores;
-        }
-      }
-    }
-  }
-  return -1;
-#else
-#if defined(_SC_NPROCESSORS_ONLN)
-  // TODO: returns number of logical cores, but I want physical cores... fix this!
-  return static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
-#else
-  return -1;
-#endif
-#endif
-}
-
-// _____________________________________________________________________________________________________________________
-int CPU::getNumLogicalCores() {
-#if defined(HWINFO_X86)
-  std::string vendorId = getVendor();
-  std::for_each(vendorId.begin(), vendorId.end(), [](char& in) { in = ::toupper(in); });
-  uint32_t regs[4]{};
-  cpuid::cpuid(0, 0, regs);
-  uint32_t HFS = regs[0];
-  if (vendorId.find("INTEL") != std::string::npos) {
-    if (HFS >= 0xb) {
-      for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-        uint32_t regs_2[4]{};
-        cpuid::cpuid(0x0b, lvl, regs_2);
-        uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
-        if (currLevel == 0x02) {
-          return static_cast<int>(LVL_CORES & regs_2[1]);
-        }
-      }
-    }
-  } else if (vendorId.find("AMD") != std::string::npos) {
-    if (HFS > 0) {
-      cpuid::cpuid(1, 0, regs);
-      return static_cast<int>(regs[1] >> 16) & 0xff;
-    }
-    return 1;
-  }
-  return -1;
-#else
-#if defined(_SC_NPROCESSORS_ONLN)
-  return static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
-#else
-  return -1;
-#endif
-#endif
-}
-
-// _____________________________________________________________________________________________________________________
-int CPU::getMaxClockSpeed_kHz() {
-  std::string line;
-  std::ifstream stream("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq");
-  if (!stream) {
-    return -1;
-  }
-  getline(stream, line);
-  stream.close();
-  try {
-    return std::stoi(line);
-  } catch (std::invalid_argument& e) {
-    return -1;
-  }
-}
-
-// _____________________________________________________________________________________________________________________
-int CPU::getRegularClockSpeed_kHz() {
-  std::string line;
-  std::ifstream stream("/proc/cpuinfo");
-  if (!stream) {
-    return -1;
-  }
-  while (getline(stream, line)) {
-    if (line.starts_with("cpu MHz")) {
-      try {
-        stream.close();
-        return static_cast<int>(std::stof(line.substr(line.find(": ") + 2, line.length()))) * 1000;
-      } catch (std::invalid_argument& e) {
-        return -1;
-      }
-    }
-  }
-  stream.close();
   return -1;
 }
 
-int CPU::getCacheSize_Bytes() {
-  std::string line;
-  std::ifstream stream("/proc/cpuinfo");
-  if (!stream) {
-    return -1;
+// _____________________________________________________________________________________________________________________
+int64_t getRegularClockSpeed_MHz(const int& core_id) {
+  int64_t Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) +
+                                                  "/cpufreq/base_frequency");
+  if (Hz > -1) {
+    return Hz / 1000;
   }
-  while (getline(stream, line)) {
-    if (line.starts_with("cache size")) {
-      try {
-        stream.close();
-        return std::stoi(line.substr(line.find(": ") + 2, line.length() - 3)) * 1000;
-      } catch (std::invalid_argument& e) {
-        return -1;
-      }
-    }
-  }
-  stream.close();
+
   return -1;
 }
+
+// _____________________________________________________________________________________________________________________
+int64_t getMinClockSpeed_MHz(const int& core_id) {
+  int64_t Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) +
+                                                  "/cpufreq/scaling_min_freq");
+  if (Hz > -1) {
+    return Hz / 1000;
+  }
+
+  return -1;
+}
+
+// _____________________________________________________________________________________________________________________
+int64_t CPU::currentClockSpeed_MHz() const {
+  int64_t Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(_core_id) +
+                                                  "/cpufreq/scaling_cur_freq");
+  if (Hz > -1) {
+    return Hz / 1000;
+  }
+
+  return -1;
+}
+
+// _____________________________________________________________________________________________________________________
+double CPU::currentUtility_Percentage() const {
+  init_jiffies();
+  // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
+  //       I will not support it because I only have a 1 socket target device
+  static Jiffies last = Jiffies();  // Works only with 1 socket
+
+  Jiffies current = filesystem::get_jiffies(0);
+
+  auto total_over_period = static_cast<double>(current.all - last.all);
+  auto work_over_period = static_cast<double>(current.working - last.working);
+
+  last = current;
+
+  const double percentage = work_over_period / total_over_period * 100.0;
+  if (percentage < 0 || percentage > 100 || std::isnan(percentage)) {
+    return -1.0;
+  }
+  return percentage;
+}
+
+// _____________________________________________________________________________________________________________________
+double CPU::currentThreadUtility_Percentage(int thread_index) const {
+  init_jiffies();
+  // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
+  //       I will not support it because I only have a 1 socket target device
+  static std::vector<Jiffies> last(0);  // Works only with 1 socket
+  if (last.empty()) {
+    last.resize(_numLogicalCores);
+  }
+
+  Jiffies current = filesystem::get_jiffies(thread_index + 1);  // thread_index works only with 1 socket right now
+
+  auto total_over_period = static_cast<double>(current.all - last[thread_index].all);
+  auto work_over_period = static_cast<double>(current.working - last[thread_index].working);
+
+  last[thread_index] = current;
+
+  const double percentage = work_over_period / total_over_period * 100.0;
+  if (percentage < 0 || percentage > 100 || std::isnan(percentage)) {
+    return -1.0;
+  }
+  return percentage;
+}
+
+// _____________________________________________________________________________________________________________________
+std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
+  std::vector<double> thread_utility(CPU::_numLogicalCores);
+  for (int thread_idx = 0; thread_idx < CPU::_numLogicalCores; ++thread_idx) {
+    thread_utility[thread_idx] = currentThreadUtility_Percentage(thread_idx);
+  }
+  return thread_utility;
+}
+
+// _____________________________________________________________________________________________________________________
+void CPU::init_jiffies() const {
+  if (!_jiffies_initialized) {
+    // Sleep 1 sec just for the start cause the usage needs to have a delta value which is depending on the unix file
+    // read it's just for the init, you don't need to wait if the delta is already created ...
+    std::this_thread::sleep_for(std::chrono::duration<double>(1));
+    _jiffies_initialized = true;
+  }
+}
+
+// CPU Temp -> Works | But requires Im_sensors
+// double CPU::currentTemperature_Celsius() const {
+//     if (!std::ifstream("/etc/sensors3.conf"))
+//     {
+//       std::cout << "The lm-sensors, the tool for monitoring your system's temperature, needs to be configured. Please
+//       set it up." << std::endl;
+//       // Configure lm-sensors if not already configured
+//       std::string detect_command = "sudo sensors-detect";
+//       std::system(detect_command.c_str());
+//     }
+
+//     // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
+//     //       I will not support it because I only have a 1 socket target device
+//     const int Socked_id = 0;
+
+//     // Command to get temperature data using 'sensors' command
+//     std::string command = "sensors | grep 'Package id " + std::to_string(Socked_id) + "' | awk '{print $4}'";
+
+//     // Open a pipe to execute the command and capture its output
+//     FILE* pipe = popen(command.c_str(), "r");
+//     if (!pipe) {
+//         std::cerr << "Error executing command." << std::endl;
+//         return -1.0; // Return a negative value to indicate an error
+//     }
+
+//     char buffer[128];
+//     std::string result = "";
+
+//     // Read the output of the command into 'result'
+//     while (!feof(pipe)) {
+//         if (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+//             result += buffer;
+//         }
+//     }
+
+//     // Close the pipe
+//     pclose(pipe);
+
+//     // Convert the result (string) to a double
+//     double temperature = -1.0; // Default value in case of conversion failure
+//     std::istringstream(result) >> temperature;
+
+//     return temperature;
+// }
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
-// Helper function for linux: parses /proc/cpuinfo. socket_id == physical_id.
-// _____________________________________________________________________________________________________________________
-std::optional<CPU> getCPU(uint8_t socket_id) {
+std::vector<Socket> getAllSockets() {
+  std::vector<Socket> sockets;
+
   std::ifstream cpuinfo("/proc/cpuinfo");
   if (!cpuinfo.is_open()) {
     return {};
   }
   std::string file((std::istreambuf_iterator<char>(cpuinfo)), (std::istreambuf_iterator<char>()));
   cpuinfo.close();
-  auto cpu_blocks_string = split(file, "\n\n");
+  auto cpu_blocks_string = utils::split(file, "\n\n");
   std::map<const std::string, const std::string> cpu_block;
-  bool physical_id_found = false;
+  int physical_id = -1;
+  bool next_add = false;
   for (const auto& block : cpu_blocks_string) {
-    if (physical_id_found) {
-      break;
-    }
-    auto lines = split(block, '\n');
-    std::map<const std::string, const std::string> cpu_map;
-    bool add = true;
-    for (const auto& line : lines) {
-      auto pair = split(line, "\t: ");
-      if (pair.size() != 2) {
+    CPU cpu;
+    auto lines = utils::split(block, '\n');
+    for (auto& line : lines) {
+      auto line_pairs = utils::split(line, ":");
+      if (line_pairs.size() < 2) {
         continue;
       }
-      strip(pair[0]);
-      strip(pair[1]);
-      if (pair[0] == "physical id" && pair[1] != std::to_string(socket_id)) {
-        add = false;
-        break;
+      auto name = line_pairs[0];
+      auto value = line_pairs[1];
+      utils::strip(name);
+      utils::strip(value);
+      if (name == "processor") {
+        cpu._core_id = std::stoi(value);
+      } else if (name == "vendor_id") {
+        cpu._vendor = value;
+      } else if (name == "model name") {
+        cpu._modelName = value;
+      } else if (name == "cache size") {
+        cpu._cacheSize_Bytes = std::stoi(utils::split(value, " ")[0]) * 1024;
+      } else if (name == "physical id") {
+        if (physical_id == std::stoi(value)) {
+          continue;
+        }
+        next_add = true;
+      } else if (name == "siblings") {
+        cpu._numLogicalCores = std::stoi(value);
+      } else if (name == "cpu cores") {
+        cpu._numPhysicalCores = std::stoi(value);
+      } else if (name == "flags") {
+        cpu._flags = utils::split(value, " ");
       }
-      if (pair[0] == "physical id" && pair[1] == std::to_string(socket_id)) {
-        physical_id_found = true;
-      }
-      cpu_map.insert({std::move(pair[0]), std::move(pair[1])});
     }
-    if (add && physical_id_found) {
-      cpu_block = std::move(cpu_map);
-      break;
+    if (next_add) {
+      cpu._maxClockSpeed_MHz = getMaxClockSpeed_MHz(cpu._core_id);
+      cpu._minClockSpeed_MHz = getMinClockSpeed_MHz(cpu._core_id);
+      cpu._regularClockSpeed_MHz = getRegularClockSpeed_MHz(cpu._core_id);
+      // Lets initizalize the data of the utility
+      cpu._jiffies_initialized = true;
+      cpu.currentUtility_Percentage();
+      cpu.currentThreadsUtility_Percentage_MainThread();
+      cpu._jiffies_initialized = false;
+      next_add = false;
+      Socket socket(cpu);
+      physical_id++;
+      socket._id = physical_id;
+      sockets.push_back(std::move(socket));
     }
   }
-  if (cpu_block.empty()) {
-    return {};
-  }
-  CPU cpu;
-  cpu._modelName = cpu_block["model name"];
-  cpu._vendor = cpu_block["vendor_id"];
-  cpu._cacheSize_Bytes = std::stoi(split(cpu_block["cache size"], ' ')[0]) * 1024;
-  cpu._numPhysicalCores = std::stoi(cpu_block["cpu cores"]);
-  cpu._numLogicalCores = std::stoi(cpu_block["siblings"]);
-  cpu._maxClockSpeed_kHz = static_cast<int>(std::stod(cpu_block["cpu MHz"]) * 1000);
-  cpu._regularClockSpeed_kHz = static_cast<int>(std::stod(cpu_block["cpu MHz"]) * 1000);
 
-  InstructionSet instruction_set;
-  std::vector<std::string> flags{"htt", "sse", "sse1", "sse2", "sse3", "sse4_1", "sse4_2", "avx", "avx2"};
-  instruction_set._isHTT = (cpu_block["flags"].find(" htt ") != std::string::npos);
-  instruction_set._isSSE = (cpu_block["flags"].find(" sse ") != std::string::npos);
-  instruction_set._isSSE2 = (cpu_block["flags"].find(" sse2 ") != std::string::npos);
-  instruction_set._isSSE3 = (cpu_block["flags"].find(" sse3 ") != std::string::npos);
-  instruction_set._isSSE41 = (cpu_block["flags"].find(" sse4_1 ") != std::string::npos);
-  instruction_set._isSSE42 = (cpu_block["flags"].find(" sse4_2 ") != std::string::npos);
-  instruction_set._isAVX = (cpu_block["flags"].find(" avx ") != std::string::npos);
-  instruction_set._isAVX2 = (cpu_block["flags"].find(" avx2 ") != std::string::npos);
-  instruction_set._init_ = true;
-
-  cpu._instructionSet = instruction_set;
-  return cpu;
-}
-
-// ===== Socket ========================================================================================================
-// _____________________________________________________________________________________________________________________
-Socket::Socket(uint8_t id) : _id(id) {
-  auto cpu = getCPU(_id);
-  if (cpu.has_value()) {
-    _cpu = cpu.value();
-  }
-}
-
-// _____________________________________________________________________________________________________________________
-Socket::Socket(uint8_t id, const class CPU& cpu) : _id(id) { _cpu = cpu; }
-
-// =====================================================================================================================
-// _____________________________________________________________________________________________________________________
-std::vector<Socket> getAllSockets() {
-  std::vector<Socket> sockets;
-  int id = 0;
-  while (true) {
-    auto cpu = getCPU(id);
-    if (!cpu.has_value()) {
-      break;
-    }
-    sockets.emplace_back(id++, std::move(cpu.value()));
-  }
   return sockets;
 }
 

@@ -5,11 +5,9 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <filesystem>
-
-#include "hwinfo/WMIwrapper.h"
-#include "hwinfo/disk.h"
-#include "hwinfo/utils/stringutils.h"
+#include <hwinfo/WMIwrapper.h>
+#include <hwinfo/disk.h>
+#include <hwinfo/utils/stringutils.h>
 
 namespace hwinfo {
 
@@ -18,42 +16,47 @@ std::vector<Disk> getAllDisks() {
   std::vector<Disk> disks;
   std::vector<const wchar_t*> res{};
   wmi::queryWMI("Win32_DiskDrive", "Manufacturer", res);
-  if (res.empty()) {
+  if (res.empty() || res.front() == nullptr) {
     return {};
   }
   for (const auto& v : res) {
-    std::wstring tmp(v);
     disks.push_back(Disk());
-    disks.back()._vendor = {tmp.begin(), tmp.end()};
+    disks.back()._vendor = utils::wstring_to_std_string(v);
   }
   res.clear();
   wmi::queryWMI("Win32_DiskDrive", "Model", res);
+  if (res.empty() || res.front() == nullptr) {
+    return {};
+  }
   for (int i = 0; i < res.size(); ++i) {
     if (i >= disks.size()) {
       break;
     }
-    std::wstring tmp(res[i]);
-    disks[i]._model = {tmp.begin(), tmp.end()};
+    disks[i]._model = utils::wstring_to_std_string(res[i]);
   }
   res.clear();
   wmi::queryWMI("Win32_DiskDrive", "SerialNumber", res);
+  if (res.empty() || res.front() == nullptr) {
+    return {};
+  }
   for (int i = 0; i < res.size(); ++i) {
     if (i >= disks.size()) {
       break;
     }
     std::wstring tmp(res[i]);
-    disks[i]._serialNumber = {tmp.begin(), tmp.end()};
+    disks[i]._serialNumber = utils::wstring_to_std_string(res[i]);
   }
-  std::vector<uint64_t> res2;
-  // this returns a random same number for all disks...
-  wmi::queryWMI("Win32_DiskDrive", "Size", res2);
-  for (int i = 0; i < res.size(); ++i) {
+  std::vector<const wchar_t*> sizes;
+  // it will return L"Size" Str
+  wmi::queryWMI("Win32_DiskDrive", "Size", sizes);
+  if (sizes.empty() || sizes.front() == nullptr) {
+    return {};
+  }
+  for (int i = 0; i < sizes.size(); ++i) {
     if (i >= disks.size()) {
       break;
     }
-    // TODO: fix this error
-    // disks[i]._size_Bytes = res2[i];
-    disks[i]._size_Bytes = -1;
+    disks[i]._size_Bytes = std::stoll(utils::wstring_to_std_string(sizes[i]));
   }
   return disks;
 }

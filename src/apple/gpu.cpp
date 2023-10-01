@@ -4,6 +4,7 @@
 #include "hwinfo/platform.h"
 
 #ifdef HWINFO_APPLE
+#ifndef USE_OCL
 
 #include <regex>
 #include <string>
@@ -39,4 +40,5 @@ int64_t GPU::getMemory_Bytes() {
 
 }  // namespace hwinfo
 
+#endif  // USE_OCL
 #endif  // HWINFO_APPLE

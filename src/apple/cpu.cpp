@@ -17,6 +17,7 @@
 
 #include "hwinfo/cpu.h"
 #include "hwinfo/cpuid.h"
+#include "hwinfo/utils/stringutils.h"
 
 namespace hwinfo {
 
@@ -72,12 +73,14 @@ std::string CPU::getModelName() {
   }
   return model;
 #else
-  char* model_2[1024];
-  size_t size = sizeof(model_2);
-  if (sysctlbyname("machdep.cpu.brand_string", model_2, &size, NULL, 0) < 0) {
-    perror("sysctl");
+  size_t size = 1024;
+  std::string model;
+  model.resize(size);
+  if (sysctlbyname("machdep.cpu.brand_string", model.data(), &size, NULL, 0) < 0) {
+    model.resize(size);
+    return model;
   }
-  return std::string(model);
+  return "<unknown>";
 #endif
 }
 
@@ -192,51 +195,30 @@ int CPU::getRegularClockSpeed_kHz() {
   return -1;
 }
 
-int CPU::getCacheSize_Bytes() {
-#if defined(unix) || defined(__unix) || defined(__unix__)
-  std::string line;
-  std::ifstream stream("/proc/cpuinfo");
-  if (!stream) {
-    return -1;
-  }
-  while (getline(stream, line)) {
-    if (line.starts_with("cache size")) {
-      try {
-        stream.close();
-        return std::stoi(line.substr(line.find(": ") + 2, line.length() - 3)) * 1000;
-      } catch (std::invalid_argument& e) {
-        return -1;
-      }
-    }
-  }
-  stream.close();
-  return -1;
-#elif defined(__APPLE__)
-  return -1;
-#elif defined(_WIN32) || defined(_WIN64)
-  std::vector<int> cacheSize{};
-  wmi::queryWMI("Win32_Processor", "L3CacheSize", cacheSize);
-  if (cacheSize.empty()) {
-    return -1;
-  }
-  return cacheSize[0];
-#else
-  return -1;
-#endif
-}
+int CPU::getCacheSize_Bytes() { return -1; }
+
+double CPU::currentUtility_Percentage() const { return -1.0; }
+
+double CPU::currentThreadUtility_Percentage(const int& thread_index) const { return -1.0; }
+
+std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const { return std::vector<double>(); }
+
+// double CPU::currentTemperature_Celsius() const {
+//  return -1.0;
+// }
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
 // Helper function for linux: parses /proc/cpuinfo. socket_id == physical_id.
 // _____________________________________________________________________________________________________________________
-std::optional<CPU> getCPU(uint8_t socket_id) { return {}; }
+std::unique_ptr<CPU> getCPU(uint8_t socket_id) { return {}; }
 
 // ===== Socket ========================================================================================================
 // _____________________________________________________________________________________________________________________
 Socket::Socket(uint8_t id) : _id(id) {
   auto cpu = getCPU(_id);
-  if (cpu.has_value()) {
-    _cpu = cpu.value();
+  if (cpu != nullptr) {
+    _cpu = *cpu;
   }
 }
 

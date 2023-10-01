@@ -6,81 +6,90 @@
 
 #ifdef HWINFO_UNIX
 
-#include <regex>
+#include <hwinfo/PCIMapper.h>
+#include <hwinfo/gpu.h>
+#include <hwinfo/utils/filesystem.h>
+
+#include <fstream>
 #include <string>
 #include <vector>
-
-#include "hwinfo/gpu.h"
-#include "hwinfo/utils/subprocess.h"
 
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::string GPU::getVendor() {
-  // TODO: piping stderr to /dev/null seems super ugly.
-  //  Why am I doing this? -> lshw prints that one should run it as sudo user to stderr...
-  std::string command("lshw -c display 2> /dev/null");
-  std::regex matcher("vendor:.*");
-  std::string output = exec(command);
-  std::smatch match;
-  std::string vendor;
-  if (std::regex_search(output.cbegin(), output.cend(), match, matcher)) {
-    char prev = '\0';
-    bool add = false;
-    std::string tmp = match[0];
-    for (auto& c : tmp) {
-      if (c == '\n') {
-        break;
+std::string read_drm_by_path(const std::string& path) {
+  std::ifstream f_drm(path);
+  if (!f_drm) {
+    return "";
+  }
+  std::string ret;
+  getline(f_drm, ret);
+  return ret;
+}
+
+// _____________________________________________________________________________________________________________________
+std::vector<int> get_frequencies(const std::string drm_path) {
+  // {min, current, max}
+  std::vector<int> freqs(3);
+  try {
+    freqs[0] = std::stoi(read_drm_by_path(drm_path + "gt_min_freq_mhz"));
+  } catch (const std::invalid_argument& e) {
+    freqs[0] = -1;
+  }
+  try {
+    freqs[1] = std::stoi(read_drm_by_path(drm_path + "gt_cur_freq_mhz"));
+  } catch (const std::invalid_argument& e) {
+    freqs[0] = -1;
+  }
+  try {
+    freqs[2] = std::stoi(read_drm_by_path(drm_path + "gt_max_freq_mhz"));
+  } catch (const std::invalid_argument& e) {
+    freqs[0] = -1;
+  }
+  return freqs;
+}
+
+// _____________________________________________________________________________________________________________________
+std::vector<GPU> getAllGPUs() {
+  std::vector<GPU> gpus{};
+  PCIMapper pci = PCI::getMapper();
+  int id = 0;
+  while (true) {
+    GPU gpu;
+    gpu._id = id;
+    std::string path("/sys/class/drm/card" + std::to_string(id) + '/');
+    if (!filesystem::exists(path)) {
+      break;
+    }
+    gpu._vendor_id = read_drm_by_path(path + "device/vendor");
+    gpu._device_id = read_drm_by_path(path + "device/device");
+    if (gpu._vendor_id.empty() || gpu._device_id.empty()) {
+      id++;
+      continue;
+    }
+    const PCIVendor& vendor = pci[gpu._vendor_id];
+    const PCIDevice device = vendor[gpu._device_id];
+    gpu._vendor = vendor.vendor_name;
+    gpu._name = vendor[gpu._device_id].device_name;
+    auto frequencies = get_frequencies(path);
+    gpu._frequency_MHz = frequencies[2];
+    gpus.push_back(std::move(gpu));
+    id++;
+  }
+#ifdef USE_OCL
+  auto cl_gpus = mcl::DeviceManager::get_list<mcl::Filter::GPU>();
+  for (auto& gpu : gpus) {
+    for (auto* cl_gpu : cl_gpus) {
+      if (cl_gpu->name().find(gpu._device_id)) {
+        gpu._driverVersion = cl_gpu->driver_version();
+        gpu._frequency_MHz = static_cast<int64_t>(cl_gpu->clock_frequency_MHz());
+        gpu._num_cores = static_cast<int>(cl_gpu->cores());
+        gpu._memory_Bytes = static_cast<int64_t>(cl_gpu->memory_Bytes());
       }
-      if (add) {
-        vendor += c;
-      }
-      if (prev == ':') {
-        add = true;
-      }
-      prev = c;
     }
   }
-  return vendor.empty() ? "<unknown>" : vendor;
-}
-
-// _____________________________________________________________________________________________________________________
-std::string GPU::getName() {
-  // TODO: piping stderr to /dev/null seems super ugly.
-  //  Why am I doing this? -> lshw prints that one should run it as sudo user to stderr...
-  std::string command("lshw -c display 2> /dev/null");
-  std::regex matcher("product:.*\\[.*\\]");
-  std::string output = exec(command);
-  std::smatch match;
-  std::string name;
-  if (std::regex_search(output.cbegin(), output.cend(), match, matcher)) {
-    bool add = false;
-    std::string tmp = match[0];
-    for (auto& c : tmp) {
-      if (c == ']') {
-        break;
-      }
-      if (add) {
-        name += c;
-      }
-      if (c == '[') {
-        add = true;
-      }
-    }
-  }
-  return name;
-}
-
-// _____________________________________________________________________________________________________________________
-std::string GPU::getDriverVersion() {
-  // TODO: implement
-  return "<unknown>";
-}
-
-// _____________________________________________________________________________________________________________________
-int64_t GPU::getMemory_Bytes() {
-  // TODO: implement
-  return -1;
+#endif  // USE_OCL
+  return gpus;
 }
 
 }  // namespace hwinfo

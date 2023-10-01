@@ -5,17 +5,18 @@
 
 #pragma once
 
+#define _WIN32_DCOM
 #include <WbemIdl.h>
-#include <Windows.h>
 #include <comdef.h>
-#include <ntddscsi.h>
 
+#include <iostream>
 #include <string>
 #include <type_traits>
 #include <vector>
 #pragma comment(lib, "wbemuuid.lib")
 
-namespace hwinfo::wmi {
+namespace hwinfo {
+namespace wmi {
 
 template <typename T>
 inline bool queryWMI(const std::string& WMIClass, std::string field, std::vector<T>& value,
@@ -30,8 +31,8 @@ inline bool queryWMI(const std::string& WMIClass, std::string field, std::vector
   hres = CoInitializeSecurity(nullptr, -1, nullptr, nullptr, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE,
                               nullptr, EOAC_NONE, nullptr);
   if (FAILED(hres)) {
-    CoUninitialize();
-    return false;
+    // CoUninitialize();
+    // return false;
   }
   IWbemLocator* pLoc = nullptr;
   hres = CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&pLoc);
@@ -88,7 +89,14 @@ inline bool queryWMI(const std::string& WMIClass, std::string field, std::vector
     } else if (std::is_same<T, unsigned long long>::value) {
       value.push_back((T)vtProp.ullVal);
     } else {
+      // TODO: this might cause issues with MinGW. fix this in another way than using the macros
+#if defined(__MINGW32__) || defined(__MINGW64__)
+      ;
+#else
       value.push_back((T)((bstr_t)vtProp.bstrVal).copy());
+      // BSTR val = SysAllocString(vtProp.bstrVal);
+      // value.push_back((bstr_t)val);
+#endif
     }
 
     VariantClear(&vtProp);
@@ -106,6 +114,7 @@ inline bool queryWMI(const std::string& WMIClass, std::string field, std::vector
   return true;
 }
 
-}  // namespace hwinfo::wmi
+}  // namespace wmi
+}  // namespace hwinfo
 
 #endif
