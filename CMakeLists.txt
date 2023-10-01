@@ -20,6 +20,7 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(MAIN_PROJECT ON)
 endif()
 
+
 if (NOT DEFINED NO_OCL)
     set(OPENCL_SDK_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
     include_directories(external/miss-opencl/include)
@@ -31,9 +32,8 @@ if (NOT DEFINED NO_OCL)
     add_compile_definitions(USE_OCL)
 endif ()
 
-include_directories(${PROJECT_SOURCE_DIR}/include/)
-
 add_subdirectory(src)
+target_include_directories(HWinfo PUBLIC ${PROJECT_SOURCE_DIR}/include/)
 
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
     file(COPY "scripts/pci.ids" DESTINATION "$ENV{HOME}/.hwinfo/")
