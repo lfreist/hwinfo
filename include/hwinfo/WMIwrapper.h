@@ -76,18 +76,17 @@ inline bool queryWMI(const std::string& WMIClass, std::string field, std::vector
     VARIANT vtProp;
     pclsObj->Get(std::wstring(field.begin(), field.end()).c_str(), 0, &vtProp, nullptr, nullptr);
 
-    //TODO: Not sure what's going on here. For now, it's been made constexpr to avoid compiler warnings.
-    if constexpr (std::is_same<T, long>::value || std::is_same<T, int>::value) {
+    if (std::is_same<T, long>::value || std::is_same<T, int>::value) {
       value.push_back((T)vtProp.intVal);
-    } else if constexpr (std::is_same<T, bool>::value) {
+    } else if (std::is_same<T, bool>::value) {
       value.push_back((T)vtProp.boolVal);
-    } else if constexpr(std::is_same<T, unsigned>::value) {
+    } else if (std::is_same<T, unsigned>::value) {
       value.push_back((T)vtProp.uintVal);
-    } else if constexpr(std::is_same<T, unsigned short>::value) {
+    } else if (std::is_same<T, unsigned short>::value) {
       value.push_back((T)vtProp.uiVal);
-    } else if constexpr(std::is_same<T, long long>::value) {
+    } else if (std::is_same<T, long long>::value) {
       value.push_back((T)vtProp.llVal);
-    } else if constexpr(std::is_same<T, unsigned long long>::value) {
+    } else if (std::is_same<T, unsigned long long>::value) {
       value.push_back((T)vtProp.ullVal);
     } else {
       // TODO: this might cause issues with MinGW. fix this in another way than using the macros
