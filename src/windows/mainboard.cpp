@@ -9,6 +9,7 @@
 
 #include "hwinfo/WMIwrapper.h"
 #include "hwinfo/mainboard.h"
+#include "hwinfo/utils/stringutils.h"
 
 namespace hwinfo {
 namespace mainboard {
@@ -25,7 +26,7 @@ std::string getVendor() {
     return "<unknown>";
   }
   std::wstring tmp(ret);
-  return {tmp.begin(), tmp.end()};
+  return utils::wstring_to_std_string(tmp);
 }
 
 // _____________________________________________________________________________________________________________________
@@ -40,7 +41,7 @@ std::string getName() {
     return "<unknown>";
   }
   std::wstring tmp(ret);
-  return {tmp.begin(), tmp.end()};
+  return utils::wstring_to_std_string(tmp);
 }
 
 // _____________________________________________________________________________________________________________________
@@ -55,7 +56,7 @@ std::string getVersion() {
     return "<unknown>";
   }
   std::wstring tmp(ret);
-  return {tmp.begin(), tmp.end()};
+  return utils::wstring_to_std_string(tmp);
 }
 
 // _____________________________________________________________________________________________________________________
@@ -70,7 +71,7 @@ std::string getSerialNumber() {
     return "<unknown>";
   }
   std::wstring tmp(ret);
-  return {tmp.begin(), tmp.end()};
+  return utils::wstring_to_std_string(tmp);
 }
 }  // namespace mainboard
 

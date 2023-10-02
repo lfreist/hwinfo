@@ -11,6 +11,7 @@
 
 #include "hwinfo/WMIwrapper.h"
 #include "hwinfo/battery.h"
+#include "hwinfo/utils/stringutils.h"
 
 namespace hwinfo {
 
@@ -52,7 +53,7 @@ std::vector<Battery> getAllBatteries() {
   for (const auto& v : res) {
     std::wstring tmp(v);
     batteries.emplace_back(counter++);
-    batteries.back()._model = {tmp.begin(), tmp.end()};
+    batteries.back()._model = utils::wstring_to_std_string(tmp);
   }
   res.clear();
   return batteries;
