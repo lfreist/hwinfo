@@ -75,7 +75,6 @@ std::vector<GPU> getAllGPUs() {
     const PCIDevice device = vendor[gpu._device_id];
     gpu._vendor = vendor.vendor_name;
     gpu._name = vendor[gpu._device_id].device_name;
-    std::cout << gpu._vendor << " " << gpu._name << std::endl;
     auto frequencies = get_frequencies(path);
     gpu._frequency_MHz = frequencies[2];
     gpus.push_back(std::move(gpu));
