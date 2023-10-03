@@ -8,7 +8,7 @@
 #include <unistd.h>
 #elif defined(__APPLE__)
 #include <sys/sysctl.h>
-#elif defined(_WIN32) || defined(_WIN64)
+#elif defined(HWINFO_WINDOWS)
 #include <Windows.h>
 
 #include "hwinfo/WMIwrapper.h"

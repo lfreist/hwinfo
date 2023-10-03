@@ -26,6 +26,7 @@ if (NOT DEFINED NO_OCL)
     endif ()
 
     add_compile_definitions(USE_OCL)
+    add_compile_definitions(NOMINMAX)
 endif ()
 
 add_subdirectory(src)

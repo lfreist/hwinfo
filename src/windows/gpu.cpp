@@ -14,8 +14,8 @@
 #pragma comment(lib, "wbemuuid.lib")
 
 #include <hwinfo/gpu.h>
-#include <hwinfo/utils/utils.h>
 #include <hwinfo/utils/stringutils.h>
+#include <hwinfo/utils/utils.h>
 
 namespace hwinfo {
 namespace gpu {
@@ -101,11 +101,12 @@ std::vector<GPU> getAllGPUs() {
   auto cl_gpus = mcl::DeviceManager::get_list<mcl::Filter::GPU>();
   for (auto& gpu : gpus) {
     for (auto* cl_gpu : cl_gpus) {
-      if (cl_gpu->name().find(gpu._device_id)) {
+      if (cl_gpu->name() == gpu.name()) {
         gpu._driverVersion = cl_gpu->driver_version();
         gpu._frequency_MHz = static_cast<int64_t>(cl_gpu->clock_frequency_MHz());
         gpu._num_cores = static_cast<int>(cl_gpu->cores());
         gpu._memory_Bytes = static_cast<int64_t>(cl_gpu->memory_Bytes());
+        break;
       }
     }
   }

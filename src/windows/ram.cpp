@@ -4,7 +4,6 @@
 #include "hwinfo/platform.h"
 
 #ifdef HWINFO_WINDOWS
-
 #include <Windows.h>
 
 #include <string>
