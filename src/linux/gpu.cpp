@@ -59,7 +59,11 @@ std::vector<GPU> getAllGPUs() {
     gpu._id = id;
     std::string path("/sys/class/drm/card" + std::to_string(id) + '/');
     if (!filesystem::exists(path)) {
-      break;
+      if (id > 2) {
+        break;
+      }
+      id++;
+      continue;
     }
     gpu._vendor_id = read_drm_by_path(path + "device/vendor");
     gpu._device_id = read_drm_by_path(path + "device/device");
@@ -71,6 +75,7 @@ std::vector<GPU> getAllGPUs() {
     const PCIDevice device = vendor[gpu._device_id];
     gpu._vendor = vendor.vendor_name;
     gpu._name = vendor[gpu._device_id].device_name;
+    std::cout << gpu._vendor << " " << gpu._name << std::endl;
     auto frequencies = get_frequencies(path);
     gpu._frequency_MHz = frequencies[2];
     gpus.push_back(std::move(gpu));
