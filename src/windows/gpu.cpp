@@ -98,12 +98,16 @@ std::vector<GPU> getAllGPUs() {
     gpus.push_back(std::move(gpu));
   }
 #ifdef USE_OCL
-  auto cl_gpus = get_cpu_cl_data();
-  // Windows
-  auto min = min(cl_gpus.size(), gpus.size());
-  for (int i = 0; i < min; ++i) {
-    gpus[i]._num_cores = cl_gpus[i].num_cores;
-    gpus[i]._frequency_MHz = cl_gpus[i].frequency_MHz;
+  auto cl_gpus = mcl::DeviceManager::get_list<mcl::Filter::GPU>();
+  for (auto& gpu : gpus) {
+    for (auto* cl_gpu : cl_gpus) {
+      if (cl_gpu->name().find(gpu._device_id)) {
+        gpu._driverVersion = cl_gpu->driver_version();
+        gpu._frequency_MHz = static_cast<int64_t>(cl_gpu->clock_frequency_MHz());
+        gpu._num_cores = static_cast<int>(cl_gpu->cores());
+        gpu._memory_Bytes = static_cast<int64_t>(cl_gpu->memory_Bytes());
+      }
+    }
   }
 #endif  // USE_OCL
   return gpus;
