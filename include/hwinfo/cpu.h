@@ -48,9 +48,9 @@ class CPU {
   int64_t maxClockSpeed_MHz() const;
   int64_t regularClockSpeed_MHz() const;
   std::vector<int64_t> currentClockSpeed_MHz() const;
-  double currentUtility() const;
-  double threadUtility(int thread_index) const;
-  std::vector<double> threadsUtility() const;
+  double currentUtilisation() const;
+  double threadUtilisation(int thread_index) const;
+  std::vector<double> threadsUtilisation() const;
   // double currentTemperature_Celsius() const;
   const std::vector<std::string>& flags() const;
   void init_jiffies() const;

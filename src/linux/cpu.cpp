@@ -76,7 +76,7 @@ std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
 }
 
 // _____________________________________________________________________________________________________________________
-double CPU::currentUtility() const {
+double CPU::currentUtilisation() const {
   init_jiffies();
   // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
   //       I will not support it because I only have a 1 socket target device
@@ -97,7 +97,7 @@ double CPU::currentUtility() const {
 }
 
 // _____________________________________________________________________________________________________________________
-double CPU::threadUtility(int thread_index) const {
+double CPU::threadUtilisation(int thread_index) const {
   init_jiffies();
   // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
   //       I will not support it because I only have a 1 socket target device
@@ -113,7 +113,7 @@ double CPU::threadUtility(int thread_index) const {
 
   last[thread_index] = current;
 
-  const double percentage = work_over_period / total_over_period * 100.0;
+  const double percentage = work_over_period / total_over_period;
   if (percentage < 0 || percentage > 100 || std::isnan(percentage)) {
     return -1.0;
   }
@@ -121,10 +121,10 @@ double CPU::threadUtility(int thread_index) const {
 }
 
 // _____________________________________________________________________________________________________________________
-std::vector<double> CPU::threadsUtility() const {
+std::vector<double> CPU::threadsUtilisation() const {
   std::vector<double> thread_utility(CPU::_numLogicalCores);
   for (int thread_idx = 0; thread_idx < CPU::_numLogicalCores; ++thread_idx) {
-    thread_utility[thread_idx] = threadUtility(thread_idx);
+    thread_utility[thread_idx] = threadUtilisation(thread_idx);
   }
   return thread_utility;
 }

@@ -31,10 +31,10 @@ int main(int argc, char** argv) {
     std::cout << cpu.maxClockSpeed_MHz() << std::endl;
     std::cout << std::left << std::setw(20) << " regular frequency:";
     std::cout << cpu.regularClockSpeed_MHz() << std::endl;
-    std::cout << std::left << std::setw(20) << " cache size (L1, L2, L3):";
+    std::cout << std::left << std::setw(20) << " cache size (L1, L2, L3): ";
     std::cout << cpu.L1CacheSize_Bytes() << ", " << cpu.L2CacheSize_Bytes() << ", " << cpu.L3CacheSize_Bytes()
               << std::endl;
-    auto threads_utility = cpu.threadsUtility();
+    auto threads_utility = cpu.threadsUtilisation();
     auto threads_speed = cpu.currentClockSpeed_MHz();
     for (int thread_idx = 0; thread_idx < threads_utility.size(); ++thread_idx) {
       std::cout << std::left << std::setw(20) << "   Thread " + std::to_string(thread_idx) + ": ";
