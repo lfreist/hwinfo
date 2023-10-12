@@ -60,22 +60,27 @@ int64_t getMinClockSpeed_MHz(const int& core_id) {
 }
 
 // _____________________________________________________________________________________________________________________
-int64_t CPU::currentClockSpeed_MHz() const {
-  int64_t Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(_core_id) +
-                                                  "/cpufreq/scaling_cur_freq");
-  if (Hz > -1) {
-    return Hz / 1000;
+std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
+  std::vector<int64_t> res;
+  res.reserve(numLogicalCores());
+  for (int i = 0; /* breaks, if i is no valid cpu id */; ++i) {
+    int64_t frequency_Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(i) +
+                                                              "/cpufreq/scaling_cur_freq");
+    if (frequency_Hz == -1) {
+      break;
+    }
+    res.push_back(frequency_Hz / 1000);
   }
 
-  return -1;
+  return res;
 }
 
 // _____________________________________________________________________________________________________________________
-double CPU::currentUtility_Percentage() const {
+double CPU::currentUtility() const {
   init_jiffies();
   // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
   //       I will not support it because I only have a 1 socket target device
-  static Jiffies last = Jiffies();  // Works only with 1 socket
+  static Jiffies last = Jiffies();
 
   Jiffies current = filesystem::get_jiffies(0);
 
@@ -84,19 +89,19 @@ double CPU::currentUtility_Percentage() const {
 
   last = current;
 
-  const double percentage = work_over_period / total_over_period * 100.0;
-  if (percentage < 0 || percentage > 100 || std::isnan(percentage)) {
+  const double utilization = work_over_period / total_over_period;
+  if (utilization < 0 || utilization > 1 || std::isnan(utilization)) {
     return -1.0;
   }
-  return percentage;
+  return utilization;
 }
 
 // _____________________________________________________________________________________________________________________
-double CPU::currentThreadUtility_Percentage(int thread_index) const {
+double CPU::threadUtility(int thread_index) const {
   init_jiffies();
   // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
   //       I will not support it because I only have a 1 socket target device
-  static std::vector<Jiffies> last(0);  // Works only with 1 socket
+  static std::vector<Jiffies> last(0);
   if (last.empty()) {
     last.resize(_numLogicalCores);
   }
@@ -116,10 +121,10 @@ double CPU::currentThreadUtility_Percentage(int thread_index) const {
 }
 
 // _____________________________________________________________________________________________________________________
-std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
+std::vector<double> CPU::threadsUtility() const {
   std::vector<double> thread_utility(CPU::_numLogicalCores);
   for (int thread_idx = 0; thread_idx < CPU::_numLogicalCores; ++thread_idx) {
-    thread_utility[thread_idx] = currentThreadUtility_Percentage(thread_idx);
+    thread_utility[thread_idx] = threadUtility(thread_idx);
   }
   return thread_utility;
 }
@@ -181,8 +186,8 @@ void CPU::init_jiffies() const {
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
-std::vector<Socket> getAllSockets() {
-  std::vector<Socket> sockets;
+std::vector<CPU> getAllCPUs() {
+  std::vector<CPU> cpus;
 
   std::ifstream cpuinfo("/proc/cpuinfo");
   if (!cpuinfo.is_open()) {
@@ -206,45 +211,36 @@ std::vector<Socket> getAllSockets() {
       auto value = line_pairs[1];
       utils::strip(name);
       utils::strip(value);
-      if (name == "processor") {
-        cpu._core_id = std::stoi(value);
-      } else if (name == "vendor_id") {
+      if (name == "vendor_id") {
         cpu._vendor = value;
       } else if (name == "model name") {
         cpu._modelName = value;
       } else if (name == "cache size") {
-        cpu._cacheSize_Bytes = std::stoi(utils::split(value, " ")[0]) * 1024;
-      } else if (name == "physical id") {
-        if (physical_id == std::stoi(value)) {
-          continue;
-        }
-        next_add = true;
+        cpu._L3CacheSize_Bytes = std::stoi(utils::split(value, " ")[0]) * 1024;
       } else if (name == "siblings") {
         cpu._numLogicalCores = std::stoi(value);
       } else if (name == "cpu cores") {
         cpu._numPhysicalCores = std::stoi(value);
       } else if (name == "flags") {
         cpu._flags = utils::split(value, " ");
+      } else if (name == "physical id") {
+        int tmp_phys_id = std::stoi(value);
+        if (physical_id == tmp_phys_id) {
+          continue;
+        }
+        cpu._id = tmp_phys_id;
+        next_add = true;
       }
     }
     if (next_add) {
-      cpu._maxClockSpeed_MHz = getMaxClockSpeed_MHz(cpu._core_id);
-      cpu._minClockSpeed_MHz = getMinClockSpeed_MHz(cpu._core_id);
-      cpu._regularClockSpeed_MHz = getRegularClockSpeed_MHz(cpu._core_id);
-      // Lets initizalize the data of the utility
-      cpu._jiffies_initialized = true;
-      cpu.currentUtility_Percentage();
-      cpu.currentThreadsUtility_Percentage_MainThread();
-      cpu._jiffies_initialized = false;
+      cpu._maxClockSpeed_MHz = getMaxClockSpeed_MHz(cpu._id);
+      cpu._regularClockSpeed_MHz = getRegularClockSpeed_MHz(cpu._id);
       next_add = false;
-      Socket socket(cpu);
       physical_id++;
-      socket._id = physical_id;
-      sockets.push_back(std::move(socket));
+      cpus.push_back(std::move(cpu));
     }
   }
-
-  return sockets;
+  return cpus;
 }
 
 }  // namespace hwinfo

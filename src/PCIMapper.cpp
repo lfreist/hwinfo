@@ -96,7 +96,6 @@ const PCIVendor& PCIMapper::operator[](const std::string& vendor_id) const { ret
 
 // _____________________________________________________________________________________________________________________
 PCIMapper PCI::getMapper() {
-
   const auto getenv = [](const char* name) -> std::string {
 
 #ifdef _MSC_VER

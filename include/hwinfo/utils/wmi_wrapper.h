@@ -25,12 +25,11 @@ namespace WMI {
 template <typename T>
 std::vector<T> get_component();
 
-
 template <typename T>
 std::vector<T> query(const std::wstring& wmi_class, const std::wstring& field);
 
-}
-}
-}
+}  // namespace WMI
+}  // namespace utils
+}  // namespace hwinfo
 
 #endif

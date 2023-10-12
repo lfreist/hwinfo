@@ -8,8 +8,8 @@
 #include <hwinfo/WMIwrapper.h>
 #include <hwinfo/cpu.h>
 #include <hwinfo/cpuid.h>
-#include <hwinfo/utils/utils.h>
 #include <hwinfo/utils/stringutils.h>
+#include <hwinfo/utils/utils.h>
 
 #include <algorithm>
 #include <string>
@@ -68,7 +68,7 @@ double CPU::currentUtility_Percentage() const {
 double CPU::currentThreadUtility_Percentage(int thread_index) const {
   std::vector<bstr_t> percentage{};
   const std::string& query = "Win32_PerfFormattedData_Counters_ProcessorInformation WHERE Name='" + std::to_string(0) +
-                       "," + std::to_string(thread_index) + "'";
+                             "," + std::to_string(thread_index) + "'";
   wmi::queryWMI(query, "PercentProcessorUtility", percentage);
   if (percentage.empty()) {
     return -1.0;

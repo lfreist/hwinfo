@@ -3,11 +3,11 @@
 
 #pragma once
 
+#include <hwinfo/utils/wmi_wrapper.h>
+
 #include <memory>
 #include <string>
 #include <vector>
-
-#include <hwinfo/utils/wmi_wrapper.h>
 
 namespace hwinfo {
 
@@ -29,8 +29,10 @@ struct Jiffies {
 #endif
 
 class CPU {
+#if HWINFO_WINDOWS
   friend std::vector<CPU> utils::WMI::get_component<CPU>();
-  friend class Socket;
+#endif
+  friend std::vector<CPU> getAllCPUs();
 
  public:
   ~CPU() = default;
@@ -45,10 +47,10 @@ class CPU {
   int numLogicalCores() const;
   int64_t maxClockSpeed_MHz() const;
   int64_t regularClockSpeed_MHz() const;
-  int64_t currentClockSpeed_MHz() const;
-  double currentUtility_Percentage() const;
-  double currentThreadUtility_Percentage(int thread_index) const;
-  std::vector<double> currentThreadsUtility_Percentage_MainThread() const;
+  std::vector<int64_t> currentClockSpeed_MHz() const;
+  double currentUtility() const;
+  double threadUtility(int thread_index) const;
+  std::vector<double> threadsUtility() const;
   // double currentTemperature_Celsius() const;
   const std::vector<std::string>& flags() const;
   void init_jiffies() const;
@@ -56,7 +58,7 @@ class CPU {
  private:
   CPU() = default;
 
-  int _id {-1};
+  int _id{-1};
   std::string _modelName;
   std::string _vendor;
   int _numPhysicalCores{-1};
@@ -70,5 +72,7 @@ class CPU {
 
   mutable bool _jiffies_initialized = false;
 };
+
+std::vector<CPU> getAllCPUs();
 
 }  // namespace hwinfo

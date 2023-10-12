@@ -50,7 +50,7 @@ int64_t hwinfo::filesystem::get_specs_by_file_path(const std::string& path) {
   stream.close();
 
   try {
-    return static_cast<int64_t>(std::stoll(line));  // MHz ->  / 1000
+    return static_cast<int64_t>(std::stoll(line));
   } catch (std::invalid_argument& e) {
     return -1;
   }
