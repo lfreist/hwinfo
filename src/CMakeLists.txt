@@ -29,6 +29,7 @@ add_library(HWinfo STATIC
         linux/disk.cpp
         # windows specific definitions
         windows/utils/filesystem.cpp
+        windows/utils/wmi_wrapper.cpp
         windows/battery.cpp
         windows/cpu.cpp
         windows/gpu.cpp

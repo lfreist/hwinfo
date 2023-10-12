@@ -7,9 +7,9 @@
 #include <string>
 #include <vector>
 
-namespace hwinfo {
+#include <hwinfo/utils/wmi_wrapper.h>
 
-class Socket;
+namespace hwinfo {
 
 #ifdef HWINFO_UNIX
 struct Jiffies {
@@ -29,61 +29,46 @@ struct Jiffies {
 #endif
 
 class CPU {
-  friend std::vector<Socket> getAllSockets();
+  friend std::vector<CPU> utils::WMI::get_component<CPU>();
   friend class Socket;
 
  public:
   ~CPU() = default;
 
+  int id() const;
   const std::string& modelName() const;
   const std::string& vendor() const;
-  int64_t cacheSize_Bytes() const;
+  int64_t L1CacheSize_Bytes() const;
+  int64_t L2CacheSize_Bytes() const;
+  int64_t L3CacheSize_Bytes() const;
   int numPhysicalCores() const;
   int numLogicalCores() const;
   int64_t maxClockSpeed_MHz() const;
   int64_t regularClockSpeed_MHz() const;
-  int64_t minClockSpeed_MHz() const;
   int64_t currentClockSpeed_MHz() const;
   double currentUtility_Percentage() const;
   double currentThreadUtility_Percentage(int thread_index) const;
   std::vector<double> currentThreadsUtility_Percentage_MainThread() const;
   // double currentTemperature_Celsius() const;
   const std::vector<std::string>& flags() const;
-  int id() const;
   void init_jiffies() const;
 
  private:
   CPU() = default;
 
+  int _id {-1};
   std::string _modelName;
   std::string _vendor;
   int _numPhysicalCores{-1};
   int _numLogicalCores{-1};
   int64_t _maxClockSpeed_MHz{-1};
   int64_t _regularClockSpeed_MHz{-1};
-  int64_t _minClockSpeed_MHz{-1};
-  int64_t _cacheSize_Bytes{-1};
+  int64_t _L1CacheSize_Bytes{-1};
+  int64_t _L2CacheSize_Bytes{-1};
+  int64_t _L3CacheSize_Bytes{-1};
   std::vector<std::string> _flags{};
 
   mutable bool _jiffies_initialized = false;
-
-  int _core_id{-1};
 };
-
-class Socket {
-  friend std::vector<Socket> getAllSockets();
-
- public:
-  ~Socket() = default;
-  const class CPU& CPU() const;
-  int id() const;
-
- private:
-  explicit Socket(class CPU& cpu);
-  int _id{-1};
-  class CPU _cpu;
-};
-
-std::vector<Socket> getAllSockets();
 
 }  // namespace hwinfo

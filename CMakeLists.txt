@@ -29,6 +29,7 @@ if (NOT DEFINED NO_OCL)
     add_compile_definitions(NOMINMAX)
 endif ()
 
+include_directories({PROJECT_SOURCE_DIR}/include)
 add_subdirectory(src)
 target_include_directories(HWinfo PUBLIC ${PROJECT_SOURCE_DIR}/include/)
 

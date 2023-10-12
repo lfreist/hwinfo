@@ -16,10 +16,9 @@ int main(int argc, char** argv) {
             << "Thanks for using hwinfo!" << std::endl;
   std::cout << std::endl << "Hardware Report:" << std::endl << std::endl;
   std::cout << "----------------------------------- CPU -----------------------------------" << std::endl;
-  auto sockets = hwinfo::getAllSockets();
-  for (const auto& s : sockets) {
-    const auto& cpu = s.CPU();
-    std::cout << "Socket " << s.id() << ":\n";
+  auto cpus = hwinfo::utils::WMI::get_component<hwinfo::CPU>();
+  for (const auto& cpu : cpus) {
+    std::cout << "Socket " << cpu.id() << ":\n";
     std::cout << std::left << std::setw(20) << " vendor:";
     std::cout << cpu.vendor() << std::endl;
     std::cout << std::left << std::setw(20) << " model:";
@@ -32,12 +31,10 @@ int main(int argc, char** argv) {
     std::cout << cpu.maxClockSpeed_MHz() << std::endl;
     std::cout << std::left << std::setw(20) << " regular frequency:";
     std::cout << cpu.regularClockSpeed_MHz() << std::endl;
-    std::cout << std::left << std::setw(20) << " min frequency:";
-    std::cout << cpu.minClockSpeed_MHz() << std::endl;
     std::cout << std::left << std::setw(20) << " current frequency:";
     std::cout << cpu.currentClockSpeed_MHz() << std::endl;
-    std::cout << std::left << std::setw(20) << " cache size:";
-    std::cout << cpu.cacheSize_Bytes() << std::endl;
+    std::cout << std::left << std::setw(20) << " cache size (L1, L2, L3):";
+    std::cout << cpu.L1CacheSize_Bytes() << ", " << cpu.L2CacheSize_Bytes() << ", " << cpu.L3CacheSize_Bytes() << std::endl;
     std::cout << std::left << std::setw(20) << " CPU Usage Average:";
     std::cout << cpu.currentUtility_Percentage() << "%" << std::endl;
     std::vector<double> threads_utility = cpu.currentThreadsUtility_Percentage_MainThread();
