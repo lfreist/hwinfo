@@ -63,8 +63,8 @@ int64_t getMinClockSpeed_MHz(const int& core_id) {
 std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
   std::vector<int64_t> res;
   res.reserve(numLogicalCores());
-  for (int i = 0; /* breaks, if i is no valid cpu id */; ++i) {
-    int64_t frequency_Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(i) +
+  for (int core_id = 0; /* breaks, if i is no valid cpu id */; ++core_id) {
+    int64_t frequency_Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) +
                                                               "/cpufreq/scaling_cur_freq");
     if (frequency_Hz == -1) {
       break;
