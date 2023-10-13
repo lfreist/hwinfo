@@ -1,8 +1,9 @@
-#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-
 #pragma once
 
-#define _WIN32_DCOM
+#include <hwinfo/platform.h>
+
+#ifdef HWINFO_WINDOWS
+
 #include <WbemIdl.h>
 #include <comdef.h>
 
@@ -12,21 +13,23 @@
 #include <vector>
 #pragma comment(lib, "wbemuuid.lib")
 
-class CPU;
-class GPU;
-class Disk;
-class RAM;
-class MainBoard;
-
 namespace hwinfo {
+
 namespace utils {
 namespace WMI {
 
-template <typename T>
-std::vector<T> get_component();
+struct _WMI {
+  _WMI();
+  ~_WMI();
+  bool execute_query(const std::wstring& query);
+
+  IWbemLocator* locator;
+  IWbemServices* service;
+  IEnumWbemClassObject* enumerator;
+};
 
 template <typename T>
-std::vector<T> query(const std::wstring& wmi_class, const std::wstring& field);
+std::vector<T> query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter = L"");
 
 }  // namespace WMI
 }  // namespace utils

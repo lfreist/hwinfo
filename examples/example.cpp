@@ -36,11 +36,10 @@ int main(int argc, char** argv) {
               << std::endl;
     auto threads_utility = cpu.threadsUtilisation();
     auto threads_speed = cpu.currentClockSpeed_MHz();
-    for (int thread_idx = 0; thread_idx < threads_utility.size(); ++thread_idx) {
-      std::cout << std::left << std::setw(20) << "   Thread " + std::to_string(thread_idx) + ": ";
-      std::cout << threads_speed[0] << " MHz (" << threads_utility[thread_idx] * 100 << "%)" << std::endl;
+    for (int thread_id = 0; thread_id < threads_utility.size(); ++thread_id) {
+      std::cout << std::left << std::setw(20) << "   Thread " + std::to_string(thread_id) + ": ";
+      std::cout << threads_speed[thread_id] << " MHz (" << threads_utility[thread_id] * 100 << "%)" << std::endl;
     }
-    // std::cout << std::left << std::setw(20) << " CPU Temperature:";
     // std::cout << cpu.currentTemperature_Celsius() << std::endl;
   }
 

@@ -20,39 +20,34 @@ namespace hwinfo {
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
-// TODO: rewrite
-int64_t CPU::currentClockSpeed_MHz() const {
-  // Intel Turbo Boost Support -> https://stackoverflow.com/a/61808781
-  // It's actually a string which holds the percentage ->
-  // https://wutils.com/wmi/root/cimv2/win32_perfformatteddata_counters_processorinformation/instances.html
-  std::vector<bstr_t> performance{};
-  wmi::queryWMI("Win32_PerfFormattedData_Counters_ProcessorInformation", "PercentProcessorPerformance", performance);
-  if (!performance.empty()) {
-    const char* strValue = static_cast<const char*>(performance[0]);
-    double performance_perc = std::stod(strValue);
-
-    if (performance_perc > 0) {
-      std::vector<int64_t> maxSpeed{};
-      wmi::queryWMI("Win32_Processor", "MaxClockSpeed", maxSpeed);
-      if (maxSpeed.empty()) {
-        return -1;
-      }
-
-      // This basic calcuation does the trick...
-      return maxSpeed[0] * performance_perc / 100;
-    }
-  }
-
-  // As Fallback we take the Win32_Processor.CurrentClockSpeed
-  std::vector<int64_t> speed{};
-  wmi::queryWMI("Win32_Processor", "CurrentClockSpeed", speed);
-  if (speed.empty()) {
+int64_t CPU::currentClockSpeed_MHz(int thread_id) const {
+  auto data = utils::WMI::query<std::string>(L"Win32_PerfFormattedData_Counters_ProcessorInformation",
+                                             L"PercentProcessorPerformance");
+  if (data.empty()) {
     return -1;
   }
-  return speed[0];
+  double performance = std::stod(data[thread_id]) / 100;
+  return static_cast<int64_t>(static_cast<double>(_maxClockSpeed_MHz) * performance);
 }
 
-double CPU::currentUtility_Percentage() const {
+// _____________________________________________________________________________________________________________________
+std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
+  std::vector<int64_t> result;
+  result.reserve(_numLogicalCores);
+  auto data = utils::WMI::query<std::string>(L"Win32_PerfFormattedData_Counters_ProcessorInformation",
+                                             L"PercentProcessorPerformance");
+  if (data.empty()) {
+    result.resize(_numLogicalCores, -1);
+    return result;
+  }
+  for (auto& v : data) {
+    double performance = std::stod(v) / 100;
+    result.push_back(static_cast<int64_t>(static_cast<double>(_maxClockSpeed_MHz) * performance));
+  }
+  return result;
+}
+
+double CPU::currentUtilisation() const {
   std::vector<bstr_t> percentage{};
   const std::string& query =
       "Win32_PerfFormattedData_Counters_ProcessorInformation WHERE Name='" + std::to_string(0) + ",_Total'";
@@ -65,40 +60,82 @@ double CPU::currentUtility_Percentage() const {
   return std::stod(strValue);
 }
 
-double CPU::currentThreadUtility_Percentage(int thread_index) const {
-  std::vector<bstr_t> percentage{};
-  const std::string& query = "Win32_PerfFormattedData_Counters_ProcessorInformation WHERE Name='" + std::to_string(0) +
-                             "," + std::to_string(thread_index) + "'";
-  wmi::queryWMI(query, "PercentProcessorUtility", percentage);
-  if (percentage.empty()) {
-    return -1.0;
+double CPU::threadUtilisation(int thread_id) const {
+  auto data = utils::WMI::query<std::string>(L"Win32_PerfFormattedData_Counters_ProcessorInformation",
+                                             L"PercentProcessorUtility");
+  if (data.empty()) {
+    return -1.f;
   }
-
-  if (SysStringLen(percentage[0]) == 0) {
-    return -1.0;
+  std::string thread_value = data[thread_id];
+  if (thread_value.empty()) {
+    return -1.f;
   }
-
-  const char* strValue = static_cast<const char*>(percentage[0]);
-  if (strValue) {
-    return std::stod(strValue);
-  }
-  return -1.0;
+  return std::stod(thread_value);
 }
 
-std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const {
-  std::vector<double> thread_utility(CPU::_numLogicalCores);
-  std::vector<std::thread> threads;
-
-  for (int thread_idx = 0; thread_idx < CPU::_numLogicalCores; ++thread_idx) {
-    threads.emplace_back(
-        [&, thread_idx]() { thread_utility[thread_idx] = currentThreadUtility_Percentage(thread_idx); });
+std::vector<double> CPU::threadsUtilisation() const {
+  std::vector<double> thread_utility;
+  thread_utility.reserve(_numLogicalCores);
+  auto data = utils::WMI::query<std::string>(L"Win32_PerfFormattedData_Counters_ProcessorInformation",
+                                             L"PercentProcessorUtility");
+  if (data.empty()) {
+    thread_utility.resize(_numLogicalCores, -1.f);
+    return thread_utility;
   }
-
-  // Join the threads
-  for (auto& thread : threads) {
-    thread.join();
+  for (const auto& v : data) {
+    if (v.empty()) {
+      thread_utility.push_back(-1.f);
+    } else {
+      thread_utility.push_back(std::stod(v) / 100.f);
+    }
   }
   return thread_utility;
+}
+
+// =====================================================================================================================
+// _____________________________________________________________________________________________________________________
+std::vector<CPU> getAllCPUs() {
+  utils::WMI::_WMI wmi;
+  const std::wstring query_string(
+      L"SELECT Name, Manufacturer, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed, L2CacheSize, L3CacheSize "
+      L"FROM Win32_Processor");
+  bool success = wmi.execute_query(query_string);
+  if (!success) {
+    return {};
+  }
+  std::vector<CPU> cpus;
+
+  ULONG u_return = 0;
+  IWbemClassObject* obj = nullptr;
+  int cpu_id = 0;
+  while (wmi.enumerator) {
+    wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+    if (!u_return) {
+      break;
+    }
+    CPU cpu;
+    cpu._id = cpu_id++;
+    VARIANT vt_prop;
+    obj->Get(L"Name", 0, &vt_prop, NULL, NULL);
+    cpu._modelName = utils::wstring_to_std_string(vt_prop.bstrVal);
+    obj->Get(L"Manufacturer", 0, &vt_prop, NULL, NULL);
+    cpu._vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
+    obj->Get(L"NumberOfCores", 0, &vt_prop, NULL, NULL);
+    cpu._numPhysicalCores = vt_prop.intVal;
+    obj->Get(L"NumberOfLogicalProcessors", 0, &vt_prop, NULL, NULL);
+    cpu._numLogicalCores = vt_prop.intVal;
+    obj->Get(L"MaxClockSpeed", 0, &vt_prop, NULL, NULL);
+    cpu._maxClockSpeed_MHz = vt_prop.uintVal;
+    cpu._regularClockSpeed_MHz = vt_prop.uintVal;
+    obj->Get(L"L2CacheSize", 0, &vt_prop, NULL, NULL);
+    cpu._L2CacheSize_Bytes = vt_prop.uintVal;
+    obj->Get(L"L3CacheSize", 0, &vt_prop, NULL, NULL);
+    cpu._L3CacheSize_Bytes = vt_prop.uintVal;
+    VariantClear(&vt_prop);
+    obj->Release();
+    cpus.push_back(std::move(cpu));
+  }
+  return cpus;
 }
 
 }  // namespace hwinfo

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <hwinfo/platform.h>
 #include <hwinfo/utils/wmi_wrapper.h>
 
 #include <memory>
@@ -29,9 +30,6 @@ struct Jiffies {
 #endif
 
 class CPU {
-#if HWINFO_WINDOWS
-  friend std::vector<CPU> utils::WMI::get_component<CPU>();
-#endif
   friend std::vector<CPU> getAllCPUs();
 
  public:
@@ -47,6 +45,7 @@ class CPU {
   int numLogicalCores() const;
   int64_t maxClockSpeed_MHz() const;
   int64_t regularClockSpeed_MHz() const;
+  int64_t currentClockSpeed_MHz(int thread_id) const;
   std::vector<int64_t> currentClockSpeed_MHz() const;
   double currentUtilisation() const;
   double threadUtilisation(int thread_index) const;

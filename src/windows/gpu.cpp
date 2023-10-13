@@ -6,6 +6,7 @@
 #ifdef HWINFO_WINDOWS
 
 #include <hwinfo/WMIwrapper.h>
+#include <hwinfo/utils/wmi_wrapper.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -84,17 +85,37 @@ std::vector<int64_t> getMemory_Bytes() {
 
 // _____________________________________________________________________________________________________________________
 std::vector<GPU> getAllGPUs() {
-  auto vendors = gpu::getVendor();
-  auto names = gpu::getName();
-  auto driver = gpu::getDriverVersion();
-  auto memory = gpu::getMemory_Bytes();
+  utils::WMI::_WMI wmi;
+  const std::wstring query_string(
+      L"SELECT Name, AdapterCompatibility, DriverVersion, AdapterRam "
+      L"FROM WIN32_VideoController");
+  bool success = wmi.execute_query(query_string);
+  if (!success) {
+    return {};
+  }
   std::vector<GPU> gpus;
-  for (size_t i = 0; i < vendors.size(); ++i) {
+
+  ULONG u_return = 0;
+  IWbemClassObject* obj = nullptr;
+  int gpu_id = 0;
+  while (wmi.enumerator) {
+    wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+    if (!u_return) {
+      break;
+    }
     GPU gpu;
-    gpu._name = ::utils::get_value(names, i);
-    gpu._vendor = ::utils::get_value(vendors, i);
-    gpu._driverVersion = ::utils::get_value(driver, i);
-    gpu._memory_Bytes = ::utils::get_value(memory, i);
+    gpu._id = gpu_id++;
+    VARIANT vt_prop;
+    obj->Get(L"Name", 0, &vt_prop, NULL, NULL);
+    gpu._name = utils::wstring_to_std_string(vt_prop.bstrVal);
+    obj->Get(L"AdapterCompatibility", 0, &vt_prop, NULL, NULL);
+    gpu._vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
+    obj->Get(L"DriverVersion", 0, &vt_prop, NULL, NULL);
+    gpu._driverVersion = utils::wstring_to_std_string(vt_prop.bstrVal);
+    obj->Get(L"AdapterRam", 0, &vt_prop, NULL, NULL);
+    gpu._memory_Bytes = vt_prop.intVal;
+    VariantClear(&vt_prop);
+    obj->Release();
     gpus.push_back(std::move(gpu));
   }
 #ifdef USE_OCL
