@@ -18,3 +18,10 @@
 #if defined(HWINFO_X86_64) || defined(HWINFO_X86_32)
 #define HWINFO_X86
 #endif
+
+// macro definitions for C++ > 11 features if compiled with C++ > 11
+#if __cplusplus >= 201703L
+#define HWI_NODISCARD [[nodiscard]]
+#else
+#define HWI_NODISCARD
+#endif

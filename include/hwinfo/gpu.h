@@ -3,14 +3,11 @@
 
 #pragma once
 
+#include <hwinfo/platform.h>
+
 #include <cstdint>
 #include <string>
 #include <vector>
-
-#ifdef USE_OCL
-#define CL_HPP_TARGET_OPENCL_VERSION 200
-#include <missocl/opencl.h>
-#endif
 
 namespace hwinfo {
 
@@ -20,13 +17,13 @@ class GPU {
  public:
   ~GPU() = default;
 
-  const std::string& vendor() const;
-  const std::string& name() const;
-  const std::string& driverVersion() const;
-  int64_t memory_Bytes() const;
-  int64_t frequency_MHz() const;
-  int num_cores() const;
-  int id() const;
+  HWI_NODISCARD const std::string& vendor() const;
+  HWI_NODISCARD const std::string& name() const;
+  HWI_NODISCARD const std::string& driverVersion() const;
+  HWI_NODISCARD int64_t memory_Bytes() const;
+  HWI_NODISCARD int64_t frequency_MHz() const;
+  HWI_NODISCARD int num_cores() const;
+  HWI_NODISCARD int id() const;
 
  private:
   GPU() = default;
