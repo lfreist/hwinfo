@@ -1,38 +1,40 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#include "hwinfo/platform.h"
+#include "../platform.h"
 
 #ifdef HWINFO_APPLE
 
-#include "hwinfo/mainboard.h"
+//#include "../mainboard.h"
 
 namespace hwinfo {
+namespace mainboard {
 
 // _____________________________________________________________________________________________________________________
-std::string MainBoard::getVendor() {
+std::string getVendor() {
   // TODO: implement
   return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
-std::string MainBoard::getName() {
+std::string getName() {
   // TODO: implement
   return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
-std::string MainBoard::getVersion() {
+std::string getVersion() {
   // TODO: implement
   return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
-std::string MainBoard::getSerialNumber() {
+std::string getSerialNumber() {
   // TODO: implement
   return "<unknown>";
 }
 
+}  // namespace mainboard
 }  // namespace hwinfo
 
 #endif  // HWINFO_APPLE

@@ -186,14 +186,14 @@ int64_t CPU::currentClockSpeed_MHz(int thread_id) const {
 //}
 
 // _____________________________________________________________________________________________________________________
-int CPU::getRegularClockSpeed_kHz() {
-  uint64_t frequency = 0;
-  size_t size = sizeof(frequency);
-  if (sysctlbyname("hw.cpufrequency", &frequency, &size, nullptr, 0) == 0) {
-    return static_cast<int>(frequency);
-  }
-  return -1;
-}
+//int CPU::getRegularClockSpeed_kHz() {
+//  uint64_t frequency = 0;
+//  size_t size = sizeof(frequency);
+//  if (sysctlbyname("hw.cpufrequency", &frequency, &size, nullptr, 0) == 0) {
+//    return static_cast<int>(frequency);
+//  }
+//  return -1;
+//}
 
 //int CPU::getCacheSize_Bytes() { return -1; }
 
