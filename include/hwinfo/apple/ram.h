@@ -1,7 +1,7 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#include "hwinfo/platform.h"
+#include "../platform.h"
 
 #ifdef HWINFO_APPLE
 
@@ -10,36 +10,37 @@
 #include <string>
 #include <vector>
 
-#include "hwinfo/ram.h"
+//#include "../ram.h"
 
 namespace hwinfo {
+namespace ram {
 
 // _____________________________________________________________________________________________________________________
-std::string RAM::getVendor() {
+std::string getVendor() {
   // TODO: implement
   return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
-std::string RAM::getName() {
+std::string getName() {
   // TODO: implement
   return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
-std::string RAM::getModel() {
+std::string getModel() {
   // TODO: implement
   return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
-std::string RAM::getSerialNumber() {
+std::string getSerialNumber() {
   // TODO: implement
   return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
-int64_t RAM::getTotalSize_Bytes() {
+int64_t getTotalSize_Bytes() {
   int64_t memsize = 0;
   size_t size = sizeof(memsize);
   if (sysctlbyname("hw.memsize", &memsize, &size, nullptr, 0) == 0) {
@@ -48,8 +49,9 @@ int64_t RAM::getTotalSize_Bytes() {
   return -1;
 }
 
-int64_t RAM::getAvailableMemory() { return -1; }
+int64_t getAvailableMemory() { return -1; }
 
+}  // namespace ram
 }  // namespace hwinfo
 
 #endif  // HWINFO_APPLE
