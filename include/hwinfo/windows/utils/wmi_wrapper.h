@@ -1,20 +1,30 @@
-#include "hwinfo/utils/wmi_wrapper.h"
+//#include "../../utils/wmi_wrapper.h"
+
+#pragma once
 
 #ifdef HWINFO_WINDOWS
 
 #include <algorithm>
 #include <vector>
 
-#include "hwinfo/cpu.h"
-#include "hwinfo/disk.h"
-#include "hwinfo/gpu.h"
-#include "hwinfo/mainboard.h"
-#include "hwinfo/ram.h"
-#include "hwinfo/utils/stringutils.h"
+#include "WMIwrapper.h"
 
 namespace hwinfo {
 namespace utils {
 namespace WMI {
+
+struct _WMI {
+  _WMI();
+  ~_WMI();
+  bool execute_query(const std::wstring& query);
+
+  IWbemLocator* locator;
+  IWbemServices* service;
+  IEnumWbemClassObject* enumerator;
+};
+
+template <typename T>
+std::vector<T> query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter = L"");
 
 _WMI::_WMI() {
   auto res = CoInitializeSecurity(NULL, -1, NULL, NULL, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE, NULL,
@@ -69,7 +79,7 @@ std::vector<long> query(const std::wstring& wmi_class, const std::wstring& field
 }
 
 template <>
-std::vector<int> WMI::query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
+std::vector<int> query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
   std::vector<int> result;
   for (const auto& v : query<long>(wmi_class, field, filter)) {
     result.push_back(static_cast<int>(v));
@@ -78,7 +88,7 @@ std::vector<int> WMI::query(const std::wstring& wmi_class, const std::wstring& f
 }
 
 template <>
-std::vector<bool> WMI::query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
+std::vector<bool> query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
   std::vector<bool> result;
   _WMI wmi;
   std::wstring filter_string;
@@ -108,7 +118,7 @@ std::vector<bool> WMI::query(const std::wstring& wmi_class, const std::wstring& 
 }
 
 template <>
-std::vector<unsigned> WMI::query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
+std::vector<unsigned> query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
   std::vector<unsigned> result;
   _WMI wmi;
   std::wstring filter_string;
@@ -138,7 +148,7 @@ std::vector<unsigned> WMI::query(const std::wstring& wmi_class, const std::wstri
 }
 
 template <>
-std::vector<unsigned short> WMI::query(const std::wstring& wmi_class, const std::wstring& field,
+std::vector<unsigned short> query(const std::wstring& wmi_class, const std::wstring& field,
                                        const std::wstring& filter) {
   std::vector<unsigned short> result;
   _WMI wmi;
@@ -169,7 +179,7 @@ std::vector<unsigned short> WMI::query(const std::wstring& wmi_class, const std:
 }
 
 template <>
-std::vector<long long> WMI::query(const std::wstring& wmi_class, const std::wstring& field,
+std::vector<long long> query(const std::wstring& wmi_class, const std::wstring& field,
                                   const std::wstring& filter) {
   std::vector<long long> result;
   _WMI wmi;
@@ -200,7 +210,7 @@ std::vector<long long> WMI::query(const std::wstring& wmi_class, const std::wstr
 }
 
 template <>
-std::vector<unsigned long long> WMI::query(const std::wstring& wmi_class, const std::wstring& field,
+std::vector<unsigned long long> query(const std::wstring& wmi_class, const std::wstring& field,
                                            const std::wstring& filter) {
   std::vector<unsigned long long> result;
   _WMI wmi;
@@ -231,7 +241,7 @@ std::vector<unsigned long long> WMI::query(const std::wstring& wmi_class, const 
 }
 
 template <>
-std::vector<std::string> WMI::query(const std::wstring& wmi_class, const std::wstring& field,
+std::vector<std::string> query(const std::wstring& wmi_class, const std::wstring& field,
                                     const std::wstring& filter) {
   _WMI wmi;
   std::wstring filter_string;

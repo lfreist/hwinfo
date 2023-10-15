@@ -1,9 +1,9 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-
 #pragma once
+
+#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 
 #define _WIN32_DCOM
 #include <WbemIdl.h>

@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <hwinfo/platform.h>
-#include <hwinfo/utils/wmi_wrapper.h>
+#include "platform.h"
+#include "utils/wmi_wrapper.h"
 
 #include <memory>
 #include <string>

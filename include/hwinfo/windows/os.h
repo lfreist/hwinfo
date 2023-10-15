@@ -1,7 +1,9 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#include "hwinfo/platform.h"
+#pragma once
+
+#include "../platform.h"
 
 #ifdef HWINFO_WINDOWS
 #include <Windows.h>
@@ -10,8 +12,6 @@
 #include <sstream>
 #include <string>
 #define STATUS_SUCCESS 0x00000000
-
-#include "../os.h"
 
 namespace hwinfo {
 

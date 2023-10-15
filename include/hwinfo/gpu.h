@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <hwinfo/platform.h>
+#include "platform.h"
 
 #include <cstdint>
 #include <string>

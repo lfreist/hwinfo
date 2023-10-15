@@ -1,3 +1,5 @@
+#pragma once
+
 #include "hwinfo/platform.h"
 
 #ifdef HWINFO_WINDOWS

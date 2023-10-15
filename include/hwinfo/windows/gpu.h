@@ -1,7 +1,9 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include "hwinfo/platform.h"
+#pragma once
+
+#include "../platform.h"
 
 #ifdef HWINFO_WINDOWS
 
@@ -9,10 +11,9 @@
 #include <string>
 #include <vector>
 
-#include "../WMIwrapper.h"
-//#include "hwinfo/gpu.h"
 #include "../utils/stringutils.h"
-#include "../utils/wmi_wrapper.h"
+#include "utils/wmi_wrapper.h"
+
 #pragma comment(lib, "wbemuuid.lib")
 
 #ifdef USE_OCL

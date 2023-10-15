@@ -10,7 +10,7 @@
 #elif defined(HWINFO_WINDOWS)
 #include <windows.h>
 
-#include "hwinfo/WMIwrapper.h"
+#include "hwinfo/windows/utils/WMIwrapper.h"
 #endif
 
 #include <cstdint>

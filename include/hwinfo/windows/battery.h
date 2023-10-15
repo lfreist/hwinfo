@@ -1,17 +1,18 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
+#pragma once
+
 #include <iostream>
 
-#include "hwinfo/platform.h"
+#include "../platform.h"
 
 #ifdef HWINFO_WINDOWS
 
 #include <iostream>
 
-#include "../WMIwrapper.h"
-//#include "hwinfo/battery.h"
 #include "../utils/stringutils.h"
+#include "utils/wmi_wrapper.h"
 
 namespace hwinfo {
 

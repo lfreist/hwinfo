@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "hwinfo/platform.h"
+#include "platform.h"
 
 #if defined(HWINFO_X86)
 

@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include <hwinfo/cpu.h>
-#include <hwinfo/disk.h>
-#include <hwinfo/gpu.h>
-#include <hwinfo/ram.h>
+#include "cpu.h"
+#include "disk.h"
+#include "gpu.h"
+#include "ram.h"
 
 #include <string>
 #include <vector>

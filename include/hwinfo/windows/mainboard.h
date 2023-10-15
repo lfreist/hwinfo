@@ -1,15 +1,16 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#include "hwinfo/platform.h"
+#pragma once
+
+#include "../platform.h"
 
 #ifdef HWINFO_WINDOWS
 
 #include <string>
 
-#include "../WMIwrapper.h"
-//#include "hwinfo/mainboard.h"
 #include "../utils/stringutils.h"
+#include "utils/wmi_wrapper.h"
 
 namespace hwinfo {
 namespace mainboard {
