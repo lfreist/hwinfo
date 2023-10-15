@@ -9,26 +9,63 @@ namespace hwinfo {
 
 class OS {
  public:
-  OS();
+  OS() {
+    _32bit = getIs32bit();
+    _64bit = getIs64bit();
+    _bigEndian = getIsBigEndian();
+    _littleEndian = !_bigEndian;
+  }
   ~OS() = default;
 
-  std::string fullName();
-  std::string name();
-  std::string version();
-  std::string kernel();
-  [[nodiscard]] bool is32bit() const;
-  [[nodiscard]] bool is64bit() const;
-  [[nodiscard]] bool isBigEndian() const;
-  [[nodiscard]] bool isLittleEndian() const;
+  std::string fullName() {
+    if (_fullName.empty()) {
+      _fullName = getFullName();
+    }
+    return _fullName;
+  }
+
+  std::string name() {
+    if (_name.empty()) {
+      _name = getName();
+    }
+    return _name;
+  }
+
+  std::string version() {
+    if (_version.empty()) {
+      _version = getVersion();
+    }
+    return _version;
+  }
+
+  std::string kernel() {
+    if (_kernel.empty()) {
+      _kernel = getKernel();
+    }
+    return _kernel;
+  }
+
+
+  [[nodiscard]] bool is32bit() const { return _32bit; }
+  [[nodiscard]] bool is64bit() const { return _64bit; }
+  [[nodiscard]] bool isBigEndian() const { return _bigEndian; }
+  [[nodiscard]] bool isLittleEndian() const { return _littleEndian; }
 
   static std::string getFullName();
   static std::string getName();
   static std::string getVersion();
   static std::string getKernel();
-  static bool getIs32bit();
+  static bool getIs32bit() { return !getIs64bit(); }
   static bool getIs64bit();
-  static bool getIsBigEndian();
-  static bool getIsLittleEndian();
+  static bool getIsBigEndian() {
+    char16_t dummy = 0x0102;
+    return ((char*)&dummy)[0] == 0x01;
+  }
+
+  static bool getIsLittleEndian() {
+    char16_t dummy = 0x0102;
+    return ((char*)&dummy)[0] == 0x02;
+  }
 
  private:
   std::string _fullName;

@@ -35,23 +35,23 @@ class CPU {
  public:
   ~CPU() = default;
 
-  int id() const;
-  const std::string& modelName() const;
-  const std::string& vendor() const;
-  int64_t L1CacheSize_Bytes() const;
-  int64_t L2CacheSize_Bytes() const;
-  int64_t L3CacheSize_Bytes() const;
-  int numPhysicalCores() const;
-  int numLogicalCores() const;
-  int64_t maxClockSpeed_MHz() const;
-  int64_t regularClockSpeed_MHz() const;
+  int id() const { return _id; }
+  const std::string& modelName() const { return _modelName; }
+  const std::string& vendor() const { return _vendor; }
+  int64_t L1CacheSize_Bytes() const { return _L1CacheSize_Bytes; }
+  int64_t L2CacheSize_Bytes() const { return _L2CacheSize_Bytes; }
+  int64_t L3CacheSize_Bytes() const { return _L3CacheSize_Bytes; }
+  int numPhysicalCores() const { return _numPhysicalCores; }
+  int numLogicalCores() const { return _numLogicalCores; }
+  int64_t maxClockSpeed_MHz() const { return _maxClockSpeed_MHz; }
+  int64_t regularClockSpeed_MHz() const { return _regularClockSpeed_MHz; }
   int64_t currentClockSpeed_MHz(int thread_id) const;
   std::vector<int64_t> currentClockSpeed_MHz() const;
   double currentUtilisation() const;
   double threadUtilisation(int thread_index) const;
   std::vector<double> threadsUtilisation() const;
   // double currentTemperature_Celsius() const;
-  const std::vector<std::string>& flags() const;
+  const std::vector<std::string>& flags() const { return _flags; }
   void init_jiffies() const;
 
  private:

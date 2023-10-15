@@ -15,11 +15,11 @@ class Disk {
  public:
   ~Disk() = default;
 
-  const std::string& vendor() const;
-  const std::string& model() const;
-  const std::string& serialNumber() const;
-  int64_t size_Bytes() const;
-  int id() const;
+  const std::string& vendor() const { return _vendor; }
+  const std::string& model() const { return _model; }
+  const std::string& serialNumber() const { return _serialNumber; }
+  int64_t size_Bytes() const { return _size_Bytes; }
+  int id() const { return _id; }
 
  private:
   Disk() = default;

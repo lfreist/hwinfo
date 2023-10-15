@@ -17,13 +17,13 @@ class GPU {
  public:
   ~GPU() = default;
 
-  HWI_NODISCARD const std::string& vendor() const;
-  HWI_NODISCARD const std::string& name() const;
-  HWI_NODISCARD const std::string& driverVersion() const;
-  HWI_NODISCARD int64_t memory_Bytes() const;
-  HWI_NODISCARD int64_t frequency_MHz() const;
-  HWI_NODISCARD int num_cores() const;
-  HWI_NODISCARD int id() const;
+  HWI_NODISCARD const std::string& vendor() const { return _vendor; }
+  HWI_NODISCARD const std::string& name() const { return _name; }
+  HWI_NODISCARD const std::string& driverVersion() const { return _driverVersion; }
+  HWI_NODISCARD int64_t memory_Bytes() const { return _memory_Bytes; }
+  HWI_NODISCARD int64_t frequency_MHz() const { return _frequency_MHz; }
+  HWI_NODISCARD int num_cores() const { return _num_cores; }
+  HWI_NODISCARD int id() const { return _id; }
 
  private:
   GPU() = default;

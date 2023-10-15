@@ -17,16 +17,16 @@ namespace hwinfo {
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
-std::string Battery::getVendor() const { return "<unknwon>"; }
+std::string Battery::getVendor() const { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
 std::string Battery::getModel() const { return _model; }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getSerialNumber() const { return "<unknwon>"; }
+std::string Battery::getSerialNumber() const { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getTechnology() const { return "<unknwon>"; }
+std::string Battery::getTechnology() const { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
 uint32_t Battery::getEnergyFull() const { return 0; }

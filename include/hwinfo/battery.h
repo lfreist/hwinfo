@@ -15,16 +15,45 @@ class Battery {
   friend std::vector<Battery> getAllBatteries();
 
  public:
-  explicit Battery(int8_t id = 0);
+  explicit Battery(int8_t id = 0) { _id = id; }
   ~Battery() = default;
 
-  std::string& vendor();
-  std::string& model();
-  std::string& serialNumber();
-  std::string& technology();
-  uint32_t energyFull();
+  std::string& vendor() {
+    if (_vendor.empty()) {
+      _vendor = getVendor();
+    }
+    return _vendor;
+  }
 
-  double capacity();
+  std::string& model() {
+    if (_model.empty()) {
+      _model = getModel();
+    }
+    return _model;
+  }
+
+  std::string& serialNumber()  {
+    if (_serialNumber.empty()) {
+      _serialNumber = getSerialNumber();
+    }
+    return _serialNumber;
+  }
+
+  std::string& technology() {
+    if (_technology.empty()) {
+      _technology = getTechnology();
+    }
+    return _technology;
+  }
+
+  uint32_t energyFull() {
+    if (_energyFull == 0) {
+      _energyFull = getEnergyFull();
+    }
+    return _energyFull;
+  }
+
+  double capacity() { return static_cast<double>(energyNow()) / energyFull(); }
 
   [[nodiscard]] std::string getVendor() const;
   [[nodiscard]] std::string getModel() const;
