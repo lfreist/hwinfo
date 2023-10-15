@@ -5,10 +5,6 @@
 
 #include "platform.h"
 
-#if defined(HWINFO_WINDOWS)
-#include "utils/wmi_wrapper.h"
-#endif
-
 #include <memory>
 #include <string>
 #include <vector>
