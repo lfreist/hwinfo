@@ -1,16 +1,16 @@
-#include <hwinfo/utils/wmi_wrapper.h>
+#include "hwinfo/utils/wmi_wrapper.h"
 
 #ifdef HWINFO_WINDOWS
 
-#include <hwinfo/cpu.h>
-#include <hwinfo/disk.h>
-#include <hwinfo/gpu.h>
-#include <hwinfo/mainboard.h>
-#include <hwinfo/ram.h>
-#include <hwinfo/utils/stringutils.h>
-
 #include <algorithm>
 #include <vector>
+
+#include "hwinfo/cpu.h"
+#include "hwinfo/disk.h"
+#include "hwinfo/gpu.h"
+#include "hwinfo/mainboard.h"
+#include "hwinfo/ram.h"
+#include "hwinfo/utils/stringutils.h"
 
 namespace hwinfo {
 namespace utils {

@@ -79,3 +79,12 @@ class OS {
 };
 
 }  // namespace hwinfo
+
+#if defined(HWINFO_APPLE)
+#include "apple/os.h"
+#elif defined(HWINFO_LINUX)
+#include "linux/os.h"
+#elif defined(HWINFO_WINDOWS)
+#include "windows/os.h"
+#endif
+

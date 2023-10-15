@@ -75,3 +75,11 @@ class CPU {
 std::vector<CPU> getAllCPUs();
 
 }  // namespace hwinfo
+
+#if defined(HWINFO_APPLE)
+#include "apple/cpu.h"
+#elif defined(HWINFO_LINUX)
+#include "linux/cpu.h"
+#elif defined(HWINFO_WINDOWS)
+#include "windows/cpu.h"
+#endif

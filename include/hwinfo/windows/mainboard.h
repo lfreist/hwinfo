@@ -7,9 +7,9 @@
 
 #include <string>
 
-#include "hwinfo/WMIwrapper.h"
-#include "hwinfo/mainboard.h"
-#include "hwinfo/utils/stringutils.h"
+#include "../WMIwrapper.h"
+//#include "hwinfo/mainboard.h"
+#include "../utils/stringutils.h"
 
 namespace hwinfo {
 namespace mainboard {

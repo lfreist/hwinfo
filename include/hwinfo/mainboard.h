@@ -30,3 +30,11 @@ class MainBoard {
 };
 
 }  // namespace hwinfo
+
+#if defined(HWINFO_APPLE)
+#include "apple/mainboard.h"
+#elif defined(HWINFO_LINUX)
+#include "linux/mainboard.h"
+#elif defined(HWINFO_WINDOWS)
+#include "windows/mainboard.h"
+#endif

@@ -33,3 +33,11 @@ class Disk {
 std::vector<Disk> getAllDisks();
 
 }  // namespace hwinfo
+
+#if defined(HWINFO_APPLE)
+#include "apple/disk.h"
+#elif defined(HWINFO_LINUX)
+#include "linux/disk.h"
+#elif defined(HWINFO_WINDOWS)
+#include "windows/disk.h"
+#endif

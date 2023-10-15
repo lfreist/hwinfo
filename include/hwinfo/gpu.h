@@ -41,3 +41,11 @@ class GPU {
 
 std::vector<GPU> getAllGPUs();
 }  // namespace hwinfo
+
+#if defined(HWINFO_APPLE)
+#include "apple/gpu.h"
+#elif defined(HWINFO_LINUX)
+#include "linux/gpu.h"
+#elif defined(HWINFO_WINDOWS)
+#include "windows/gpu.h"
+#endif

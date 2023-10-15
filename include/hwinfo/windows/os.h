@@ -11,7 +11,7 @@
 #include <string>
 #define STATUS_SUCCESS 0x00000000
 
-#include "hwinfo/os.h"
+#include "../os.h"
 
 namespace hwinfo {
 

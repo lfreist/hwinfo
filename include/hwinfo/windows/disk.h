@@ -5,9 +5,9 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <hwinfo/disk.h>
-#include <hwinfo/utils/stringutils.h>
-#include <hwinfo/utils/wmi_wrapper.h>
+//#include "hwinfo/disk.h"
+#include "../utils/stringutils.h"
+#include "../utils/wmi_wrapper.h"
 
 namespace hwinfo {
 

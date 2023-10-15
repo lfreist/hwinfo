@@ -5,16 +5,16 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <hwinfo/WMIwrapper.h>
-#include <hwinfo/cpu.h>
-#include <hwinfo/cpuid.h>
-#include <hwinfo/utils/stringutils.h>
-#include <hwinfo/utils/utils.h>
-
 #include <algorithm>
 #include <string>
 #include <thread>
 #include <vector>
+
+#include "../WMIwrapper.h"
+//#include "hwinfo/cpu.h"
+#include "../cpuid.h"
+#include "../utils/stringutils.h"
+#include "../utils/utils.h"
 
 namespace hwinfo {
 

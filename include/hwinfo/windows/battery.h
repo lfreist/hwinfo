@@ -9,9 +9,9 @@
 
 #include <iostream>
 
-#include "hwinfo/WMIwrapper.h"
-#include "hwinfo/battery.h"
-#include "hwinfo/utils/stringutils.h"
+#include "../WMIwrapper.h"
+//#include "hwinfo/battery.h"
+#include "../utils/stringutils.h"
 
 namespace hwinfo {
 

@@ -77,3 +77,11 @@ class Battery {
 std::vector<Battery> getAllBatteries();
 
 }  // namespace hwinfo
+
+#if defined(HWINFO_APPLE)
+#include "apple/battery.h"
+#elif defined(HWINFO_LINUX)
+#include "linux/battery.h"
+#elif defined(HWINFO_WINDOWS)
+#include "windows/battery.h"
+#endif

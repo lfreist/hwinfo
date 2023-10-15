@@ -1,18 +1,18 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include <hwinfo/platform.h>
+#include "hwinfo/platform.h"
 
 #ifdef HWINFO_WINDOWS
-
-#include <hwinfo/WMIwrapper.h>
-#include <hwinfo/gpu.h>
-#include <hwinfo/utils/stringutils.h>
-#include <hwinfo/utils/wmi_wrapper.h>
 
 #include <algorithm>
 #include <string>
 #include <vector>
+
+#include "../WMIwrapper.h"
+//#include "hwinfo/gpu.h"
+#include "../utils/stringutils.h"
+#include "../utils/wmi_wrapper.h"
 #pragma comment(lib, "wbemuuid.lib")
 
 #ifdef USE_OCL
