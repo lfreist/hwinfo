@@ -28,7 +28,7 @@ std::vector<Disk> getAllDisks() {
   int disk_id = 0;
   while (wmi.enumerator) {
     wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
-    if (!u_return) {
+    if (!u_return || obj == nullptr) {
       break;
     }
     Disk disk;

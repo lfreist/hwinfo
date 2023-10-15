@@ -10,6 +10,10 @@
 #include <hwinfo/gpu.h>
 #include <hwinfo/utils/filesystem.h>
 
+#ifdef USE_OCL
+#include <missocl/opencl.h>
+#endif
+
 #include <fstream>
 #include <string>
 #include <vector>
