@@ -1,14 +1,4 @@
 add_library(HWinfo STATIC
-#        hwinfo.cpp
-        # platform independent definitions
-#        PCIMapper.cpp
-#        battery.cpp
-#        cpu.cpp
-#        gpu.cpp
-#        ram.cpp
-#        os.cpp
-#        mainboard.cpp
-#        disk.cpp
         # apple specific definitions
         apple/utils/filesystem.cpp
         apple/battery.cpp
