@@ -52,7 +52,7 @@ if (WIN32 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 endif ()
 
 if (NOT DEFINED NO_OCL)
-    target_link_libraries(HWinfo PUBLIC miss-opencl_static)
+    target_link_libraries(HWinfo INTERFACE miss-opencl_static)
 endif ()
 
 # If the host system is Linux, copy the "pci.ids" to a destination folder.
