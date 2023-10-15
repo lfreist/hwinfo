@@ -35,6 +35,14 @@ std::string getSerialNumber() {
 }
 
 }  // namespace mainboard
+
+MainBoard::MainBoard() {
+  _vendor = "";
+  _name = "";
+  _version = "";
+  _serialNumber = "";
+}
+
 }  // namespace hwinfo
 
 #endif  // HWINFO_APPLE

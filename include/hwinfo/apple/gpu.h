@@ -1,7 +1,7 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include "hwinfo/platform.h"
+#include "../platform.h"
 
 #ifdef HWINFO_APPLE
 #ifndef USE_OCL
@@ -10,33 +10,35 @@
 #include <string>
 #include <vector>
 
-#include "hwinfo/gpu.h"
+//#include "../gpu.h"
 
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::string GPU::getVendor() {
-  // TODO: implement
-  return "<unknown>";
-}
+//std::string GPU::getVendor() {
+//  // TODO: implement
+//  return "<unknown>";
+//}
 
 // _____________________________________________________________________________________________________________________
-std::string GPU::getName() {
-  // TODO: implement
-  return "<unknown>";
-}
+//std::string GPU::getName() {
+//  // TODO: implement
+//  return "<unknown>";
+//}
 
 // _____________________________________________________________________________________________________________________
-std::string GPU::getDriverVersion() {
-  // TODO: implement
-  return "<unknown>";
-}
+//std::string GPU::getDriverVersion() {
+//  // TODO: implement
+//  return "<unknown>";
+//}
 
 // _____________________________________________________________________________________________________________________
-int64_t GPU::getMemory_Bytes() {
-  // TODO: implement
-  return -1;
-}
+//int64_t GPU::getMemory_Bytes() {
+//  // TODO: implement
+//  return -1;
+//}
+
+std::vector<GPU> getAllGPUs() { return {}; }
 
 }  // namespace hwinfo
 

@@ -52,6 +52,17 @@ int64_t getTotalSize_Bytes() {
 int64_t getAvailableMemory() { return -1; }
 
 }  // namespace ram
+
+RAM::RAM() {
+  _name = "<unknown>";
+  _vendor = "<unknown>";
+  _serialNumber = "<unknown>";
+  _model = "<unknown>";
+  _total_Bytes = -1;
+  _free_Bytes = -1;
+  _available_Bytes = -1;
+}
+
 }  // namespace hwinfo
 
 #endif  // HWINFO_APPLE

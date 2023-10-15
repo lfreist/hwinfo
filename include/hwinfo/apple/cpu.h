@@ -27,6 +27,8 @@ int64_t CPU::currentClockSpeed_MHz(int thread_id) const {
   return -1;
 }
 
+std::vector<int64_t> CPU::currentClockSpeed_MHz() const { return std::vector<int64_t>(); }
+
 // _____________________________________________________________________________________________________________________
 //std::string CPU::getVendor() {
 //#if defined(HWINFO_X86)
@@ -227,7 +229,7 @@ std::vector<double> CPU::threadsUtilisation() const { return std::vector<double>
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
-std::vector<CPU> getAllCPUSs() { return {}; }
+std::vector<CPU> getAllCPUs() { return {}; }
 
 }  // namespace hwinfo
 
