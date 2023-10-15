@@ -80,7 +80,7 @@ std::vector<Battery> getAllBatteries();
 
 #if defined(HWINFO_APPLE)
 #include "apple/battery.h"
-#elif defined(HWINFO_LINUX)
+#elif defined(HWINFO_UNIX)
 #include "linux/battery.h"
 #elif defined(HWINFO_WINDOWS)
 #include "windows/battery.h"

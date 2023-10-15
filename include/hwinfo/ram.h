@@ -46,7 +46,7 @@ class RAM {
 
 #if defined(HWINFO_APPLE)
 #include "apple/ram.h"
-#elif defined(HWINFO_LINUX)
+#elif defined(HWINFO_UNIX)
 #include "linux/ram.h"
 #elif defined(HWINFO_WINDOWS)
 #include "windows/ram.h"

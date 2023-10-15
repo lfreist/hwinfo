@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "hwinfo/cpu.h"
+#include "../cpu.h"
 
 namespace hwinfo {
 namespace filesystem {

@@ -4,7 +4,10 @@
 #pragma once
 
 #include "platform.h"
+
+#if defined(HWINFO_WINDOWS)
 #include "utils/wmi_wrapper.h"
+#endif
 
 #include <memory>
 #include <string>
@@ -78,7 +81,7 @@ std::vector<CPU> getAllCPUs();
 
 #if defined(HWINFO_APPLE)
 #include "apple/cpu.h"
-#elif defined(HWINFO_LINUX)
+#elif defined(HWINFO_UNIX)
 #include "linux/cpu.h"
 #elif defined(HWINFO_WINDOWS)
 #include "windows/cpu.h"

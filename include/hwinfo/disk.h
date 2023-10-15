@@ -36,7 +36,7 @@ std::vector<Disk> getAllDisks();
 
 #if defined(HWINFO_APPLE)
 #include "apple/disk.h"
-#elif defined(HWINFO_LINUX)
+#elif defined(HWINFO_UNIX)
 #include "linux/disk.h"
 #elif defined(HWINFO_WINDOWS)
 #include "windows/disk.h"

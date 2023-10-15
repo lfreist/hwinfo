@@ -44,7 +44,7 @@ std::vector<GPU> getAllGPUs();
 
 #if defined(HWINFO_APPLE)
 #include "apple/gpu.h"
-#elif defined(HWINFO_LINUX)
+#elif defined(HWINFO_UNIX)
 #include "linux/gpu.h"
 #elif defined(HWINFO_WINDOWS)
 #include "windows/gpu.h"

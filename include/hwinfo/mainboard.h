@@ -33,7 +33,7 @@ class MainBoard {
 
 #if defined(HWINFO_APPLE)
 #include "apple/mainboard.h"
-#elif defined(HWINFO_LINUX)
+#elif defined(HWINFO_UNIX)
 #include "linux/mainboard.h"
 #elif defined(HWINFO_WINDOWS)
 #include "windows/mainboard.h"

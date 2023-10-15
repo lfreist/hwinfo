@@ -1,14 +1,14 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include "hwinfo/platform.h"
+#include "../platform.h"
 
 #ifdef HWINFO_UNIX
 
 #include <fstream>
 
-#include "hwinfo/battery.h"
-#include "hwinfo/utils/filesystem.h"
+#include "../battery.h"
+#include "../utils/filesystem.h"
 
 namespace hwinfo {
 

@@ -2,13 +2,13 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include "hwinfo/platform.h"
+#include "../platform.h"
 
 #ifdef HWINFO_UNIX
 
-#include <hwinfo/PCIMapper.h>
-#include <hwinfo/gpu.h>
-#include <hwinfo/utils/filesystem.h>
+#include "../PCIMapper.h"
+#include "../gpu.h"
+#include "../utils/filesystem.h"
 
 #include <fstream>
 #include <string>

@@ -1,7 +1,7 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#include "hwinfo/platform.h"
+#include "../platform.h"
 
 #ifdef HWINFO_UNIX
 
@@ -12,8 +12,8 @@
 #include <sstream>
 #include <string>
 
-#include "hwinfo/os.h"
-#include "hwinfo/utils/stringutils.h"
+#include "../os.h"
+#include "../utils/stringutils.h"
 
 namespace hwinfo {
 

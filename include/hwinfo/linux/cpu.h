@@ -1,7 +1,7 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#include "hwinfo/platform.h"
+#include "../platform.h"
 
 #ifdef HWINFO_UNIX
 
@@ -20,9 +20,9 @@
 #include <thread>
 #include <vector>
 
-#include "hwinfo/cpu.h"
-#include "hwinfo/utils/filesystem.h"
-#include "hwinfo/utils/stringutils.h"
+#include "../cpu.h"
+#include "utils/filesystem.h"
+#include "../utils/stringutils.h"
 
 namespace hwinfo {
 
