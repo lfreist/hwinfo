@@ -28,15 +28,11 @@ std::vector<Disk> getAllDisks() {
   int disk_id = 0;
   while (wmi.enumerator) {
     wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
-    std::cout << "processing new value... ";
     if (!u_return || obj == nullptr) {
-      std::cout << "Failed" << std::endl;
       break;
     }
-    std::cout << "Succeeded" << std::endl;
     Disk disk;
     disk._id = disk_id++;
-    std::cout << "Disk " << disk_id - 1 << std::endl;
     VARIANT vt_prop;
     obj->Get(L"Model", 0, &vt_prop, nullptr, nullptr);
     disk._model = utils::wstring_to_std_string(((bstr_t)vt_prop.bstrVal).copy());
