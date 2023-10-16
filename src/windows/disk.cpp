@@ -13,24 +13,32 @@ namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 std::vector<Disk> getAllDisks() {
+  std::cout << "getAllDisks()" << std::endl;
   utils::WMI::_WMI wmi;
   const std::wstring query_string(
       L"SELECT Model, Manufacturer, SerialNumber, Size "
       L"FROM Win32_DiskDrive");
+  std::cout << "Running Query... ";
   bool success = wmi.execute_query(query_string);
   if (!success) {
+    std::cout << "Failed" << std::endl;
     return {};
   }
+  std::cout << "Succeeded" << std::endl;
   std::vector<Disk> disks;
 
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
   int disk_id = 0;
+  std::cout << "iterating..." << std::endl;
   while (wmi.enumerator) {
     wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+    std::cout << "processing new value... ";
     if (!u_return || obj == nullptr) {
+      std::cout << "Failed" << std::endl;
       break;
     }
+    std::cout << "Succeeded" << std::endl;
     Disk disk;
     disk._id = disk_id++;
     VARIANT vt_prop;
@@ -45,7 +53,9 @@ std::vector<Disk> getAllDisks() {
     VariantClear(&vt_prop);
     obj->Release();
     disks.push_back(std::move(disk));
+    std::cout << "Disk added!" << std::endl;
   }
+  std::cout << disks.size() << " Disks found." << std::endl;
   return disks;
 }
 
