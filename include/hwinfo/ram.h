@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <hwinfo/platform.h>
+
 #include <cstdint>
 #include <string>
 
@@ -13,23 +15,22 @@ class RAM {
   RAM();
   ~RAM() = default;
 
-  const std::string& vendor() const;
-  const std::string& name() const;
-  const std::string& model() const;
-  const std::string& serialNumber() const;
-  int64_t total_Bytes() const;
-  int64_t free_Bytes() const;
-  int64_t available_Bytes() const;
+  HWI_NODISCARD const std::string& vendor() const;
+  HWI_NODISCARD const std::string& name() const;
+  HWI_NODISCARD const std::string& model() const;
+  HWI_NODISCARD const std::string& serialNumber() const;
+  HWI_NODISCARD int64_t total_Bytes() const;
+  HWI_NODISCARD int64_t frequency_Hz() const;
+  int64_t free_Bytes();
+  int64_t available_Bytes();
 
  private:
-  std::string _vendor{};
-  std::string _name{};
-  std::string _model{};
-  std::string _serialNumber{};
+  std::string _vendor{"<unknown>"};
+  std::string _name{"<unknown>"};
+  std::string _model{"<unknown>"};
+  std::string _serialNumber{"<unknown>"};
   int64_t _total_Bytes = -1;
-  int64_t _free_Bytes = -1;
-  int64_t _available_Bytes = -1;
-  int _frequency = -1;
+  int64_t _frequency_Hz = -1;
 };
 
 }  // namespace hwinfo

@@ -5,7 +5,10 @@
  * This file is part of hwinfo.
  */
 
-#include <hwinfo/PCIMapper.h>
+#include <hwinfo/utils/PCIMapper.h>
+
+#ifdef HWINFO_UNIX
+
 #include <hwinfo/utils/stringutils.h>
 
 #include <fstream>
@@ -116,3 +119,5 @@ PCIMapper PCI::getMapper() {
 }
 
 }  // namespace hwinfo
+
+#endif  // HWINFO_UNIX

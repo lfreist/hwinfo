@@ -2,14 +2,8 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <hwinfo/cpu.h>
-#include <hwinfo/disk.h>
-#include <hwinfo/gpu.h>
-#include <hwinfo/mainboard.h>
-#include <hwinfo/ram.h>
 #include <hwinfo/utils/stringutils.h>
 
-#include <algorithm>
 #include <vector>
 
 namespace hwinfo {
@@ -17,14 +11,16 @@ namespace utils {
 namespace WMI {
 
 _WMI::_WMI() {
-  auto res = CoInitializeSecurity(NULL, -1, NULL, NULL, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE, NULL,
-                                  EOAC_NONE, NULL);
-  res &= CoInitializeEx(0, COINIT_MULTITHREADED);
-  res &= CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&locator);
-  res &= locator->ConnectServer(_bstr_t("ROOT\\CIMV2"), NULL, NULL, 0, 0, 0, 0, &service);
+  auto res = CoInitializeSecurity(nullptr, -1, nullptr, nullptr, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE,
+                                  nullptr, EOAC_NONE, nullptr);
+  res &= CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+  res &= CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&locator);
+  res &= locator->ConnectServer(_bstr_t("ROOT\\CIMV2"), nullptr, nullptr, nullptr, 0, nullptr, nullptr, &service);
   res &= CoSetProxyBlanket(service, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, nullptr, RPC_C_AUTHN_LEVEL_CALL,
                            RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, EOAC_NONE);
-  if (!SUCCEEDED(res)) throw std::runtime_error("error initializing WMI");
+  if (!SUCCEEDED(res)) {
+    throw std::runtime_error("error initializing WMI");
+  }
 }
 
 _WMI::~_WMI() {
@@ -60,8 +56,10 @@ std::vector<long> query(const std::wstring& wmi_class, const std::wstring& field
       break;
     }
     VARIANT vt_prop;
-    obj->Get(field.c_str(), 0, &vt_prop, NULL, NULL);
-    result.push_back(vt_prop.intVal);
+    HRESULT hr = obj->Get(field.c_str(), 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      result.push_back(vt_prop.intVal);
+    }
     VariantClear(&vt_prop);
     obj->Release();
   }
@@ -69,7 +67,7 @@ std::vector<long> query(const std::wstring& wmi_class, const std::wstring& field
 }
 
 template <>
-std::vector<int> WMI::query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
+std::vector<int> query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
   std::vector<int> result;
   for (const auto& v : query<long>(wmi_class, field, filter)) {
     result.push_back(static_cast<int>(v));
@@ -78,7 +76,7 @@ std::vector<int> WMI::query(const std::wstring& wmi_class, const std::wstring& f
 }
 
 template <>
-std::vector<bool> WMI::query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
+std::vector<bool> query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
   std::vector<bool> result;
   _WMI wmi;
   std::wstring filter_string;
@@ -99,8 +97,10 @@ std::vector<bool> WMI::query(const std::wstring& wmi_class, const std::wstring& 
       break;
     }
     VARIANT vt_prop;
-    obj->Get(field.c_str(), 0, &vt_prop, NULL, NULL);
-    result.push_back(vt_prop.boolVal);
+    HRESULT hr = obj->Get(field.c_str(), 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      result.push_back(vt_prop.boolVal);
+    }
     VariantClear(&vt_prop);
     obj->Release();
   }
@@ -108,7 +108,7 @@ std::vector<bool> WMI::query(const std::wstring& wmi_class, const std::wstring& 
 }
 
 template <>
-std::vector<unsigned> WMI::query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
+std::vector<unsigned> query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
   std::vector<unsigned> result;
   _WMI wmi;
   std::wstring filter_string;
@@ -129,8 +129,10 @@ std::vector<unsigned> WMI::query(const std::wstring& wmi_class, const std::wstri
       break;
     }
     VARIANT vt_prop;
-    obj->Get(field.c_str(), 0, &vt_prop, NULL, NULL);
-    result.push_back(vt_prop.uintVal);
+    HRESULT hr = obj->Get(field.c_str(), 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      result.push_back(vt_prop.uintVal);
+    }
     VariantClear(&vt_prop);
     obj->Release();
   }
@@ -138,7 +140,7 @@ std::vector<unsigned> WMI::query(const std::wstring& wmi_class, const std::wstri
 }
 
 template <>
-std::vector<unsigned short> WMI::query(const std::wstring& wmi_class, const std::wstring& field,
+std::vector<unsigned short> query(const std::wstring& wmi_class, const std::wstring& field,
                                        const std::wstring& filter) {
   std::vector<unsigned short> result;
   _WMI wmi;
@@ -160,8 +162,10 @@ std::vector<unsigned short> WMI::query(const std::wstring& wmi_class, const std:
       break;
     }
     VARIANT vt_prop;
-    obj->Get(field.c_str(), 0, &vt_prop, NULL, NULL);
-    result.push_back(vt_prop.uiVal);
+    HRESULT hr = obj->Get(field.c_str(), 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      result.push_back(vt_prop.uiVal);
+    }
     VariantClear(&vt_prop);
     obj->Release();
   }
@@ -169,7 +173,7 @@ std::vector<unsigned short> WMI::query(const std::wstring& wmi_class, const std:
 }
 
 template <>
-std::vector<long long> WMI::query(const std::wstring& wmi_class, const std::wstring& field,
+std::vector<long long> query(const std::wstring& wmi_class, const std::wstring& field,
                                   const std::wstring& filter) {
   std::vector<long long> result;
   _WMI wmi;
@@ -191,8 +195,10 @@ std::vector<long long> WMI::query(const std::wstring& wmi_class, const std::wstr
       break;
     }
     VARIANT vt_prop;
-    obj->Get(field.c_str(), 0, &vt_prop, NULL, NULL);
-    result.push_back(vt_prop.llVal);
+    HRESULT hr = obj->Get(field.c_str(), 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      result.push_back(vt_prop.llVal);
+    }
     VariantClear(&vt_prop);
     obj->Release();
   }
@@ -200,7 +206,7 @@ std::vector<long long> WMI::query(const std::wstring& wmi_class, const std::wstr
 }
 
 template <>
-std::vector<unsigned long long> WMI::query(const std::wstring& wmi_class, const std::wstring& field,
+std::vector<unsigned long long> query(const std::wstring& wmi_class, const std::wstring& field,
                                            const std::wstring& filter) {
   std::vector<unsigned long long> result;
   _WMI wmi;
@@ -222,8 +228,10 @@ std::vector<unsigned long long> WMI::query(const std::wstring& wmi_class, const 
       break;
     }
     VARIANT vt_prop;
-    obj->Get(field.c_str(), 0, &vt_prop, NULL, NULL);
-    result.push_back(vt_prop.ullVal);
+    HRESULT hr = obj->Get(field.c_str(), 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      result.push_back(vt_prop.ullVal);
+    }
     VariantClear(&vt_prop);
     obj->Release();
   }
@@ -231,7 +239,7 @@ std::vector<unsigned long long> WMI::query(const std::wstring& wmi_class, const 
 }
 
 template <>
-std::vector<std::string> WMI::query(const std::wstring& wmi_class, const std::wstring& field,
+std::vector<std::string> query(const std::wstring& wmi_class, const std::wstring& field,
                                     const std::wstring& filter) {
   _WMI wmi;
   std::wstring filter_string;
@@ -253,8 +261,10 @@ std::vector<std::string> WMI::query(const std::wstring& wmi_class, const std::ws
       break;
     }
     VARIANT vt_prop;
-    obj->Get(field.c_str(), 0, &vt_prop, NULL, NULL);
-    result.push_back(wstring_to_std_string(vt_prop.bstrVal));
+    HRESULT hr = obj->Get(field.c_str(), 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      result.push_back(wstring_to_std_string(vt_prop.bstrVal));
+    }
     VariantClear(&vt_prop);
     obj->Release();
   }
@@ -265,4 +275,4 @@ std::vector<std::string> WMI::query(const std::wstring& wmi_class, const std::ws
 }  // namespace utils
 }  // namespace hwinfo
 
-#endif  // WINDOWS
+#endif  // HWINFO_WINDOWS

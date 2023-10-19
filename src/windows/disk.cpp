@@ -34,21 +34,27 @@ std::vector<Disk> getAllDisks() {
     Disk disk;
     disk._id = disk_id++;
     VARIANT vt_prop;
-    obj->Get(L"Model", 0, &vt_prop, nullptr, nullptr);
-    disk._model = utils::wstring_to_std_string(((bstr_t)vt_prop.bstrVal).copy());
-    obj->Get(L"Manufacturer", 0, &vt_prop, nullptr, nullptr);
-    disk._vendor = utils::wstring_to_std_string(((bstr_t)vt_prop.bstrVal).copy());
-    obj->Get(L"SerialNumber", 0, &vt_prop, nullptr, nullptr);
-    disk._serialNumber = utils::wstring_to_std_string(((bstr_t)vt_prop.bstrVal).copy());
-    obj->Get(L"Size", 0, &vt_prop, nullptr, nullptr);
-    disk._size_Bytes = std::stoll(utils::wstring_to_std_string(((bstr_t)vt_prop.bstrVal).copy()));
-    std::cout << "Added Size" << std::endl;
+    HRESULT hr;
+    hr = obj->Get(L"Model", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      disk._model = utils::wstring_to_std_string(vt_prop.bstrVal);
+    }
+    hr = obj->Get(L"Manufacturer", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      disk._vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
+    }
+    hr = obj->Get(L"SerialNumber", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      disk._serialNumber = utils::wstring_to_std_string(vt_prop.bstrVal);
+    }
+    hr = obj->Get(L"Size", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      disk._size_Bytes = std::stoll(utils::wstring_to_std_string(vt_prop.bstrVal));
+    }
     VariantClear(&vt_prop);
     obj->Release();
     disks.push_back(std::move(disk));
-    std::cout << "Disk added!" << std::endl;
   }
-  std::cout << disks.size() << " Disks found." << std::endl;
   return disks;
 }
 

@@ -9,7 +9,6 @@
 
 #include <iostream>
 #include <string>
-#include <type_traits>
 #include <vector>
 #pragma comment(lib, "wbemuuid.lib")
 
@@ -23,9 +22,9 @@ struct _WMI {
   ~_WMI();
   bool execute_query(const std::wstring& query);
 
-  IWbemLocator* locator;
-  IWbemServices* service;
-  IEnumWbemClassObject* enumerator;
+  IWbemLocator* locator = nullptr;
+  IWbemServices* service = nullptr;
+  IEnumWbemClassObject* enumerator = nullptr;
 };
 
 template <typename T>

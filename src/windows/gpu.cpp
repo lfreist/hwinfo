@@ -5,7 +5,6 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <hwinfo/WMIwrapper.h>
 #include <hwinfo/gpu.h>
 #include <hwinfo/utils/stringutils.h>
 #include <hwinfo/utils/wmi_wrapper.h>
@@ -44,14 +43,23 @@ std::vector<GPU> getAllGPUs() {
     GPU gpu;
     gpu._id = gpu_id++;
     VARIANT vt_prop;
-    obj->Get(L"Name", 0, &vt_prop, nullptr, nullptr);
-    gpu._name = utils::wstring_to_std_string(vt_prop.bstrVal);
-    obj->Get(L"AdapterCompatibility", 0, &vt_prop, nullptr, nullptr);
-    gpu._vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
-    obj->Get(L"DriverVersion", 0, &vt_prop, nullptr, nullptr);
-    gpu._driverVersion = utils::wstring_to_std_string(vt_prop.bstrVal);
-    obj->Get(L"AdapterRam", 0, &vt_prop, nullptr, nullptr);
-    gpu._memory_Bytes = vt_prop.intVal;
+    HRESULT hr;
+    hr = obj->Get(L"Name", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      gpu._name = utils::wstring_to_std_string(vt_prop.bstrVal);
+    }
+    hr = obj->Get(L"AdapterCompatibility", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      gpu._vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
+    }
+    hr = obj->Get(L"DriverVersion", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      gpu._driverVersion = utils::wstring_to_std_string(vt_prop.bstrVal);
+    }
+    hr = obj->Get(L"AdapterRam", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      gpu._memory_Bytes = vt_prop.intVal;
+    }
     VariantClear(&vt_prop);
     obj->Release();
     gpus.push_back(std::move(gpu));

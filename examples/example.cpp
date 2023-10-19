@@ -1,12 +1,13 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include <hwinfo/PCIMapper.h>
 #include <hwinfo/hwinfo.h>
 
 #include <iomanip>
 #include <iostream>
 #include <vector>
+
+#include "hwinfo/utils/PCIMapper.h"
 
 int main(int argc, char** argv) {
   std::cout << "hwinfo is an open source, MIT licensed project that implements a platform independent "
@@ -46,8 +47,6 @@ int main(int argc, char** argv) {
   hwinfo::OS os;
   std::cout << "----------------------------------- OS ------------------------------------" << std::endl;
   std::cout << std::left << std::setw(20) << "Operating System:";
-  std::cout << os.fullName() << std::endl;
-  std::cout << std::left << std::setw(20) << "short name:";
   std::cout << os.name() << std::endl;
   std::cout << std::left << std::setw(20) << "version:";
   std::cout << os.version() << std::endl;
@@ -92,6 +91,8 @@ int main(int argc, char** argv) {
   std::cout << ram.free_Bytes() / 1024 / 1024 << std::endl;
   std::cout << std::left << std::setw(20) << "available [MiB]:";
   std::cout << ram.available_Bytes() / 1024 / 1024 << std::endl;
+  std::cout << std::left << std::setw(20) << "Frequency [MHz]:";
+  std::cout << ram.frequency_Hz() / 1000 / 1000 << std::endl;
 
   hwinfo::MainBoard main_board;
   std::cout << "------------------------------- Main Board --------------------------------" << std::endl;

@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <hwinfo/platform.h>
+
 #include <string>
 
 namespace hwinfo {
@@ -12,26 +14,15 @@ class OS {
   OS();
   ~OS() = default;
 
-  std::string fullName();
-  std::string name();
-  std::string version();
-  std::string kernel();
-  [[nodiscard]] bool is32bit() const;
-  [[nodiscard]] bool is64bit() const;
-  [[nodiscard]] bool isBigEndian() const;
-  [[nodiscard]] bool isLittleEndian() const;
-
-  static std::string getFullName();
-  static std::string getName();
-  static std::string getVersion();
-  static std::string getKernel();
-  static bool getIs32bit();
-  static bool getIs64bit();
-  static bool getIsBigEndian();
-  static bool getIsLittleEndian();
+  HWI_NODISCARD std::string name() const;
+  HWI_NODISCARD std::string version() const;
+  HWI_NODISCARD std::string kernel() const;
+  HWI_NODISCARD bool is32bit() const;
+  HWI_NODISCARD bool is64bit() const;
+  HWI_NODISCARD bool isBigEndian() const;
+  HWI_NODISCARD bool isLittleEndian() const;
 
  private:
-  std::string _fullName;
   std::string _name;
   std::string _version;
   std::string _kernel;

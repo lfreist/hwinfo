@@ -1,19 +1,17 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#include "hwinfo/platform.h"
+#include <hwinfo/platform.h>
 
 #ifdef HWINFO_WINDOWS
 
-#include <hwinfo/WMIwrapper.h>
 #include <hwinfo/cpu.h>
 #include <hwinfo/cpuid.h>
 #include <hwinfo/utils/stringutils.h>
-#include <hwinfo/utils/utils.h>
+#include <hwinfo/utils/wmi_wrapper.h>
 
 #include <algorithm>
 #include <string>
-#include <thread>
 #include <vector>
 
 namespace hwinfo {
@@ -48,16 +46,12 @@ std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
 }
 
 double CPU::currentUtilisation() const {
-  std::vector<bstr_t> percentage{};
-  const std::string& query =
-      "Win32_PerfFormattedData_Counters_ProcessorInformation WHERE Name='" + std::to_string(0) + ",_Total'";
-  wmi::queryWMI(query, "PercentProcessorUtility", percentage);
-  if (percentage.empty()) {
-    return -1.0;
+  auto res = utils::WMI::query<std::string>(L"Win32_PerfFormattedData_Counters_ProcessorInformation",
+                                            L"PercentProcessorUtility", L"Name=" + std::to_wstring(0) + L",_Total");
+  if (res.empty()) {
+    return -1.f;
   }
-
-  const char* strValue = static_cast<const char*>(percentage[0]);
-  return std::stod(strValue);
+  return std::stod(res[0]);
 }
 
 double CPU::threadUtilisation(int thread_id) const {
@@ -116,21 +110,36 @@ std::vector<CPU> getAllCPUs() {
     CPU cpu;
     cpu._id = cpu_id++;
     VARIANT vt_prop;
-    obj->Get(L"Name", 0, &vt_prop, NULL, NULL);
-    cpu._modelName = utils::wstring_to_std_string(vt_prop.bstrVal);
-    obj->Get(L"Manufacturer", 0, &vt_prop, NULL, NULL);
-    cpu._vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
-    obj->Get(L"NumberOfCores", 0, &vt_prop, NULL, NULL);
-    cpu._numPhysicalCores = vt_prop.intVal;
-    obj->Get(L"NumberOfLogicalProcessors", 0, &vt_prop, NULL, NULL);
-    cpu._numLogicalCores = vt_prop.intVal;
-    obj->Get(L"MaxClockSpeed", 0, &vt_prop, NULL, NULL);
-    cpu._maxClockSpeed_MHz = vt_prop.uintVal;
-    cpu._regularClockSpeed_MHz = vt_prop.uintVal;
-    obj->Get(L"L2CacheSize", 0, &vt_prop, NULL, NULL);
-    cpu._L2CacheSize_Bytes = vt_prop.uintVal;
-    obj->Get(L"L3CacheSize", 0, &vt_prop, NULL, NULL);
-    cpu._L3CacheSize_Bytes = vt_prop.uintVal;
+    HRESULT hr;
+    hr = obj->Get(L"Name", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      cpu._modelName = utils::wstring_to_std_string(vt_prop.bstrVal);
+    }
+    hr = obj->Get(L"Manufacturer", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      cpu._vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
+    }
+    hr = obj->Get(L"NumberOfCores", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      cpu._numPhysicalCores = vt_prop.intVal;
+    }
+    hr = obj->Get(L"NumberOfLogicalProcessors", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      cpu._numLogicalCores = vt_prop.intVal;
+    }
+    hr = obj->Get(L"MaxClockSpeed", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      cpu._maxClockSpeed_MHz = vt_prop.uintVal;
+      cpu._regularClockSpeed_MHz = vt_prop.uintVal;
+    }
+    hr = obj->Get(L"L2CacheSize", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      cpu._L2CacheSize_Bytes = vt_prop.uintVal;
+    }
+    hr = obj->Get(L"L3CacheSize", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      cpu._L3CacheSize_Bytes = vt_prop.uintVal;
+    }
     VariantClear(&vt_prop);
     obj->Release();
     cpus.push_back(std::move(cpu));

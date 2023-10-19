@@ -7,11 +7,11 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <iostream>
+#include <hwinfo/battery.h>
+#include <hwinfo/utils/stringutils.h>
+#include <hwinfo/utils/wmi_wrapper.h>
 
-#include "hwinfo/WMIwrapper.h"
-#include "hwinfo/battery.h"
-#include "hwinfo/utils/stringutils.h"
+#include <iostream>
 
 namespace hwinfo {
 
@@ -43,19 +43,42 @@ bool Battery::discharging() const { return false; }
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
 std::vector<Battery> getAllBatteries() {
-  std::vector<Battery> batteries;
-  std::vector<const wchar_t*> res{};
-  wmi::queryWMI("Win32_Battery", "Name", res);
-  if (res.empty() || res.front() == nullptr) {
+  utils::WMI::_WMI wmi;
+  const std::wstring query_string(L"SELECT DeviceID, FullChargeCapacity, Name FROM Win32_Battery");
+  bool success = wmi.execute_query(query_string);
+  if (!success) {
     return {};
   }
-  int8_t counter = 0;
-  for (const auto& v : res) {
-    std::wstring tmp(v);
-    batteries.emplace_back(counter++);
-    batteries.back()._model = utils::wstring_to_std_string(tmp);
+  std::vector<Battery> batteries;
+
+  ULONG u_return = 0;
+  IWbemClassObject* obj = nullptr;
+  int battery_id = 0;
+  while (wmi.enumerator) {
+    wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+    if (!u_return) {
+      break;
+    }
+    Battery battery;
+    battery._id = battery_id++;
+    VARIANT vt_prop;
+    HRESULT hr;
+    hr = obj->Get(L"Name", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      battery._model = utils::wstring_to_std_string(vt_prop.bstrVal);
+    }
+    hr = obj->Get(L"FullChargeCapacity", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      battery._energyFull = vt_prop.uintVal;
+    }
+    hr = obj->Get(L"DeviceID", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      battery._serialNumber = utils::wstring_to_std_string(vt_prop.bstrVal);
+    }
+    VariantClear(&vt_prop);
+    obj->Release();
+    batteries.push_back(std::move(battery));
   }
-  res.clear();
   return batteries;
 }
 

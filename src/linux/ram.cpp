@@ -82,8 +82,18 @@ RAM::RAM() {
   _model = "<unknown>";
   auto meminfo = parse_meminfo();
   _total_Bytes = meminfo.total;
-  _free_Bytes = meminfo.free;
-  _available_Bytes = meminfo.available;
+}
+
+// _____________________________________________________________________________________________________________________
+int64_t RAM::free_Bytes() {
+  auto meminfo = parse_meminfo();
+  return meminfo.free;
+}
+
+// _____________________________________________________________________________________________________________________
+int64_t RAM::available_Bytes() {
+  auto meminfo = parse_meminfo();
+  return meminfo.available;
 }
 
 }  // namespace hwinfo

@@ -37,7 +37,7 @@ class Battery {
   [[nodiscard]] bool discharging() const;
 
  private:
-  int8_t _id = -1;
+  int _id = -1;
   std::string _vendor;
   std::string _model;
   std::string _serialNumber;

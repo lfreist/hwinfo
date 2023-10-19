@@ -7,6 +7,10 @@
 
 #pragma once
 
+#include <hwinfo/platform.h>
+
+#ifdef HWINFO_UNIX
+
 #include <map>
 #include <string>
 
@@ -52,3 +56,5 @@ struct PCI {
 };
 
 }  // namespace hwinfo
+
+#endif  // HWINFO_UNIX
