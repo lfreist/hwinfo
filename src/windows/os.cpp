@@ -44,7 +44,7 @@ OS::OS() {
   }
   hr = obj->Get(L"OSArchitecture", 0, &vt_prop, nullptr, nullptr);
   if (SUCCEEDED(hr)) {
-    _64bit = utils::wstring_to_std_string(vt_prop.bstrVal) == "64-bit";
+    _64bit = utils::wstring_to_std_string(vt_prop.bstrVal).find("64") != std::string::npos;
     _32bit = !_64bit;
   }
   hr = obj->Get(L"BuildNumber", 0, &vt_prop, nullptr, nullptr);
