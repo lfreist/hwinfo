@@ -132,16 +132,22 @@ std::vector<CPU> getAllCPUs() {
       cpu._maxClockSpeed_MHz = vt_prop.uintVal;
       cpu._regularClockSpeed_MHz = vt_prop.uintVal;
     }
-    hr = obj->Get(L"L2CacheSize", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
-      cpu._L2CacheSize_Bytes = vt_prop.uintVal;
-    }
-    hr = obj->Get(L"L3CacheSize", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
-      cpu._L3CacheSize_Bytes = vt_prop.uintVal;
-    }
     VariantClear(&vt_prop);
     obj->Release();
+    auto cache{[&]() -> void {
+      auto data = utils::WMI::query<std::uint32_t>(L"Win32_CacheMemory", L"MaxCacheSize");
+      if (data.empty()) {
+        cpu._L1CacheSize_Bytes = cpu._L2CacheSize_Bytes = cpu._L3CacheSize_Bytes = -1;
+      }
+      try {
+        cpu._L1CacheSize_Bytes = data.at(0);
+        cpu._L2CacheSize_Bytes = data.at(1);
+        cpu._L3CacheSize_Bytes = data.at(2);
+      } catch (const std::exception& e) {
+        std::cout << "Exception in CPU Cache: " << e.what() << std::endl;
+      }
+    }};
+    cache();
     cpus.push_back(std::move(cpu));
   }
   return cpus;
