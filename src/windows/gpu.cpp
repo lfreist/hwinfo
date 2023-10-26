@@ -58,7 +58,7 @@ std::vector<GPU> getAllGPUs() {
     }
     hr = obj->Get(L"AdapterRam", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr)) {
-      gpu._memory_Bytes = vt_prop.intVal;
+      gpu._memory_Bytes = vt_prop.uintVal;
     }
     VariantClear(&vt_prop);
     obj->Release();
