@@ -1,23 +1,23 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include "hwinfo/platform.h"
+#include <hwinfo/platform.h>
 
 #ifdef HWINFO_UNIX
 
+#include <hwinfo/disk.h>
+#include <hwinfo/utils/filesystem.h>
+#include <hwinfo/utils/stringutils.h>
+
 #include <fstream>
 #include <regex>
-
-#include "hwinfo/disk.h"
-#include "hwinfo/utils/filesystem.h"
-#include "hwinfo/utils/stringutils.h"
 
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 bool isPartition(const std::string& path) {
-    std::regex partitionRegex(R"((sda|sdb|sdc|nvme\d+n\d+)p?\d+$)");
-    return std::regex_search(path, partitionRegex);
+  std::regex partitionRegex(R"((sd[a-z]|nvme\d+n\d+)p?\d+$)");
+  return std::regex_search(path, partitionRegex);
 }
 
 // _____________________________________________________________________________________________________________________
@@ -25,13 +25,14 @@ std::string getDiskVendor(const std::string& path) {
   // nvme devices are in /sys/class/nvme/ and /sys/class/block/nvme*
   // but the vendor file is only in /sys/class/nvme/
   // so we need to check if the device is in /sys/class/block/nvme* and if so, we need to change the path
+  // TODO: use utils::get_specs_by_file
   std::string vendor_path = path;
   std::string::size_type nvme_pos = path.find("nvme");
   if (nvme_pos != std::string::npos) {
-    std::string nvme_name = path.substr(nvme_pos, 5); // Exemple : "nvme0"
+    std::string nvme_name = path.substr(nvme_pos, 5);  // Exemple : "nvme0"
     vendor_path = path.substr(0, nvme_pos - 6) + "nvme/" + nvme_name;
   }
-  
+
   std::ifstream f(vendor_path + "/device/vendor");
   if (f.is_open()) {
     std::string vendor;
@@ -40,7 +41,7 @@ std::string getDiskVendor(const std::string& path) {
     f.close();
     return vendor;
   }
-  
+
   return "<unknown>";
 }
 
@@ -89,16 +90,18 @@ std::vector<Disk> getAllDisks() {
   const std::string base_path("/sys/class/block/");
   for (const auto& entry : filesystem::getDirectoryEntries(base_path)) {
     std::string path(base_path + entry);
-    if (!filesystem::exists(path))
+    if (!filesystem::exists(path)) continue;
+    if (isPartition(path)) {  // Check if it's a partition
       continue;
-    if (isPartition(path)) // Check if it's a partition
-      continue;
+    }
     Disk disk = Disk();
     disk._vendor = getDiskVendor(path);
     disk._model = getDiskModel(path);
     disk._serialNumber = getDiskSerialNumber(path);
-    if (disk.empty()) // Check before get size because size is always define in /sys/class/block/...
+    // Check before get size because size is always define in /sys/class/block/...
+    if (disk._vendor == "<unknown>" && disk._model == "<unknown>" && disk._serialNumber == "<unknown>") {
       continue;
+    }
     disk._size_Bytes = getDiskSize_Bytes(path);
 
     disks.push_back(std::move(disk));
