@@ -8,6 +8,7 @@ add_library(HWinfo STATIC
         ram.cpp
         os.cpp
         mainboard.cpp
+        network.cpp
         disk.cpp
         # apple specific definitions
         apple/utils/filesystem.cpp
@@ -36,6 +37,7 @@ add_library(HWinfo STATIC
         windows/ram.cpp
         windows/os.cpp
         windows/mainboard.cpp
+        windows/network.cpp
         windows/disk.cpp
         )
 

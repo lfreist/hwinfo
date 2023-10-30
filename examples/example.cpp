@@ -122,7 +122,6 @@ int main(int argc, char** argv) {
       std::cout << std::left << std::setw(20) << "  capacity:";
       std::cout << battery.capacity() << std::endl;
     }
-    std::cout << "---------------------------------------------------------------------------" << std::endl;
   } else {
     std::cout << "No Batteries installed or detected" << std::endl;
   }
@@ -142,8 +141,28 @@ int main(int argc, char** argv) {
       std::cout << std::left << std::setw(20) << "  size:";
       std::cout << disk.size_Bytes() << std::endl;
     }
-    std::cout << "---------------------------------------------------------------------------" << std::endl;
   } else {
     std::cout << "No Disks installed or detected" << std::endl;
+  }
+
+  std::vector<hwinfo::Network> networks = hwinfo::getAllNetworks();
+  std::cout << "--------------------------------- Networks -----------------------------------" << std::endl;
+  if (!networks.empty()) {
+    int network_counter = 0;
+    for (const auto& network : networks) {
+      if (network.ip4().size() > 0) {
+        std::cout << "Network " << network_counter++ << ":" << std::endl;
+        std::cout << std::left << std::setw(20) << "  Description:";
+        std::cout << network.description() << std::endl;
+        std::cout << std::left << std::setw(20) << "  Interface index:";
+        std::cout << network.interfaceIndex() << std::endl;
+        std::cout << std::left << std::setw(20) << "  MAC:";
+        std::cout << network.mac() << std::endl;
+        std::cout << std::left << std::setw(20) << "  IPv4:";
+        std::cout << network.ip4() << std::endl;
+      }
+    }
+  } else {
+    std::cout << "No Networks installed or detected" << std::endl;
   }
 }
