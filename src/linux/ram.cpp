@@ -75,23 +75,27 @@ MemInfo parse_meminfo() {
 }
 
 // _____________________________________________________________________________________________________________________
-RAM::RAM() {
-  _name = "<unknown>";
-  _vendor = "<unknown>";
-  _serialNumber = "<unknown>";
-  _model = "<unknown>";
-  auto meminfo = parse_meminfo();
-  _total_Bytes = meminfo.total;
+Memory::Memory() {
+  // TODO: get information for actual memory modules (DIMM)
+  Module module;
+  module.vendor = "<unknown>";
+  module.name = "<unknown>";
+  module.serial_number = "<unknown>";
+  module.model = "<unknown>";
+  module.id = 0;
+  module.total_Bytes = parse_meminfo().total;
+  module.frequency_Hz = -1;
+  _modules.push_back(module);
 }
 
 // _____________________________________________________________________________________________________________________
-int64_t RAM::free_Bytes() {
+int64_t Memory::free_Bytes() const {
   auto meminfo = parse_meminfo();
   return meminfo.free;
 }
 
 // _____________________________________________________________________________________________________________________
-int64_t RAM::available_Bytes() {
+int64_t Memory::available_Bytes() const {
   auto meminfo = parse_meminfo();
   return meminfo.available;
 }

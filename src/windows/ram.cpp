@@ -15,41 +15,17 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-RAM::RAM() = default;
-
-// _____________________________________________________________________________________________________________________
-int64_t RAM::free_Bytes() {
-  auto res = utils::WMI::query<std::string>(L"Win32_OperatingSystem", L"FreePhysicalMemory");
-  if (res.empty()) {
-    return -1;
-  }
-  if (res.size() > _id) {
-    return std::stoll(res[_id]) * 1024;
-  }
-  return -1;
-}
-
-// _____________________________________________________________________________________________________________________
-int64_t RAM::available_Bytes() {
-  // TODO: Get actual available memory size...
-  return free_Bytes();
-}
-
-// _____________________________________________________________________________________________________________________
-RAM::RAM(int id) : _id(id) {}
-
-// _____________________________________________________________________________________________________________________
-std::vector<RAM> getAllRAM() {
+Memory::Memory() {
   utils::WMI::_WMI wmi;
   const std::wstring query_string(
       L"SELECT Capacity, ConfiguredClockSpeed, Manufacturer, SerialNumber, PartNumber FROM Win32_PhysicalMemory");
   bool success = wmi.execute_query(query_string);
   if (!success) {
-    return {};
+    return;
   }
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
-  std::vector<RAM> rams;
+  std::vector<Memory> rams;
   int id = 0;
   while (wmi.enumerator) {
     wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
@@ -58,35 +34,49 @@ std::vector<RAM> getAllRAM() {
     }
     VARIANT vt_prop;
     HRESULT hr;
-    RAM ram(id++);
+    Memory::Module module(id++);
     hr = obj->Get(L"Manufacturer", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr)) {
-      ram._vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
+      module.vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     hr = obj->Get(L"partNumber", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr)) {
-      ram._model = utils::wstring_to_std_string(vt_prop.bstrVal);
+      module.model = utils::wstring_to_std_string(vt_prop.bstrVal);
       // TODO: One expects an actual name of the RAM but wmi does not provide such a property...
       //       The "Name"-property of WMI returns "PhysicalMemory".
-      ram._name = ram._model;
+      module.name = std::string(module.vendor + " " + module.model);
     }
     hr = obj->Get(L"Capacity", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr)) {
-      ram._total_Bytes = std::stoll(utils::wstring_to_std_string(vt_prop.bstrVal));
+      module.total_Bytes = std::stoll(utils::wstring_to_std_string(vt_prop.bstrVal));
     }
     hr = obj->Get(L"ConfiguredClockSpeed", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr)) {
-      ram._frequency_Hz = static_cast<int64_t>(vt_prop.ulVal) * 1000 * 1000;
+      module.frequency_Hz = static_cast<int64_t>(vt_prop.ulVal) * 1000 * 1000;
     }
     hr = obj->Get(L"SerialNumber", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr)) {
-      ram._serialNumber = utils::wstring_to_std_string(vt_prop.bstrVal);
+      module.serial_number = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     VariantClear(&vt_prop);
     obj->Release();
-    rams.push_back(std::move(ram));
+    _modules.push_back(std::move(module));
   }
-  return rams;
+}
+
+// _____________________________________________________________________________________________________________________
+int64_t Memory::free_Bytes() const {
+  auto res = utils::WMI::query<std::string>(L"Win32_OperatingSystem", L"FreePhysicalMemory");
+  if (res.empty()) {
+    return -1;
+  }
+  return std::stoll(res.front()) * 1024;
+}
+
+// _____________________________________________________________________________________________________________________
+int64_t Memory::available_Bytes() const {
+  // TODO: Get actual available memory size...
+  return free_Bytes();
 }
 
 }  // namespace hwinfo
