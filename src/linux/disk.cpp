@@ -6,6 +6,7 @@
 #ifdef HWINFO_UNIX
 
 #include <fstream>
+#include <regex>
 
 #include "hwinfo/disk.h"
 #include "hwinfo/utils/filesystem.h"
@@ -14,15 +15,32 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
+bool isPartition(const std::string& path) {
+    std::regex partitionRegex(R"((sda|sdb|sdc|nvme\d+n\d+)p?\d+$)");
+    return std::regex_search(path, partitionRegex);
+}
+
+// _____________________________________________________________________________________________________________________
 std::string getDiskVendor(const std::string& path) {
-  std::ifstream f(path + "/device/vendor");
-  if (f) {
+  // nvme devices are in /sys/class/nvme/ and /sys/class/block/nvme*
+  // but the vendor file is only in /sys/class/nvme/
+  // so we need to check if the device is in /sys/class/block/nvme* and if so, we need to change the path
+  std::string vendor_path = path;
+  std::string::size_type nvme_pos = path.find("nvme");
+  if (nvme_pos != std::string::npos) {
+    std::string nvme_name = path.substr(nvme_pos, 5); // Exemple : "nvme0"
+    vendor_path = path.substr(0, nvme_pos - 6) + "nvme/" + nvme_name;
+  }
+  
+  std::ifstream f(vendor_path + "/device/vendor");
+  if (f.is_open()) {
     std::string vendor;
     getline(f, vendor);
     utils::strip(vendor);
     f.close();
     return vendor;
   }
+  
   return "<unknown>";
 }
 
@@ -71,9 +89,10 @@ std::vector<Disk> getAllDisks() {
   const std::string base_path("/sys/class/block/");
   for (const auto& entry : filesystem::getDirectoryEntries(base_path)) {
     std::string path(base_path + entry);
-    if (!filesystem::exists(path)) {
+    if (!filesystem::exists(path))
       continue;
-    }
+    if (isPartition(path)) // Check if it's a partition
+      continue;
     Disk disk = Disk();
     disk._vendor = getDiskVendor(path);
     disk._model = getDiskModel(path);

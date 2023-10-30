@@ -42,5 +42,6 @@ std::string getDiskVendor(const std::string& path);
 std::string getDiskModel(const std::string& path);
 std::string getDiskSerialNumber(const std::string& path);
 int64_t getDiskSize_Bytes(const std::string& path);
+bool isPartition(const std::string& path);
 
 }  // namespace hwinfo
