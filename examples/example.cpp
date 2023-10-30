@@ -75,27 +75,27 @@ int main(int argc, char** argv) {
     std::cout << gpu.num_cores() << std::endl;
   }
 
-  auto rams = hwinfo::getAllRAM();
-  std::cout << "----------------------------------- RAM -----------------------------------" << std::endl;
-  for (auto& ram : rams) {
-    std::cout << "RAM " << ram.id() << ":\n";
-    std::cout << std::left << std::setw(20) << "vendor:";
-    std::cout << ram.vendor() << std::endl;
-    std::cout << std::left << std::setw(20) << "model:";
-    std::cout << ram.model() << std::endl;
-    std::cout << std::left << std::setw(20) << "name:";
-    std::cout << ram.name() << std::endl;
-    std::cout << std::left << std::setw(20) << "serial-number:";
-    std::cout << ram.serialNumber() << std::endl;
-    std::cout << std::left << std::setw(20) << "size [MiB]:";
-    std::cout << ram.total_Bytes() / 1024 / 1024 << std::endl;
-    std::cout << std::left << std::setw(20) << "free [MiB]:";
-    std::cout << ram.free_Bytes() / 1024 / 1024 << std::endl;
-    std::cout << std::left << std::setw(20) << "available [MiB]:";
-    std::cout << ram.available_Bytes() / 1024 / 1024 << std::endl;
-    std::cout << std::left << std::setw(20) << "Frequency [MHz]:";
-    std::cout << ram.frequency_Hz() / 1000 / 1000 << std::endl;
-  }
+  // auto rams = hwinfo::getAllRAM();
+  // std::cout << "----------------------------------- RAM -----------------------------------" << std::endl;
+  // for (auto& ram : rams) {
+  //   std::cout << "RAM " << ram.id() << ":\n";
+  //   std::cout << std::left << std::setw(20) << "vendor:";
+  //   std::cout << ram.vendor() << std::endl;
+  //   std::cout << std::left << std::setw(20) << "model:";
+  //   std::cout << ram.model() << std::endl;
+  //   std::cout << std::left << std::setw(20) << "name:";
+  //   std::cout << ram.name() << std::endl;
+  //   std::cout << std::left << std::setw(20) << "serial-number:";
+  //   std::cout << ram.serialNumber() << std::endl;
+  //   std::cout << std::left << std::setw(20) << "size [MiB]:";
+  //   std::cout << ram.total_Bytes() / 1024 / 1024 << std::endl;
+  //   std::cout << std::left << std::setw(20) << "free [MiB]:";
+  //   std::cout << ram.free_Bytes() / 1024 / 1024 << std::endl;
+  //   std::cout << std::left << std::setw(20) << "available [MiB]:";
+  //   std::cout << ram.available_Bytes() / 1024 / 1024 << std::endl;
+  //   std::cout << std::left << std::setw(20) << "Frequency [MHz]:";
+  //   std::cout << ram.frequency_Hz() / 1000 / 1000 << std::endl;
+  // }
 
   hwinfo::MainBoard main_board;
   std::cout << "------------------------------- Main Board --------------------------------" << std::endl;

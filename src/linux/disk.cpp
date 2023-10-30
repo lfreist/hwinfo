@@ -13,50 +13,74 @@
 
 namespace hwinfo {
 
+// _____________________________________________________________________________________________________________________
+std::string getDiskVendor(const std::string& path) {
+  std::ifstream f(path + "/device/vendor");
+  if (f) {
+    std::string vendor;
+    getline(f, vendor);
+    utils::strip(vendor);
+    f.close();
+    return vendor;
+  }
+  return "<unknown>";
+}
+
+// _____________________________________________________________________________________________________________________
+std::string getDiskModel(const std::string& path) {
+  std::ifstream f(path + "/device/model");
+  if (f) {
+    std::string model;
+    getline(f, model);
+    utils::strip(model);
+    f.close();
+    return model;
+  }
+  return "<unknown>";
+}
+
+// _____________________________________________________________________________________________________________________
+std::string getDiskSerialNumber(const std::string& path) {
+  std::ifstream f(path + "/device/serial");
+  if (f) {
+    std::string serial;
+    getline(f, serial);
+    utils::strip(serial);
+    f.close();
+    return serial;
+  }
+  return "<unknown>";
+}
+
+// _____________________________________________________________________________________________________________________
+int64_t getDiskSize_Bytes(const std::string& path) {
+  std::ifstream f(path + "/size");
+  if (f) {
+    int64_t size;
+    f >> size;
+    f.close();
+    return size * block_size;
+  }
+  return -1;
+}
+
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
 std::vector<Disk> getAllDisks() {
   std::vector<Disk> disks;
   const std::string base_path("/sys/class/block/");
   for (const auto& entry : filesystem::getDirectoryEntries(base_path)) {
-    Disk disk;
-    std::string path(base_path + "/" + entry + "/device/");
+    std::string path(base_path + entry);
     if (!filesystem::exists(path)) {
       continue;
     }
-    std::ifstream f(path + "vendor");
-    if (f) {
-      getline(f, disk._vendor);
-    } else {
-      disk._vendor = "<unknown>";
-    }
-    f.close();
-    f.open(path + "model");
-    if (f) {
-      getline(f, disk._model);
-    } else {
-      disk._model = "<unknown>";
-    }
-    f.close();
-    f.open(path + "serial");
-    if (f) {
-      getline(f, disk._serialNumber);
-    } else {
-      disk._serialNumber = "<unknown>";
-    }
-    f.close();
-    utils::strip(disk._vendor);
-    utils::strip(disk._model);
-    utils::strip(disk._serialNumber);
-    disk._size_Bytes = -1;
-    /*
-    struct statvfs buf {};
-    std::string mount_path("/dev/");
-    mount_path.append(split_get_index(entry.path().string(), "/", -1));
-    if (statvfs(mount_path.c_str(), &buf)) {
-      size = static_cast<int64_t>(buf.f_bsize * buf.f_bfree);
-    }
-    */
+    Disk disk = Disk();
+    disk._vendor = getDiskVendor(path);
+    disk._model = getDiskModel(path);
+    disk._serialNumber = getDiskSerialNumber(path);
+    if (disk.empty()) // Check before get size because size is always define in /sys/class/block/...
+      continue;
+    disk._size_Bytes = getDiskSize_Bytes(path);
 
     disks.push_back(std::move(disk));
   }
