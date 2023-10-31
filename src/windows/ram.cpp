@@ -34,7 +34,8 @@ Memory::Memory() {
     }
     VARIANT vt_prop;
     HRESULT hr;
-    Memory::Module module(id++);
+    Memory::Module module;
+    module.id = id++;
     hr = obj->Get(L"Manufacturer", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr)) {
       module.vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
