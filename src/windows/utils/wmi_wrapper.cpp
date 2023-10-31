@@ -141,7 +141,7 @@ std::vector<unsigned> query(const std::wstring& wmi_class, const std::wstring& f
 
 template <>
 std::vector<unsigned short> query(const std::wstring& wmi_class, const std::wstring& field,
-                                       const std::wstring& filter) {
+                                  const std::wstring& filter) {
   std::vector<unsigned short> result;
   _WMI wmi;
   std::wstring filter_string;
@@ -173,8 +173,7 @@ std::vector<unsigned short> query(const std::wstring& wmi_class, const std::wstr
 }
 
 template <>
-std::vector<long long> query(const std::wstring& wmi_class, const std::wstring& field,
-                                  const std::wstring& filter) {
+std::vector<long long> query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
   std::vector<long long> result;
   _WMI wmi;
   std::wstring filter_string;
@@ -207,7 +206,7 @@ std::vector<long long> query(const std::wstring& wmi_class, const std::wstring& 
 
 template <>
 std::vector<unsigned long long> query(const std::wstring& wmi_class, const std::wstring& field,
-                                           const std::wstring& filter) {
+                                      const std::wstring& filter) {
   std::vector<unsigned long long> result;
   _WMI wmi;
   std::wstring filter_string;
@@ -239,8 +238,7 @@ std::vector<unsigned long long> query(const std::wstring& wmi_class, const std::
 }
 
 template <>
-std::vector<std::string> query(const std::wstring& wmi_class, const std::wstring& field,
-                                    const std::wstring& filter) {
+std::vector<std::string> query(const std::wstring& wmi_class, const std::wstring& field, const std::wstring& filter) {
   _WMI wmi;
   std::wstring filter_string;
   if (!filter.empty()) {

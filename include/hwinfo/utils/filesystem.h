@@ -1,8 +1,8 @@
 #pragma once
 
-#include <string>
-
 #include <hwinfo/cpu.h>
+
+#include <string>
 
 namespace hwinfo {
 namespace filesystem {
