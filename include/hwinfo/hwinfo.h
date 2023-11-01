@@ -8,5 +8,6 @@
 #include <hwinfo/disk.h>
 #include <hwinfo/gpu.h>
 #include <hwinfo/mainboard.h>
+#include <hwinfo/network.h>
 #include <hwinfo/os.h>
 #include <hwinfo/ram.h>
