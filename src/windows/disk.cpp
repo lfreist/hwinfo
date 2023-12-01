@@ -45,7 +45,8 @@ std::vector<Disk> getAllDisks() {
     }
     hr = obj->Get(L"SerialNumber", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr)) {
-      disk._serialNumber = utils::wstring_to_std_string(vt_prop.bstrVal);
+      if (vt_prop.bstrVal)  // the value may empty
+        disk._serialNumber = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     hr = obj->Get(L"Size", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr)) {
