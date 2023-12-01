@@ -1,6 +1,8 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.16)
 project(hwinfo VERSION 1.0.0 LANGUAGES CXX)
 include(GNUInstallDirs)
+
+string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}" PROJECT_IS_TOP_LEVEL)
 
 option(BUILD_EXAMPLES "Build example program" ${PROJECT_IS_TOP_LEVEL})
 option(BUILD_TESTING  "Build test program" ${PROJECT_IS_TOP_LEVEL})
