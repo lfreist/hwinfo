@@ -15,9 +15,12 @@ _WMI::_WMI() {
                                   nullptr, EOAC_NONE, nullptr);
   res &= CoInitializeEx(nullptr, COINIT_MULTITHREADED);
   res &= CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&locator);
-  res &= locator->ConnectServer(_bstr_t("ROOT\\CIMV2"), nullptr, nullptr, nullptr, 0, nullptr, nullptr, &service);
-  res &= CoSetProxyBlanket(service, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, nullptr, RPC_C_AUTHN_LEVEL_CALL,
-                           RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, EOAC_NONE);
+  if (locator) {
+    res &= locator->ConnectServer(_bstr_t("ROOT\\CIMV2"), nullptr, nullptr, nullptr, 0, nullptr, nullptr, &service);
+    if (service)
+      res &= CoSetProxyBlanket(service, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, nullptr, RPC_C_AUTHN_LEVEL_CALL,
+                               RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, EOAC_NONE);
+  }
   if (!SUCCEEDED(res)) {
     throw std::runtime_error("error initializing WMI");
   }
@@ -30,6 +33,7 @@ _WMI::~_WMI() {
 }
 
 bool _WMI::execute_query(const std::wstring& query) {
+  if (service == nullptr) return false;
   return SUCCEEDED(service->ExecQuery(bstr_t(L"WQL"), bstr_t(std::wstring(query.begin(), query.end()).c_str()),
                                       WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, nullptr, &enumerator));
 }

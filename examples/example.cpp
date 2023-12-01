@@ -149,4 +149,5 @@ int main(int argc, char** argv) {
   } else {
     std::cout << "No Disks installed or detected" << std::endl;
   }
+  return EXIT_SUCCESS;
 }

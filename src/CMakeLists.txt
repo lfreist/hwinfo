@@ -48,3 +48,5 @@ if (NOT DEFINED NO_OCL)
 endif ()
 
 add_library(${PROJECT_NAME}::HWinfo ALIAS HWinfo)
+
+install(TARGETS HWinfo DESTINATION ${CMAKE_INSTALL_LIBDIR})
