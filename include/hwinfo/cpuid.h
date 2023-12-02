@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "hwinfo/platform.h"
 
 #if defined(HWINFO_X86)

@@ -18,10 +18,10 @@ class Battery {
   explicit Battery(int8_t id = 0);
   ~Battery() = default;
 
-  std::string& vendor();
-  std::string& model();
-  std::string& serialNumber();
-  std::string& technology();
+  std::string vendor();
+  std::string model();
+  std::string serialNumber();
+  std::string technology();
   uint32_t energyFull();
 
   double capacity();

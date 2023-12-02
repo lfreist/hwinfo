@@ -19,7 +19,7 @@ struct Jiffies {
     all = -1;
   }
 
-  Jiffies(const int64_t& _all, const int64_t& _working) {
+  Jiffies(int64_t _all, int64_t _working) {
     all = _all;
     working = _working;
   }
