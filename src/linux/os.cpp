@@ -32,7 +32,7 @@ OS::OS() {
         // remove \" at begin and end of the substring result
         _name = {line.begin() + 1, line.end() - 1};
       }
-      if (utils::starts_with(line, "VERSION")) {
+      if (utils::starts_with(line, "VERSION=")) {
         line = line.substr(line.find('=') + 1, line.length());
         // remove \" at begin and end of the substring result
         _version = {line.begin() + 1, line.end() - 1};
