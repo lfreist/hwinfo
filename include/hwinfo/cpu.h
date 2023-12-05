@@ -36,6 +36,7 @@ class CPU {
   ~CPU() = default;
 
   int id() const;
+  const std::string& processorId() const;
   const std::string& modelName() const;
   const std::string& vendor() const;
   int64_t L1CacheSize_Bytes() const;
@@ -58,6 +59,7 @@ class CPU {
   CPU() = default;
 
   int _id{-1};
+  std::string _processorId;
   std::string _modelName;
   std::string _vendor;
   int _numPhysicalCores{-1};

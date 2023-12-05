@@ -55,6 +55,18 @@ OS::OS() {
   if (SUCCEEDED(hr)) {
     _kernel = utils::wstring_to_std_string(vt_prop.bstrVal);
   }
+  auto uuid{[&]() -> void {
+    auto data = utils::WMI::query<std::string>(L"Win32_ComputerSystemProduct", L"UUID");
+    if (data.empty()) {
+      _uuid = "";
+    }
+    try {
+      _uuid = data.at(0);
+    } catch (const std::exception& e) {
+      std::cout << "Exception in OS UUID: " << e.what() << std::endl;
+    }
+  }};
+  uuid();
   VariantClear(&vt_prop);
   obj->Release();
 }

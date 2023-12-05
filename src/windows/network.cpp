@@ -4,10 +4,6 @@
 #include <hwinfo/platform.h>
 
 #ifdef HWINFO_WINDOWS
-#include <Windows.h>
-
-#include <sstream>
-#include <string>
 
 #include <hwinfo/network.h>
 #include <hwinfo/utils/stringutils.h>

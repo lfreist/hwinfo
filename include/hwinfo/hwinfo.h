@@ -11,3 +11,4 @@
 #include <hwinfo/network.h>
 #include <hwinfo/os.h>
 #include <hwinfo/ram.h>
+#include <hwinfo/bios.h>

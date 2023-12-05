@@ -14,6 +14,7 @@ class OS {
   OS();
   ~OS() = default;
 
+  HWI_NODISCARD std::string uuid() const;
   HWI_NODISCARD std::string name() const;
   HWI_NODISCARD std::string version() const;
   HWI_NODISCARD std::string kernel() const;
@@ -23,6 +24,7 @@ class OS {
   HWI_NODISCARD bool isLittleEndian() const;
 
  private:
+  std::string _uuid;
   std::string _name;
   std::string _version;
   std::string _kernel;

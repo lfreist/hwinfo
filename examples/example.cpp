@@ -22,6 +22,8 @@ int main(int argc, char** argv) {
     std::cout << "Socket " << cpu.id() << ":\n";
     std::cout << std::left << std::setw(20) << " vendor:";
     std::cout << cpu.vendor() << std::endl;
+    std::cout << std::left << std::setw(20) << " processor id:";
+    std::cout << cpu.processorId() << std::endl;
     std::cout << std::left << std::setw(20) << " model:";
     std::cout << cpu.modelName() << std::endl;
     std::cout << std::left << std::setw(20) << " physical cores:";
@@ -48,6 +50,8 @@ int main(int argc, char** argv) {
   std::cout << "----------------------------------- OS ------------------------------------" << std::endl;
   std::cout << std::left << std::setw(20) << "Operating System:";
   std::cout << os.name() << std::endl;
+  std::cout << std::left << std::setw(20) << "uuid:";
+  std::cout << os.uuid() << std::endl;
   std::cout << std::left << std::setw(20) << "version:";
   std::cout << os.version() << std::endl;
   std::cout << std::left << std::setw(20) << "kernel:";
@@ -56,6 +60,13 @@ int main(int argc, char** argv) {
   std::cout << (os.is32bit() ? "32 bit" : "64 bit") << std::endl;
   std::cout << std::left << std::setw(20) << "endianess:";
   std::cout << (os.isLittleEndian() ? "little endian" : "big endian") << std::endl;
+
+  hwinfo::BIOS bios;
+  std::cout << "----------------------------------- BIOS ------------------------------------" << std::endl;
+  std::cout << std::left << std::setw(20) << "name:";
+  std::cout << bios.name() << std::endl;
+  std::cout << std::left << std::setw(20) << "serial number:";
+  std::cout << bios.serialNumber() << std::endl;
 
   auto gpus = hwinfo::getAllGPUs();
   std::cout << "----------------------------------- GPU -----------------------------------" << std::endl;

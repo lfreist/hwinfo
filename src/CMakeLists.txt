@@ -10,6 +10,7 @@ add_library(HWinfo STATIC
         mainboard.cpp
         network.cpp
         disk.cpp
+        bios.cpp
         # apple specific definitions
         apple/utils/filesystem.cpp
         apple/battery.cpp
@@ -39,6 +40,7 @@ add_library(HWinfo STATIC
         windows/mainboard.cpp
         windows/network.cpp
         windows/disk.cpp
+        windows/bios.cpp
         )
 
 if (WIN32 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")

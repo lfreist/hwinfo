@@ -91,7 +91,7 @@ std::vector<double> CPU::threadsUtilisation() const {
 std::vector<CPU> getAllCPUs() {
   utils::WMI::_WMI wmi;
   const std::wstring query_string(
-      L"SELECT Name, Manufacturer, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed, L2CacheSize, L3CacheSize "
+      L"SELECT Name, Manufacturer, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed, ProcessorId "
       L"FROM Win32_Processor");
   bool success = wmi.execute_query(query_string);
   if (!success) {
@@ -131,6 +131,10 @@ std::vector<CPU> getAllCPUs() {
     if (SUCCEEDED(hr)) {
       cpu._maxClockSpeed_MHz = vt_prop.uintVal;
       cpu._regularClockSpeed_MHz = vt_prop.uintVal;
+    }
+    hr = obj->Get(L"ProcessorId", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      cpu._processorId = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     VariantClear(&vt_prop);
     obj->Release();
