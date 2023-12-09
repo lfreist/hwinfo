@@ -17,10 +17,10 @@ class MainBoard {
   MainBoard();
   ~MainBoard() = default;
 
-  std::string vendor() const;
-  std::string name() const;
-  std::string version() const;
-  std::string serialNumber() const;
+  const std::string& vendor() const;
+  const std::string& name() const;
+  const std::string& version() const;
+  const std::string& serialNumber() const;
 
  private:
   std::string _vendor;

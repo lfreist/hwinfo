@@ -17,9 +17,9 @@ class GPU {
  public:
   ~GPU() = default;
 
-  HWI_NODISCARD std::string vendor() const;
-  HWI_NODISCARD std::string name() const;
-  HWI_NODISCARD std::string driverVersion() const;
+  HWI_NODISCARD const std::string& vendor() const;
+  HWI_NODISCARD const std::string& name() const;
+  HWI_NODISCARD const std::string& driverVersion() const;
   HWI_NODISCARD int64_t memory_Bytes() const;
   HWI_NODISCARD int64_t frequency_MHz() const;
   HWI_NODISCARD int num_cores() const;
