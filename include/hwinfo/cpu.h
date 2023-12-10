@@ -24,8 +24,8 @@ struct Jiffies {
     working = _working;
   }
 
-  int64_t working{-1};
-  int64_t all{-1};
+  int64_t working;
+  int64_t all;
 };
 #endif
 
