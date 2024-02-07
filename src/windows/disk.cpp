@@ -50,7 +50,7 @@ std::vector<Disk> getAllDisks() {
     }
     hr = obj->Get(L"Size", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr)) {
-      disk._size_Bytes = std::stoll(utils::wstring_to_std_string(vt_prop.bstrVal));
+      disk._size_Bytes = static_cast<int64_t>(vt_prop.ullVal);
     }
     VariantClear(&vt_prop);
     obj->Release();
