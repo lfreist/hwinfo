@@ -1,7 +1,7 @@
 /**
-* This file has a copy of the content of script/pci.ids, which is returned by a function as a string.
-* In case that file is updated, this file should be updated as well.
-*/
+ * This file has a copy of the content of script/pci.ids, which is returned by a function as a string.
+ * In case that file is updated, this file should be updated as well.
+ */
 
 #pragma once
 
@@ -36416,6 +36416,6 @@ C 40  Coprocessor
 C ff  Unassigned class)";
 }
 
-}
+}  // namespace hwinfo
 
 #endif  // HWINFO_UNIX

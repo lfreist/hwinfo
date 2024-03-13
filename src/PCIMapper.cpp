@@ -9,8 +9,8 @@
 
 #ifdef HWINFO_UNIX
 
-#include <hwinfo/utils/stringutils.h>
 #include <hwinfo/utils/pci.ids.h>
+#include <hwinfo/utils/stringutils.h>
 
 #include <sstream>
 #include <stdexcept>
@@ -37,7 +37,6 @@ const PCIDevice& PCIVendor::operator[](const std::string& device_id) const {
 
 // _____________________________________________________________________________________________________________________
 PCIMapper::PCIMapper() {
-
   std::stringstream s_pciid(get_pcs_ids());
   PCIVendor* current_vendor = nullptr;
   PCIDevice* current_device = nullptr;
