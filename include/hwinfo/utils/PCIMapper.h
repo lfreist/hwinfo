@@ -39,7 +39,7 @@ struct PCIVendor {
 
 class PCIMapper {
  public:
-  explicit PCIMapper(const std::string& pci_ids_file);
+  explicit PCIMapper();
   ~PCIMapper() = default;
 
   const PCIVendor& vendor_from_id(const std::string& vendor_id) const;

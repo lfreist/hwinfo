@@ -37,10 +37,6 @@ target_include_directories(HWinfo PUBLIC ${PROJECT_SOURCE_DIR}/include/)
 
 install(DIRECTORY include/hwinfo DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-    file(COPY "scripts/pci.ids" DESTINATION "$ENV{HOME}/.hwinfo/")
-endif ()
-
 if (NOT PROJECT_IS_TOP_LEVEL)
     return()
 endif()
