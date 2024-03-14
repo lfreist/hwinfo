@@ -37,7 +37,7 @@ const PCIDevice& PCIVendor::operator[](const std::string& device_id) const {
 
 // _____________________________________________________________________________________________________________________
 PCIMapper::PCIMapper() {
-  std::stringstream s_pciid(get_pcs_ids());
+  std::stringstream s_pciid(get_pci_ids());
   PCIVendor* current_vendor = nullptr;
   PCIDevice* current_device = nullptr;
   while (true) {

@@ -11,7 +11,7 @@
 
 namespace hwinfo {
 
-inline std::string get_pcs_ids() {
+inline std::string get_pci_ids() {
   return R"(#
 #	List of PCI ID's
 #
