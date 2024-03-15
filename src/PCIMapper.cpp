@@ -9,9 +9,10 @@
 
 #ifdef HWINFO_UNIX
 
+#include <hwinfo/utils/pci.ids.h>
 #include <hwinfo/utils/stringutils.h>
 
-#include <fstream>
+#include <sstream>
 #include <stdexcept>
 
 namespace hwinfo {
@@ -35,16 +36,13 @@ const PCIDevice& PCIVendor::operator[](const std::string& device_id) const {
 }
 
 // _____________________________________________________________________________________________________________________
-PCIMapper::PCIMapper(const std::string& pci_ids_file) {
-  std::ifstream f_pciid(pci_ids_file);
-  if (!f_pciid) {
-    throw std::runtime_error("ERROR: Could not open file '" + pci_ids_file + "'.\n");
-  }
+PCIMapper::PCIMapper() {
+  std::stringstream s_pciid(get_pci_ids());
   PCIVendor* current_vendor = nullptr;
   PCIDevice* current_device = nullptr;
   while (true) {
     std::string line;
-    if (!std::getline(f_pciid, line)) {
+    if (!std::getline(s_pciid, line)) {
       break;
     }
     if (utils::starts_with(line, "#") || utils::starts_with(line, "\n") || line.empty()) {
@@ -114,7 +112,7 @@ PCIMapper PCI::getMapper() {
   };
 
   static std::string path = getenv("HOME");
-  static PCIMapper mapper(path + "/.hwinfo/pci.ids");
+  static PCIMapper mapper;
   return mapper;
 }
 
