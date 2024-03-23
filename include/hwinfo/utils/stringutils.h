@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <regex>
 #include <codecvt>
 #include <cstdint>
 #include <cstring>
@@ -12,6 +13,37 @@
 
 namespace hwinfo {
 namespace utils {
+
+/**
+ * Replaces an occurence once in the entire string. Stops at first match
+ *
+ * @param input The input string
+ * @param from The token to match
+ * @param to The token to use as a replace with matched ones
+ */
+inline bool replaceOnce(std::string& input, const std::string& from, const std::string& to)
+{
+    size_t start_pos = input.find(from);
+
+    if (start_pos == std::string::npos)
+        return false;
+
+    input.replace(start_pos, from.length(), to);
+
+    return true;
+}
+
+/**
+ * Replaces all occurences in the entire string.
+ *
+ * @param input The input string
+ * @param from The token to match
+ * @param to The token to use as a replace with matched ones
+ */
+inline void replaceAll(std::string& input, const char from, const char to)
+{
+    std::replace(input.begin(), input.end(), from, to);
+}
 
 /**
  * remove all white spaces (' ', '\t', '\n') from start and end of input

@@ -73,6 +73,10 @@ int main(int argc, char** argv) {
     std::cout << gpu.frequency_MHz() << std::endl;
     std::cout << std::left << std::setw(20) << "  cores:";
     std::cout << gpu.num_cores() << std::endl;
+    std::cout << std::left << std::setw(20) << "  vendor_id:";
+    std::cout << gpu.vendor_id() << std::endl;
+    std::cout << std::left << std::setw(20) << "  device_id:";
+    std::cout << gpu.device_id() << std::endl;
   }
 
   hwinfo::Memory memory;
