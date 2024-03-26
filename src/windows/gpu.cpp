@@ -63,17 +63,14 @@ std::vector<GPU> getAllGPUs() {
     hr = obj->Get(L"PNPDeviceID", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr)) {
       std::string ret = utils::wstring_to_std_string(vt_prop.bstrVal);
-      if (utils::starts_with(ret, "PCI\\"))
-      {
+      if (utils::starts_with(ret, "PCI\\")) {
         utils::replaceOnce(ret, "PCI\\", "");
         std::vector<std::string> ids = utils::split(ret, "&");
         gpu._vendor_id = ids[0];
         utils::replaceOnce(gpu._vendor_id, "VEN_", "");
         gpu._device_id = ids[1];
         utils::replaceOnce(gpu._device_id, "DEV_", "");
-      }
-      else
-      {
+      } else {
         gpu._vendor_id = "0";
         gpu._device_id = "0";
       }
