@@ -24,6 +24,8 @@ class GPU {
   HWI_NODISCARD int64_t frequency_MHz() const;
   HWI_NODISCARD int num_cores() const;
   HWI_NODISCARD int id() const;
+  HWI_NODISCARD const std::string& vendor_id() const;
+  HWI_NODISCARD const std::string& device_id() const;
 
  private:
   GPU() = default;

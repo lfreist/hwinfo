@@ -24,7 +24,7 @@ namespace hwinfo {
 std::vector<GPU> getAllGPUs() {
   utils::WMI::_WMI wmi;
   const std::wstring query_string(
-      L"SELECT Name, AdapterCompatibility, DriverVersion, AdapterRam "
+      L"SELECT Name, AdapterCompatibility, DriverVersion, AdapterRam, PNPDeviceID "
       L"FROM WIN32_VideoController");
   bool success = wmi.execute_query(query_string);
   if (!success) {
@@ -59,6 +59,21 @@ std::vector<GPU> getAllGPUs() {
     hr = obj->Get(L"AdapterRam", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr)) {
       gpu._memory_Bytes = vt_prop.uintVal;
+    }
+    hr = obj->Get(L"PNPDeviceID", 0, &vt_prop, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+      std::string ret = utils::wstring_to_std_string(vt_prop.bstrVal);
+      if (utils::starts_with(ret, "PCI\\")) {
+        utils::replaceOnce(ret, "PCI\\", "");
+        std::vector<std::string> ids = utils::split(ret, "&");
+        gpu._vendor_id = ids[0];
+        utils::replaceOnce(gpu._vendor_id, "VEN_", "");
+        gpu._device_id = ids[1];
+        utils::replaceOnce(gpu._device_id, "DEV_", "");
+      } else {
+        gpu._vendor_id = "0";
+        gpu._device_id = "0";
+      }
     }
     VariantClear(&vt_prop);
     obj->Release();
