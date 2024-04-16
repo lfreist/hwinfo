@@ -29,7 +29,7 @@ std::string Battery::getSerialNumber() const { return "<unknwon>"; }
 std::string Battery::getTechnology() const { return "<unknwon>"; }
 
 // _____________________________________________________________________________________________________________________
-uint32_t Battery::getEnergyFull() const { return 0; }
+uint32_t Battery::getEnergyFull() const { return 1; }
 
 // _____________________________________________________________________________________________________________________
 uint32_t Battery::energyNow() const { return 0; }
@@ -64,15 +64,15 @@ std::vector<Battery> getAllBatteries() {
     VARIANT vt_prop;
     HRESULT hr;
     hr = obj->Get(L"Name", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       battery._model = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     hr = obj->Get(L"FullChargeCapacity", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_I4)) {
       battery._energyFull = vt_prop.uintVal;
     }
     hr = obj->Get(L"DeviceID", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       battery._serialNumber = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     VariantClear(&vt_prop);

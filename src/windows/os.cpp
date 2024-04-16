@@ -39,20 +39,20 @@ OS::OS() {
   VARIANT vt_prop;
   HRESULT hr;
   hr = obj->Get(L"Caption", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr)) {
+  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
     _name = utils::wstring_to_std_string(vt_prop.bstrVal);
   }
   hr = obj->Get(L"OSArchitecture", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr)) {
+  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
     _64bit = utils::wstring_to_std_string(vt_prop.bstrVal).find("64") != std::string::npos;
     _32bit = !_64bit;
   }
   hr = obj->Get(L"BuildNumber", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr)) {
+  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
     _version = utils::wstring_to_std_string(vt_prop.bstrVal);
   }
   hr = obj->Get(L"Version", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr)) {
+  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
     _kernel = utils::wstring_to_std_string(vt_prop.bstrVal);
   }
   VariantClear(&vt_prop);

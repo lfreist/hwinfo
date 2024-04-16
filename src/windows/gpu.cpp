@@ -45,23 +45,23 @@ std::vector<GPU> getAllGPUs() {
     VARIANT vt_prop;
     HRESULT hr;
     hr = obj->Get(L"Name", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       gpu._name = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     hr = obj->Get(L"AdapterCompatibility", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       gpu._vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     hr = obj->Get(L"DriverVersion", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       gpu._driverVersion = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     hr = obj->Get(L"AdapterRam", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_I4)) {
       gpu._memory_Bytes = vt_prop.uintVal;
     }
     hr = obj->Get(L"PNPDeviceID", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       std::string ret = utils::wstring_to_std_string(vt_prop.bstrVal);
       if (utils::starts_with(ret, "PCI\\")) {
         utils::replaceOnce(ret, "PCI\\", "");

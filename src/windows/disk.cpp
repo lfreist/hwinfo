@@ -36,21 +36,20 @@ std::vector<Disk> getAllDisks() {
     VARIANT vt_prop;
     HRESULT hr;
     hr = obj->Get(L"Model", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       disk._model = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     hr = obj->Get(L"Manufacturer", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       disk._vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     hr = obj->Get(L"SerialNumber", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
-      if (vt_prop.bstrVal)  // the value may empty
-        disk._serialNumber = utils::wstring_to_std_string(vt_prop.bstrVal);
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
+      disk._serialNumber = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     hr = obj->Get(L"Size", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
-      disk._size_Bytes = static_cast<int64_t>(vt_prop.ullVal);
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
+      disk._size_Bytes = std::stoll(utils::wstring_to_std_string(vt_prop.bstrVal));
     }
     VariantClear(&vt_prop);
     obj->Release();

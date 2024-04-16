@@ -37,26 +37,26 @@ Memory::Memory() {
     Memory::Module module;
     module.id = id++;
     hr = obj->Get(L"Manufacturer", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       module.vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     hr = obj->Get(L"partNumber", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       module.model = utils::wstring_to_std_string(vt_prop.bstrVal);
       // TODO: One expects an actual name of the RAM but wmi does not provide such a property...
       //       The "Name"-property of WMI returns "PhysicalMemory".
       module.name = std::string(module.vendor + " " + module.model);
     }
     hr = obj->Get(L"Capacity", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       module.total_Bytes = std::stoll(utils::wstring_to_std_string(vt_prop.bstrVal));
     }
     hr = obj->Get(L"ConfiguredClockSpeed", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
-      module.frequency_Hz = static_cast<int64_t>(vt_prop.ulVal) * 1000 * 1000;
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_I4)) {
+      module.frequency_Hz = static_cast<int64_t>(vt_prop.intVal) * 1000 * 1000;
     }
     hr = obj->Get(L"SerialNumber", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       module.serial_number = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     VariantClear(&vt_prop);

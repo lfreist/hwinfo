@@ -112,23 +112,23 @@ std::vector<CPU> getAllCPUs() {
     VARIANT vt_prop;
     HRESULT hr;
     hr = obj->Get(L"Name", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       cpu._modelName = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     hr = obj->Get(L"Manufacturer", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       cpu._vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
     }
     hr = obj->Get(L"NumberOfCores", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_I4)) {
       cpu._numPhysicalCores = vt_prop.intVal;
     }
     hr = obj->Get(L"NumberOfLogicalProcessors", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_I4)) {
       cpu._numLogicalCores = vt_prop.intVal;
     }
     hr = obj->Get(L"MaxClockSpeed", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_I4)) {
       cpu._maxClockSpeed_MHz = vt_prop.uintVal;
       cpu._regularClockSpeed_MHz = vt_prop.uintVal;
     }
