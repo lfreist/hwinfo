@@ -30,19 +30,19 @@ MainBoard::MainBoard() {
   VARIANT vt_prop;
   HRESULT hr;
   hr = obj->Get(L"Manufacturer", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr)) {
+  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
     _vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
   }
   hr = obj->Get(L"Product", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr)) {
+  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
     _name = utils::wstring_to_std_string(vt_prop.bstrVal);
   }
   hr = obj->Get(L"Version", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr)) {
+  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
     _version = utils::wstring_to_std_string(vt_prop.bstrVal);
   }
   hr = obj->Get(L"SerialNumber", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr)) {
+  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
     _serialNumber = utils::wstring_to_std_string(vt_prop.bstrVal);
   }
   VariantClear(&vt_prop);
