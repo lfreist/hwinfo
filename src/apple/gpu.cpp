@@ -4,7 +4,6 @@
 #include "hwinfo/platform.h"
 
 #ifdef HWINFO_APPLE
-#ifndef USE_OCL
 
 #include <regex>
 #include <string>
@@ -15,30 +14,25 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::string GPU::getVendor() {
+std::string read_drm_by_path(const std::string& path) {
   // TODO: implement
   return "<unknown>";
 }
 
 // _____________________________________________________________________________________________________________________
-std::string GPU::getName() {
+std::vector<int> get_frequencies(const std::string drm_path) {
+  std::vector<int> freqs(3);
   // TODO: implement
-  return "<unknown>";
+  return freqs;
 }
 
 // _____________________________________________________________________________________________________________________
-std::string GPU::getDriverVersion() {
+std::vector<GPU> getAllGPUs() {
+  std::vector<GPU> gpus{};
   // TODO: implement
-  return "<unknown>";
-}
-
-// _____________________________________________________________________________________________________________________
-int64_t GPU::getMemory_Bytes() {
-  // TODO: implement
-  return -1;
+  return gpus;
 }
 
 }  // namespace hwinfo
 
-#endif  // USE_OCL
 #endif  // HWINFO_APPLE
