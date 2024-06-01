@@ -37,7 +37,7 @@ int64_t getRegularClockSpeed_MHz(const int& core_id) {
     return static_cast<int>(frequency);
   }
 
-  // TODO: make Mhz, its khz
+  // TODO: its khz, make mhz
   return -1;
 }
 
@@ -224,8 +224,17 @@ int getNumLogicalCores() {
 // _____________________________________________________________________________________________________________________
 std::vector<CPU> getAllCPUs() {
   std::vector<CPU> cpus;
+  CPU cpu;
 
-  // TODO: implement
+  cpu._vendor = getVendor();
+  cpu._modelName = getModelName();
+  cpu._numPhysicalCores = getNumPhysicalCores();
+  cpu._numLogicalCores = getNumLogicalCores();
+  cpu._maxClockSpeed_MHz = getMaxClockSpeed_MHz(0);
+  cpu._regularClockSpeed_MHz = getRegularClockSpeed_MHz(0);
+
+  cpus.push_back(cpu);
+
   return cpus;
 }
 
