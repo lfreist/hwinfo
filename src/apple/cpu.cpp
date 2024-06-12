@@ -7,9 +7,9 @@
 
 #include <mach/mach.h>
 #include <mach/mach_time.h>
-#include <cmath>
 #include <sys/sysctl.h>
 
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -122,7 +122,7 @@ std::string getModelName() {
   size_t size = 1024;
   std::string model;
   model.resize(size);
-  if (sysctlbyname("machdep.cpu.brand_string", model.data(), &size, NULL, 0) < 0) {
+  if (sysctlbyname("machdep.cpu.brand_string", model.data(), &size, nullptr, 0) < 0) {
     model.resize(size);
     return model;
   }
@@ -237,7 +237,6 @@ std::vector<CPU> getAllCPUs() {
 
   return cpus;
 }
-
 
 }  // namespace hwinfo
 
