@@ -19,25 +19,13 @@ namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 int64_t getMaxClockSpeed_MHz(const int& core_id) {
-  long speed = 0;
-  size_t speed_size = sizeof(speed);
-  if (sysctlbyname("hw.cpufrequency", &speed, &speed_size, nullptr, 0) != 0) {
-    speed = -1;
-  }
-
-  // TODO: its khz, make mhz
-  return static_cast<int>(speed);
+  // TODO
+  return -1;
 }
 
 // _____________________________________________________________________________________________________________________
 int64_t getRegularClockSpeed_MHz(const int& core_id) {
-  uint64_t frequency = 0;
-  size_t size = sizeof(frequency);
-  if (sysctlbyname("hw.cpufrequency", &frequency, &size, nullptr, 0) == 0) {
-    return static_cast<int>(frequency);
-  }
-
-  // TODO: its khz, make mhz
+  // TODO
   return -1;
 }
 
@@ -122,8 +110,9 @@ std::string getModelName() {
   size_t size = 1024;
   std::string model;
   model.resize(size);
-  if (sysctlbyname("machdep.cpu.brand_string", model.data(), &size, nullptr, 0) < 0) {
+  if (sysctlbyname("machdep.cpu.brand_string", model.data(), &size, nullptr, 0) == 0) {
     model.resize(size);
+    model.pop_back();
     return model;
   }
   return "<unknown>";
