@@ -13,6 +13,18 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
+int64_t getMemSize() {
+  int64_t memSize;
+  size_t size = sizeof(memSize);
+
+  if (sysctlbyname("hw.memsize", &memSize, &size, nullptr, 0) == 0) {
+    return memSize;
+  }
+
+  return -1;
+}
+
+// _____________________________________________________________________________________________________________________
 Memory::Memory() {
   // TODO: get information for actual memory modules (DIMM)
   Module module;
@@ -21,7 +33,7 @@ Memory::Memory() {
   module.serial_number = "<unknown>";
   module.model = "<unknown>";
   module.id = 0;
-  module.total_Bytes = -1;
+  module.total_Bytes = getMemSize();
   module.frequency_Hz = -1;
   _modules.push_back(module);
 }
@@ -34,7 +46,13 @@ int64_t Memory::free_Bytes() const {
 
 // _____________________________________________________________________________________________________________________
 int64_t Memory::available_Bytes() const {
-  // TODO: implement
+  int64_t usableMemSize;
+  size_t size = sizeof(usableMemSize);
+
+  if (sysctlbyname("hw.memsize_usable", &usableMemSize, &size, nullptr, 0) == 0) {
+    return usableMemSize;
+  }
+
   return -1;
 }
 
