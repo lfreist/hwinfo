@@ -10,27 +10,11 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-std::string MainBoard::getVendor() {
-  // TODO: implement
-  return "<unknown>";
-}
-
-// _____________________________________________________________________________________________________________________
-std::string MainBoard::getName() {
-  // TODO: implement
-  return "<unknown>";
-}
-
-// _____________________________________________________________________________________________________________________
-std::string MainBoard::getVersion() {
-  // TODO: implement
-  return "<unknown>";
-}
-
-// _____________________________________________________________________________________________________________________
-std::string MainBoard::getSerialNumber() {
-  // TODO: implement
-  return "<unknown>";
+MainBoard::MainBoard() {
+  _vendor = "<unknown>";
+  _name = "<unknown>";
+  _version = "<unknown>";
+  _serialNumber = "<unknown>";
 }
 
 }  // namespace hwinfo

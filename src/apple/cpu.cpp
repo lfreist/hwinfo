@@ -7,28 +7,55 @@
 
 #include <mach/mach.h>
 #include <mach/mach_time.h>
-#include <math.h>
-#include <pthread.h>
 #include <sys/sysctl.h>
 
-#include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
 #include "hwinfo/cpu.h"
-#include "hwinfo/cpuid.h"
-#include "hwinfo/utils/stringutils.h"
 
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-int CPU::currentClockSpeed_kHz() {
+int64_t getMaxClockSpeed_MHz(const int& core_id) {
+  long speed = 0;
+  size_t speed_size = sizeof(speed);
+  if (sysctlbyname("hw.cpufrequency", &speed, &speed_size, nullptr, 0) != 0) {
+    speed = -1;
+  }
+
+  // TODO: its khz, make mhz
+  return static_cast<int>(speed);
+}
+
+// _____________________________________________________________________________________________________________________
+int64_t getRegularClockSpeed_MHz(const int& core_id) {
+  uint64_t frequency = 0;
+  size_t size = sizeof(frequency);
+  if (sysctlbyname("hw.cpufrequency", &frequency, &size, nullptr, 0) == 0) {
+    return static_cast<int>(frequency);
+  }
+
+  // TODO: its khz, make mhz
+  return -1;
+}
+
+// _____________________________________________________________________________________________________________________
+int64_t getMinClockSpeed_MHz(const int& core_id) {
   // TODO: implement
   return -1;
 }
 
 // _____________________________________________________________________________________________________________________
-std::string CPU::getVendor() {
+std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
+  // TODO: implement
+  std::vector<int64_t> res;
+  return res;
+}
+
+// _____________________________________________________________________________________________________________________
+std::string getVendor() {
 #if defined(HWINFO_X86)
   std::string vendor;
   uint32_t regs[4]{0};
@@ -44,7 +71,26 @@ std::string CPU::getVendor() {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string CPU::getModelName() {
+double CPU::currentUtilisation() const {
+  // TODO: implement
+  return -1;
+}
+
+// _____________________________________________________________________________________________________________________
+double CPU::threadUtilisation(int thread_index) const {
+  // TODO: implement
+  return -1;
+}
+
+// _____________________________________________________________________________________________________________________
+std::vector<double> CPU::threadsUtilisation() const {
+  std::vector<double> thread_utiliy;
+  // TODO: implement
+  return thread_utiliy;
+}
+
+// _____________________________________________________________________________________________________________________
+std::string getModelName() {
 #if defined(HWINFO_X86)
   std::string model;
   uint32_t regs[4]{};
@@ -76,7 +122,7 @@ std::string CPU::getModelName() {
   size_t size = 1024;
   std::string model;
   model.resize(size);
-  if (sysctlbyname("machdep.cpu.brand_string", model.data(), &size, NULL, 0) < 0) {
+  if (sysctlbyname("machdep.cpu.brand_string", model.data(), &size, nullptr, 0) < 0) {
     model.resize(size);
     return model;
   }
@@ -85,7 +131,7 @@ std::string CPU::getModelName() {
 }
 
 // _____________________________________________________________________________________________________________________
-int CPU::getNumPhysicalCores() {
+int getNumPhysicalCores() {
 #if defined(HWINFO_X86)
   uint32_t regs[4]{};
   std::string vendorId = getVendor();
@@ -139,7 +185,7 @@ int CPU::getNumPhysicalCores() {
 }
 
 // _____________________________________________________________________________________________________________________
-int CPU::getNumLogicalCores() {
+int getNumLogicalCores() {
 #if defined(HWINFO_X86)
   std::string vendorId = getVendor();
   std::for_each(vendorId.begin(), vendorId.end(), [](char& in) { in = ::toupper(in); });
@@ -176,58 +222,21 @@ int CPU::getNumLogicalCores() {
 }
 
 // _____________________________________________________________________________________________________________________
-int CPU::getMaxClockSpeed_kHz() {
-  long speed = 0;
-  size_t speed_size = sizeof(speed);
-  if (sysctlbyname("hw.cpufrequency", &speed, &speed_size, nullptr, 0) != 0) {
-    speed = -1;
-  }
-  return static_cast<int>(speed);
+std::vector<CPU> getAllCPUs() {
+  std::vector<CPU> cpus;
+  CPU cpu;
+
+  cpu._vendor = getVendor();
+  cpu._modelName = getModelName();
+  cpu._numPhysicalCores = getNumPhysicalCores();
+  cpu._numLogicalCores = getNumLogicalCores();
+  cpu._maxClockSpeed_MHz = getMaxClockSpeed_MHz(0);
+  cpu._regularClockSpeed_MHz = getRegularClockSpeed_MHz(0);
+
+  cpus.push_back(cpu);
+
+  return cpus;
 }
-
-// _____________________________________________________________________________________________________________________
-int CPU::getRegularClockSpeed_kHz() {
-  uint64_t frequency = 0;
-  size_t size = sizeof(frequency);
-  if (sysctlbyname("hw.cpufrequency", &frequency, &size, nullptr, 0) == 0) {
-    return static_cast<int>(frequency);
-  }
-  return -1;
-}
-
-int CPU::getCacheSize_Bytes() { return -1; }
-
-double CPU::currentUtility_Percentage() const { return -1.0; }
-
-double CPU::currentThreadUtility_Percentage(const int& thread_index) const { return -1.0; }
-
-std::vector<double> CPU::currentThreadsUtility_Percentage_MainThread() const { return std::vector<double>(); }
-
-// double CPU::currentTemperature_Celsius() const {
-//  return -1.0;
-// }
-
-// =====================================================================================================================
-// _____________________________________________________________________________________________________________________
-// Helper function for linux: parses /proc/cpuinfo. socket_id == physical_id.
-// _____________________________________________________________________________________________________________________
-std::unique_ptr<CPU> getCPU(uint8_t socket_id) { return {}; }
-
-// ===== Socket ========================================================================================================
-// _____________________________________________________________________________________________________________________
-Socket::Socket(uint8_t id) : _id(id) {
-  auto cpu = getCPU(_id);
-  if (cpu != nullptr) {
-    _cpu = *cpu;
-  }
-}
-
-// _____________________________________________________________________________________________________________________
-Socket::Socket(uint8_t id, const class CPU& cpu) : _id(id) { _cpu = cpu; }
-
-// =====================================================================================================================
-// _____________________________________________________________________________________________________________________
-std::vector<Socket> getAllSockets() { return {}; }
 
 }  // namespace hwinfo
 
