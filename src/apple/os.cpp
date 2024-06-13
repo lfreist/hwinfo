@@ -17,26 +17,39 @@ namespace hwinfo {
 // _____________________________________________________________________________________________________________________
 OS::OS() {
   size_t size = 1024;
+  _name = "macOS";
 
-  std::string os_name;
-  os_name.resize(size);
-  if (sysctlbyname("kern.ostype", os_name.data(), &size, nullptr, 0) == 0) {
-    os_name.resize(size);  // trim the string to the actual size
-    _name = os_name;
+  std::string kernel_name;
+  kernel_name.resize(size);
+  if (sysctlbyname("kern.ostype", kernel_name.data(), &size, nullptr, 0) == 0) {
+    kernel_name.resize(size);  // trim the string to the actual size
+    kernel_name.pop_back();    // remove unprintable character at the end
+    _kernel = kernel_name;
   } else {
-    _name = "macOS";
+    _kernel = "<unknown name>";
+  }
+
+  std::string kernel_version;
+  kernel_version.resize(size);
+  if (sysctlbyname("kern.osrelease", kernel_version.data(), &size, nullptr, 0) == 0) {
+    kernel_version.resize(size);
+    kernel_version.pop_back();
+
+    _kernel = _kernel + " " + kernel_version;
+  } else {
+    _kernel = _kernel + " <unknown version>";
   }
 
   std::string os_version;
   os_version.resize(size);
-  if (sysctlbyname("kern.osrelease", os_version.data(), &size, nullptr, 0) == 0) {
-    os_version.resize(size);  // trim the string to the actual size
+
+  if (sysctlbyname("kern.osproductversion", os_version.data(), &size, nullptr, 0) == 0) {
+    os_version.resize(size);
+    os_version.pop_back();
     _version = os_version;
   } else {
     _version = "<unknown>";
   }
-
-  _kernel = "<unknown>";
 
   _64bit = true;
   _32bit = !_64bit;
