@@ -3,89 +3,77 @@
 
 #include <hwinfo/platform.h>
 
+#include <cstdint>
+
 #ifdef HWINFO_APPLE
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOBSD.h>
 #include <IOKit/IOKitLib.h>
-#include <IOKit/storage/IOBlockStorageDevice.h>
 #include <IOKit/storage/IOMedia.h>
-#include <IOKit/storage/IOStorageDeviceCharacteristics.h>
 #include <hwinfo/disk.h>
 
 #include <string>
 
 namespace hwinfo {
 
-// Helper function to convert CFString to std::string
-std::string CFStringToString(CFStringRef cfString) {
-  if (!cfString) {
+/**
+  Converts a CFStringRef to a std::string
+ */
+std::string cf_to_std(CFStringRef cfString) {
+  if (cfString == nullptr) {
     return "<unknown>";
-  };
+  }
+
   CFIndex length = CFStringGetLength(cfString);
   CFIndex maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1;
-  char* buffer = (char*)malloc(maxSize);
-  if (CFStringGetCString(cfString, buffer, maxSize, kCFStringEncodingUTF8)) {
-    std::string stdString(buffer);
-    free(buffer);
-    return stdString;
-  }
-  free(buffer);
-  return "<unknown>";
-}
 
-template <typename Key>
-CFTypeRef GetIORegistryProperty(io_object_t ioObject, Key key) {
-  // Convert key to CFString
-  auto keyCF = CFStringCreateWithCString(kCFAllocatorDefault, key, kCFStringEncodingUTF8);
+  // Initialize std::string with maxSize and fill with null characters
+  auto out = std::string(maxSize, '\0');
 
-  // Get property from I/O Registry
-  CFTypeRef value = IORegistryEntryCreateCFProperty(ioObject, keyCF, kCFAllocatorDefault, 0);
+  // Fill std::string with the actual string
+  auto success = CFStringGetCString(cfString, const_cast<char*>(out.data()), maxSize, kCFStringEncodingUTF8);
 
-  if (keyCF) {
-    CFRelease(keyCF);
+  if (!success) {
+    return "<unknown>";
   }
 
-  return value;
+  // Resize the string to the actual length
+  out.resize(strlen(out.c_str()));
+  return out;
 }
 
-std::string getDiskVendor(const io_object_t& service) {
-  auto vendorRef = (CFStringRef)GetIORegistryProperty(service, "Vendor");
-  std::string vendor = CFStringToString(vendorRef);
-  if (vendorRef) {
-    CFRelease(vendorRef);
-  };
-  return vendor;
-}
-
-std::string getDiskModel(const io_object_t& service) {
-  auto modelRef = (CFStringRef)GetIORegistryProperty(service, kIONameMatchKey);
-  std::string model = CFStringToString(modelRef);
-  if (modelRef) {
-    CFRelease(modelRef);
-  };
-  return model;
-}
-
-std::string getDiskSerialNumber(const io_object_t& service) {
-  auto serialRef = (CFStringRef)GetIORegistryProperty(service, kIOPlatformSerialNumberKey);
-  std::string serial = CFStringToString(serialRef);
-  if (serialRef) {
-    CFRelease(serialRef);
-  };
-  return serial;
-}
-
-int64_t getDiskSize_Bytes(const io_object_t& service) {
-  CFNumberRef sizeRef = (CFNumberRef)GetIORegistryProperty(service, kIOMediaSizeKey);
-  if (sizeRef) {
-    int64_t size;
-    CFNumberGetValue(sizeRef, kCFNumberSInt64Type, &size);
-    return size;
+/**
+  Converts a CFNumberRef to a number of type ReturnType
+ */
+template <typename NumberType>
+NumberType cf_to_std(CFNumberRef raw, CFNumberType cfNumberEnum) {
+  if (raw == nullptr) {
+    return NumberType();
   }
 
-  // unknown size
-  return -1;
+  NumberType out;
+  CFNumberGetValue(raw, cfNumberEnum, &out);
+
+  return out;
+}
+
+int64_t cf_to_std(CFNumberRef raw) { return cf_to_std<int64_t>(raw, kCFNumberSInt64Type); }
+
+template <typename ReturnType, typename CFType>
+ReturnType getIORegistryProperty(io_object_t service, CFStringRef key) {
+  // Get the property from I/O Registry
+  auto raw = static_cast<CFType>(IORegistryEntryCreateCFProperty(service, key, kCFAllocatorDefault, 0));
+
+  // Convert the property to a output type
+  ReturnType out = cf_to_std(raw);
+
+  // Release the property
+  if (raw) {
+    CFRelease(raw);
+  };
+
+  return out;
 }
 
 // Retrieves disk information using I/O Kit
@@ -96,19 +84,36 @@ std::vector<Disk> getAllDisks() {
   CFDictionaryAddValue(matchingDict, CFSTR(kIOMediaWholeKey), kCFBooleanTrue);
 
   io_iterator_t iter;
-  auto status = IOServiceGetMatchingServices(0, matchingDict, &iter);
-  if (status == KERN_SUCCESS) {
-    io_object_t service;
-    while ((service = IOIteratorNext(iter))) {
+  if (IOServiceGetMatchingServices(0, matchingDict, &iter) == KERN_SUCCESS) {
+    int i_disk = 0;
+    while (true) {
+      auto service = IOIteratorNext(iter);
+      if (service == 0) {
+        break;
+      }
+
+      // get the name of the IO service
+
       auto disk = Disk();
-      disk._vendor = getDiskVendor(service);
-      disk._model = getDiskModel(service);
-      disk._serialNumber = getDiskSerialNumber(service);
-      disk._size_Bytes = getDiskSize_Bytes(service);
+
+      disk._id = i_disk;
+
+      disk._vendor = "Apple";
+
+      std::string model;
+      model.resize(1024);
+      IORegistryEntryGetName(service, const_cast<char*>(model.data()));
+      disk._model = model;
+
+      disk._serialNumber = getIORegistryProperty<std::string, CFStringRef>(service, CFSTR(kIOMediaUUIDKey));
+
+      disk._size_Bytes = getIORegistryProperty<int64_t, CFNumberRef>(service, CFSTR(kIOMediaSizeKey));
 
       disks.push_back(std::move(disk));
 
       IOObjectRelease(service);
+
+      i_disk++;
     }
     IOObjectRelease(iter);
   }
