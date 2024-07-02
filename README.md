@@ -57,10 +57,10 @@ hwinfo builds using C++20. However, if your compiler does not support C++20, you
 |                  | Version            |  ✔️   |   ❌   |   ✔️    |
 |                  | Serial-Number      |   ❌   |   ❌   |   ✔️    |
 |                  | Bios               |   ❌   |   ❌   |    ❌    |
-| Disk             | Vendor             |  ✔️   |   ❌   |   ✔️    |
-|                  | Model              |  ✔️   |   ❌   |   ✔️    |
-|                  | Serial-Number      |   ❌   |   ❌   |   ✔️    |
-|                  | Size               |   ❌   |   ❌   |    ❌    |
+| Disk             | Vendor             |  ✔️   |  ✔️   |   ✔️    |
+|                  | Model              |  ✔️   |  ✔️   |   ✔️    |
+|                  | Serial-Number      |  ✔️   |  ✔️   |   ✔️    |
+|                  | Size               |  ✔️   |  ✔️   |   ✔️    |
 | Operating System | Name               |  ✔️   |  ✔️   |   ✔️    |
 |                  | Short Name         |  ✔️   |  ❌️   |   ✔️    |
 |                  | Version            |  ✔️   |  ✔️   |    ❌    |
@@ -242,13 +242,13 @@ Disk 4:
 2. Simply add the following to your `<project-root>/CMakeLists.txt` file:
     ```cmake
     # file: <project-root>/CMakeLists.txt
-    
+
     add_subdirectory(third_party/hwinfo)
     ```
 3. Include `hwinfo` into your `.cpp/.h` files:
     ```c++
     // file: your_executable.cpp
-    
+
     #include "hwinfo/hwinfo.h"
 
    int main(int argc, char** argv) {
