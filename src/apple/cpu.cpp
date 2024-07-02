@@ -9,11 +9,11 @@
 #include <mach/mach_time.h>
 #include <sys/sysctl.h>
 
-#include <cmath>
 #include <string>
 #include <vector>
 
 #include "hwinfo/cpu.h"
+#include "hwinfo/cpuid.h"
 
 namespace hwinfo {
 
@@ -119,6 +119,8 @@ std::string getModelName() {
   return "<unknown>";
 #endif
 }
+
+int getNumLogicalCores();
 
 // _____________________________________________________________________________________________________________________
 int getNumPhysicalCores() {
