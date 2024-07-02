@@ -6,6 +6,7 @@ string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}" PROJECT
 
 option(BUILD_EXAMPLES "Build example program" ${PROJECT_IS_TOP_LEVEL})
 option(BUILD_TESTING  "Build test program" ${PROJECT_IS_TOP_LEVEL})
+option(NO_OCL "Disable OCL" OFF)
 
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 
