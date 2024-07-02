@@ -6,7 +6,6 @@
 #include <hwinfo/platform.h>
 #include <hwinfo/utils/wmi_wrapper.h>
 
-#include <memory>
 #include <string>
 #include <vector>
 

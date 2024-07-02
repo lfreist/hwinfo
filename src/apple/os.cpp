@@ -21,7 +21,7 @@ OS::OS() {
 
   std::string kernel_name;
   kernel_name.resize(size);
-  if (sysctlbyname("kern.ostype", kernel_name.data(), &size, nullptr, 0) == 0) {
+  if (sysctlbyname("kern.ostype", static_cast<void*>(const_cast<char*>(kernel_name.data())), &size, nullptr, 0) == 0) {
     kernel_name.resize(size);  // trim the string to the actual size
     kernel_name.pop_back();    // remove unprintable character at the end
     _kernel = kernel_name;
@@ -31,7 +31,8 @@ OS::OS() {
 
   std::string kernel_version;
   kernel_version.resize(size);
-  if (sysctlbyname("kern.osrelease", kernel_version.data(), &size, nullptr, 0) == 0) {
+  if (sysctlbyname("kern.osrelease", static_cast<void*>(const_cast<char*>(kernel_version.data())), &size, nullptr, 0) ==
+      0) {
     kernel_version.resize(size);
     kernel_version.pop_back();
 
@@ -43,7 +44,8 @@ OS::OS() {
   std::string os_version;
   os_version.resize(size);
 
-  if (sysctlbyname("kern.osproductversion", os_version.data(), &size, nullptr, 0) == 0) {
+  if (sysctlbyname("kern.osproductversion", static_cast<void*>(const_cast<char*>(os_version.data())), &size, nullptr,
+                   0) == 0) {
     os_version.resize(size);
     os_version.pop_back();
     _version = os_version;
