@@ -92,18 +92,25 @@ std::vector<Disk> getAllDisks() {
         break;
       }
 
-      // get the name of the IO service
-
       auto disk = Disk();
 
       disk._id = i_disk;
 
-      disk._vendor = "Apple";
-
+      // get the name of the IO service
       std::string model;
-      model.resize(1024);
-      IORegistryEntryGetName(service, const_cast<char*>(model.data()));
+      model.resize(128);
+      if (IORegistryEntryGetName(service, const_cast<char*>(model.data())) != KERN_SUCCESS) {
+        model = "<unknown>";
+      }
+      model.resize(strlen(model.c_str()));
       disk._model = model;
+
+      // guess the vendor from the model
+      if (model.find("APPLE") != std::string::npos || model.find("Apple") != std::string::npos) {
+        disk._vendor = "Apple";
+      } else {
+        disk._vendor = "<unknown>";
+      }
 
       disk._serialNumber = getIORegistryProperty<std::string, CFStringRef>(service, CFSTR(kIOMediaUUIDKey));
 
