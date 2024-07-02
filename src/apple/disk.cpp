@@ -96,7 +96,7 @@ std::vector<Disk> getAllDisks() {
   CFDictionaryAddValue(matchingDict, CFSTR(kIOMediaWholeKey), kCFBooleanTrue);
 
   io_iterator_t iter;
-  auto status = IOServiceGetMatchingServices(kIOMainPortDefault, matchingDict, &iter);
+  auto status = IOServiceGetMatchingServices(0, matchingDict, &iter);
   if (status == KERN_SUCCESS) {
     io_object_t service;
     while ((service = IOIteratorNext(iter))) {
