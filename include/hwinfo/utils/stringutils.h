@@ -150,7 +150,7 @@ inline std::vector<std::string> split(const std::string& input, const char delim
 inline std::string split_get_index(const std::string& input, const std::string& delimiter, int index) {
   unsigned occ = count_substring(input, delimiter) + 1;
   index = index < 0 ? static_cast<int>(occ + index) : index;
-  if (occ <= index) {
+  if (static_cast<int>(occ) <= index) {
     return "";
   }
 
