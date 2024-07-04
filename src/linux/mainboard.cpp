@@ -6,6 +6,7 @@
 #ifdef HWINFO_UNIX
 
 #include <fstream>
+#include <vector>
 
 #include "hwinfo/mainboard.h"
 
