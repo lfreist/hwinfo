@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include <codecvt>
+#include <algorithm>
+#include <clocale>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
-#include <locale>
-#include <regex>
 #include <string>
 #include <vector>
 
@@ -180,7 +180,7 @@ inline std::string wstring_to_string() { return ""; }
  * @return
  */
 inline std::string wstring_to_std_string(const std::wstring& ws) {
-  std::string str_locale = setlocale(LC_ALL, "");
+  std::string str_locale = std::setlocale(LC_ALL, "");
   const wchar_t* wch_src = ws.c_str();
 
 #ifdef _MSC_VER
@@ -198,15 +198,15 @@ inline std::string wstring_to_std_string(const std::wstring& ws) {
   std::string result_text = ch_dest;
   delete[] ch_dest;
 #else
-  size_t n_dest_size = wcstombs(NULL, wch_src, 0) + 1;
+  size_t n_dest_size = std::wcstombs(NULL, wch_src, 0) + 1;
   char* ch_dest = new char[n_dest_size];
-  memset(ch_dest, 0, n_dest_size);
-  wcstombs(ch_dest, wch_src, n_dest_size);
+  std::memset(ch_dest, 0, n_dest_size);
+  std::wcstombs(ch_dest, wch_src, n_dest_size);
   std::string result_text = ch_dest;
   delete[] ch_dest;
 #endif
 
-  setlocale(LC_ALL, str_locale.c_str());
+  std::setlocale(LC_ALL, str_locale.c_str());
   return result_text;
 }
 

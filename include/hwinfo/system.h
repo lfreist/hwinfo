@@ -8,7 +8,6 @@
 #include <hwinfo/gpu.h>
 #include <hwinfo/ram.h>
 
-#include <string>
 #include <vector>
 
 namespace hwinfo {
@@ -19,13 +18,13 @@ class System {
 
   std::vector<CPU>& CPUs() const;
   std::vector<GPU>& GPUs() const;
-  std::vector<RAM>& RAMs() const;
+  std::vector<Memory>& RAMs() const;
   std::vector<Disk>& Disks() const;
 
  private:
   std::vector<CPU> _cpuSockets;
   std::vector<GPU> _gpus;
-  std::vector<RAM> _ramBars;
+  std::vector<Memory> _ramBars;
   std::vector<Disk> _disks;
 };
 

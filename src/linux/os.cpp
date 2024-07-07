@@ -9,7 +9,6 @@
 #include <sys/utsname.h>
 
 #include <fstream>
-#include <sstream>
 #include <string>
 
 #include "hwinfo/os.h"
@@ -26,7 +25,7 @@ OS::OS() {
       _name = "Linux";
       _version = "<unknown>";
     }
-    while (getline(stream, line)) {
+    while (std::getline(stream, line)) {
       if (utils::starts_with(line, "PRETTY_NAME")) {
         line = line.substr(line.find('=') + 1, line.length());
         // remove \" at begin and end of the substring result

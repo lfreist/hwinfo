@@ -7,15 +7,10 @@
 
 #include <unistd.h>
 
-#include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <cstdio>
-#include <cstdlib>
 #include <fstream>
-#include <iostream>
 #include <map>
-#include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
