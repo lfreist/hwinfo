@@ -9,11 +9,11 @@
 #include <mach/mach_time.h>
 #include <sys/sysctl.h>
 
-#include <cmath>
 #include <string>
 #include <vector>
 
 #include "hwinfo/cpu.h"
+#include "hwinfo/cpuid.h"
 
 namespace hwinfo {
 
@@ -110,7 +110,8 @@ std::string getModelName() {
   size_t size = 1024;
   std::string model;
   model.resize(size);
-  if (sysctlbyname("machdep.cpu.brand_string", model.data(), &size, nullptr, 0) == 0) {
+  if (sysctlbyname("machdep.cpu.brand_string", static_cast<void*>(const_cast<char*>(model.data())), &size, nullptr,
+                   0) == 0) {
     model.resize(size);
     model.pop_back();
     return model;
@@ -118,6 +119,8 @@ std::string getModelName() {
   return "<unknown>";
 #endif
 }
+
+int getNumLogicalCores();
 
 // _____________________________________________________________________________________________________________________
 int getNumPhysicalCores() {

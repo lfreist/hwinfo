@@ -14,6 +14,8 @@
 #include <cpuid.h>
 #endif
 
+#include <cstdint>
+
 #define MAX_INTEL_TOP_LVL 4
 
 #define SSE_POS 0x02000000

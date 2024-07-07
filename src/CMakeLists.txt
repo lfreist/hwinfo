@@ -43,6 +43,10 @@ if (WIN32 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     target_link_libraries(HWinfo PUBLIC "wbemuuid")
 endif ()
 
+if (APPLE)
+    target_link_libraries(HWinfo PUBLIC "-framework IOKit" "-framework CoreFoundation")
+endif()
+
 if (NOT DEFINED NO_OCL)
     target_link_libraries(HWinfo PUBLIC miss-opencl_static)
 endif ()
