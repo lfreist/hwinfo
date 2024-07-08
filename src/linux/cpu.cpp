@@ -139,7 +139,7 @@ void CPU::init_jiffies() const {
 //     if (!std::ifstream("/etc/sensors3.conf"))
 //     {
 //       std::cout << "The lm-sensors, the tool for monitoring your system's temperature, needs to be configured. Please
-//       set it up." << std::endl;
+//       set it up." << '\n';
 //       // Configure lm-sensors if not already configured
 //       std::string detect_command = "sudo sensors-detect";
 //       std::system(detect_command.c_str());
@@ -155,7 +155,7 @@ void CPU::init_jiffies() const {
 //     // Open a pipe to execute the command and capture its output
 //     FILE* pipe = popen(command.c_str(), "r");
 //     if (!pipe) {
-//         std::cerr << "Error executing command." << std::endl;
+//         std::cerr << "Error executing command." << '\n';
 //         return -1.0; // Return a negative value to indicate an error
 //     }
 

@@ -144,7 +144,7 @@ std::vector<CPU> getAllCPUs() {
         cpu._L2CacheSize_Bytes = data.at(1);
         cpu._L3CacheSize_Bytes = data.at(2);
       } catch (const std::exception& e) {
-        std::cout << "Exception in CPU Cache: " << e.what() << std::endl;
+        std::cout << "Exception in CPU Cache: " << e.what() << '\n';
       }
     }};
     cache();
