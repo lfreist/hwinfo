@@ -5,7 +5,13 @@
 #include <hwinfo/hwinfo.h>
 
 #include <cassert>
+#include <cmath>
 #include <vector>
+
+size_t bytesToMiB(size_t bytes) {
+  thread_local const auto mib_bytes = std::pow(2, 20);
+  return static_cast<size_t>(static_cast<double>(bytes) / mib_bytes);
+}
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
   fmt::print(
@@ -72,7 +78,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
                 "{:<20} {}\n"
                 "{:<20} {}\n"
                 "{:<20} {}\n"
-                "{:<20} {:.2f}\n"
+                "{:<20} {}\n"
                 "{:<20} {}\n"
                 "{:<20} {}\n"
                 "{:<20} {}\n"
@@ -81,7 +87,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
                 "vendor:", gpu.vendor(),
                 "model:", gpu.name(),
                 "driverVersion:", gpu.driverVersion(),
-                "memory [MiB]:", static_cast<double>(gpu.memory_Bytes()) / 1024.0 / 1024.0,
+                "memory [MiB]:", bytesToMiB(gpu.memory_Bytes()),
                 "frequency:", gpu.frequency_MHz(),
                 "cores:", gpu.num_cores(),
                 "vendor_id:", gpu.vendor_id(),
@@ -95,9 +101,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
              "{:<20} {}\n"
              "{:<20} {}\n"
              "{:<20} {}\n",
-             "size [MiB]:", memory.total_Bytes() / 1024 / 1024,
-             "free [MiB]:", memory.free_Bytes() / 1024 / 1024,
-             "available [MiB]:", memory.available_Bytes() / 1024 / 1024);
+             "size [MiB]:", bytesToMiB(memory.total_Bytes()),
+             "free [MiB]:", bytesToMiB(memory.free_Bytes()),
+             "available [MiB]:", bytesToMiB(memory.available_Bytes()));
   // clang-format on
 
   for (const auto& module : memory.modules()) {
@@ -113,17 +119,17 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
                 "model:", module.model,
                 "name:", module.name,
                 "serial-number:", module.serial_number,
-                "Frequency [MHz]:", module.frequency_Hz / 1000 / 1000);
+                "Frequency [MHz]:", static_cast<double>(module.frequency_Hz) / 1e6);
     // clang-format on
   }
 
   hwinfo::MainBoard main_board;
   // clang-format off
   fmt::print("------------------------------- Main Board --------------------------------\n"
-             "{:<20}{}\n"
-             "{:<20}{}\n"
-             "{:<20}{}\n"
-             "{:<20}{}\n",
+             "{:<20} {}\n"
+             "{:<20} {}\n"
+             "{:<20} {}\n"
+             "{:<20} {}\n",
              "vendor:", main_board.vendor(),
              "name:", main_board.name(),
              "version:", main_board.version(),
