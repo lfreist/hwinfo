@@ -3,15 +3,12 @@
 
 #include <fmt/core.h>
 #include <hwinfo/hwinfo.h>
+#include <hwinfo/utils/unit.h>
 
 #include <cassert>
-#include <cmath>
 #include <vector>
 
-size_t bytesToMiB(size_t bytes) {
-  thread_local const auto mib_bytes = std::pow(2, 20);
-  return static_cast<size_t>(static_cast<double>(bytes) / mib_bytes);
-}
+using hwinfo::unit::bytes_to_MiB;
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
   fmt::print(
@@ -87,7 +84,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
                 "vendor:", gpu.vendor(),
                 "model:", gpu.name(),
                 "driverVersion:", gpu.driverVersion(),
-                "memory [MiB]:", bytesToMiB(gpu.memory_Bytes()),
+                "memory [MiB]:", bytes_to_MiB(gpu.memory_Bytes()),
                 "frequency:", gpu.frequency_MHz(),
                 "cores:", gpu.num_cores(),
                 "vendor_id:", gpu.vendor_id(),
@@ -101,9 +98,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
              "{:<20} {}\n"
              "{:<20} {}\n"
              "{:<20} {}\n",
-             "size [MiB]:", bytesToMiB(memory.total_Bytes()),
-             "free [MiB]:", bytesToMiB(memory.free_Bytes()),
-             "available [MiB]:", bytesToMiB(memory.available_Bytes()));
+             "size [MiB]:", bytes_to_MiB(memory.total_Bytes()),
+             "free [MiB]:", bytes_to_MiB(memory.free_Bytes()),
+             "available [MiB]:", bytes_to_MiB(memory.available_Bytes()));
   // clang-format on
 
   for (const auto& module : memory.modules()) {
@@ -119,7 +116,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
                 "model:", module.model,
                 "name:", module.name,
                 "serial-number:", module.serial_number,
-                "Frequency [MHz]:", static_cast<double>(module.frequency_Hz) / 1e6);
+                "Frequency [MHz]:", module.frequency_Hz == -1 ? -1 : static_cast<double>(module.frequency_Hz) / 1e6);
     // clang-format on
   }
 
