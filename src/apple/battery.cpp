@@ -45,34 +45,56 @@ CFDictionaryRef getPowerSource(const int id) {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getVendor() const {
-  const CFDictionaryRef powerSource = getPowerSource(_id);
-  if (!powerSource) {
-    return "<unknown>";
-  }
-
-  const auto vendorName = static_cast<CFStringRef>(CFDictionaryGetValue(powerSource, CFSTR(kIOPSVendorDataKey)));
-
-  CFRelease(powerSource);
-  if (!vendorName) {
-    return "<unknown>";
-  }
-
-  const char* vendor = CFStringGetCStringPtr(vendorName, kCFStringEncodingUTF8);
-  return vendor ? std::string(vendor) : "<unknown>";
-}
+std::string Battery::getVendor() const { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
 std::string Battery::getModel() const { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getSerialNumber() const { return "<unknown>"; }
+std::string Battery::getSerialNumber() const {
+  const CFDictionaryRef powerSource = getPowerSource(_id);
+  if (!powerSource) {
+    return "<unknown>";
+  }
+
+  // this key is recommended. it may be empty
+  const auto serialNumber =
+      static_cast<CFStringRef>(CFDictionaryGetValue(powerSource, CFSTR(kIOPSHardwareSerialNumberKey)));
+
+  if (!serialNumber) {
+    CFRelease(powerSource);
+    return "<unknown>";
+  }
+
+  char serialNumberStr[256];
+
+  CFStringGetCString(serialNumber, serialNumberStr, sizeof(serialNumberStr), kCFStringEncodingUTF8);
+  CFRelease(powerSource);
+
+  return serialNumberStr;
+}
 
 // _____________________________________________________________________________________________________________________
 std::string Battery::getTechnology() const { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
-uint32_t Battery::getEnergyFull() const { return 1; }
+uint32_t Battery::getEnergyFull() const {
+  const CFDictionaryRef powerSource = getPowerSource(_id);
+  if (!powerSource) {
+    return 0;
+  }
+
+  const auto maxCapacityNum = static_cast<CFNumberRef>(CFDictionaryGetValue(powerSource, CFSTR(kIOPSMaxCapacityKey)));
+  CFRelease(powerSource);
+  if (!maxCapacityNum) {
+    return 0;
+  }
+
+  uint32_t maxCapacity;
+  CFNumberGetValue(maxCapacityNum, kCFNumberIntType, &maxCapacity);
+
+  return maxCapacity;
+}
 
 // _____________________________________________________________________________________________________________________
 uint32_t Battery::energyNow() const {
