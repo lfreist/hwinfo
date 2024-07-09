@@ -51,12 +51,6 @@ if (NOT DEFINED NO_OCL)
     target_link_libraries(HWinfo PUBLIC miss-opencl_static)
 endif ()
 
-if(APPLE)
-    find_library(IOKIT_LIBRARY IOKit)
-    find_library(COREFOUNDATION_LIBRARY CoreFoundation)
-    target_link_libraries(HWinfo PUBLIC ${IOKIT_LIBRARY} ${COREFOUNDATION_LIBRARY})
-endif()
-
 add_library(${PROJECT_NAME}::HWinfo ALIAS HWinfo)
 
 install(TARGETS HWinfo DESTINATION ${CMAKE_INSTALL_LIBDIR})
