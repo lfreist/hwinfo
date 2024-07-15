@@ -19,7 +19,7 @@ jobs:
         uses: egor-tensin/setup-clang@v1
 
       - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DNO_OCL=ON
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build

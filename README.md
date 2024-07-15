@@ -12,7 +12,7 @@
 hwinfo provides an easy-to-use and modern C++ API for retrieving hardware information of your systems components such as
 CPU, RAM, GPU, Disks, Mainboard, ...
 
-hwinfo automatically uses the latest C++ standard supported by your compiler. C++20 is required for GPU OpenCL support if enabled (configurable with `NO_OCL`).
+hwinfo automatically uses the latest C++ standard supported by your compiler. C++20 is required for GPU OpenCL support if enabled (configurable with `HWINFO_GPU_OPENCL`).
 
 > **Note**
 >

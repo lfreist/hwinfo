@@ -27,7 +27,6 @@ string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}" PROJECT
 
 option(BUILD_EXAMPLES "Build example program" ${PROJECT_IS_TOP_LEVEL})
 option(BUILD_TESTING  "Build test program" ${PROJECT_IS_TOP_LEVEL})
-option(NO_OCL "Disable OCL" OFF)
 
 # Components
 option(HWINFO_OS "Enable OS detection" ON)
@@ -36,20 +35,24 @@ option(HWINFO_CPU "Enable CPU detection" ON)
 option(HWINFO_DISK "Enable disk detection" ON)
 option(HWINFO_RAM "Enable RAM detection" ON)
 option(HWINFO_GPU "Enable GPU detection" ON)
+option(HWINFO_GPU_OPENCL "Enable usage of OpenCL in GPU information" OFF)
 option(HWINFO_BATTERY "Enable battery detection" ON)
+
+# deprecated NO_OCL
+if (DEFINED NO_OCL)
+    message(WARNING "NO_OCL is deprecated, use HWINFO_GPU_OPENCL instead")
+    set(HWINFO_GPU_OPENCL NOT NO_OCL)
+endif()
+
+if(HWINFO_GPU_OPENCL)
+    if(NOT TARGET miss-opencl_static)
+        add_subdirectory(${PROJECT_SOURCE_DIR}/external/miss-opencl)
+    endif()
+endif()
 
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
-if (NOT DEFINED NO_OCL)
-    if (NOT TARGET miss-opencl_static)
-        add_subdirectory(external/miss-opencl)
-    endif ()
-
-    add_compile_definitions(USE_OCL)
-    add_compile_definitions(NOMINMAX)
-endif ()
 
 set(HWINFO_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 add_subdirectory(src)

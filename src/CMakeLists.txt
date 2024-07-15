@@ -152,7 +152,13 @@ if(HWINFO_GPU)
     hwinfo_gpu PRIVATE hwinfo::utils::filesystem hwinfo::utils::wmi
                        hwinfo::utils::PCIMapper)
 
-  if(NOT DEFINED NO_OCL)
+  if(HWINFO_GPU_OPENCL)
+    if(NOT TARGET miss-opencl_static)
+      add_subdirectory(${PROJECT_SOURCE_DIR}/external/miss-opencl)
+    endif()
+
+    target_compile_definitions(hwinfo_gpu PRIVATE USE_OCL NOMINMAX)
+
     target_link_libraries(hwinfo_gpu PRIVATE miss-opencl_static)
   endif()
 
