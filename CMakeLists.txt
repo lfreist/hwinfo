@@ -1,4 +1,25 @@
 cmake_minimum_required(VERSION 3.16)
+
+# Use the latest C++ standard available
+if("${CMAKE_CXX_STANDARD}" STREQUAL "")
+    if(DEFINED CMAKE_CXX23_STANDARD_COMPILE_OPTION OR DEFINED CMAKE_CXX23_EXTENSION_COMPILE_OPTION)
+        set(CMAKE_CXX_STANDARD 23)
+    elseif(DEFINED CMAKE_CXX20_STANDARD_COMPILE_OPTION OR DEFINED CMAKE_CXX20_EXTENSION_COMPILE_OPTION)
+        set(CMAKE_CXX_STANDARD 20)
+    elseif(DEFINED CMAKE_CXX17_STANDARD_COMPILE_OPTION OR DEFINED
+                                                            CMAKE_CXX17_EXTENSION_COMPILE_OPTION
+    )
+        set(CMAKE_CXX_STANDARD 17)
+    elseif(DEFINED CMAKE_CXX14_STANDARD_COMPILE_OPTION OR DEFINED
+                                                            CMAKE_CXX14_EXTENSION_COMPILE_OPTION
+    )
+        set(CMAKE_CXX_STANDARD 14)
+    else()
+        set(CMAKE_CXX_STANDARD 11)
+    endif()
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 project(hwinfo VERSION 1.0.0 LANGUAGES CXX)
 include(GNUInstallDirs)
 
@@ -18,14 +39,6 @@ option(HWINFO_GPU "Enable GPU detection" ON)
 option(HWINFO_BATTERY "Enable battery detection" ON)
 
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
-
-if (NOT DEFINED NO_OCL)
-    set(CMAKE_CXX_STANDARD 20)
-else ()
-    set(CMAKE_CXX_STANDARD 11)
-endif ()
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 

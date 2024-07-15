@@ -12,8 +12,7 @@
 hwinfo provides an easy-to-use and modern C++ API for retrieving hardware information of your systems components such as
 CPU, RAM, GPU, Disks, Mainboard, ...
 
-hwinfo builds using C++20. However, if your compiler does not support C++20, you can fall back to C++11 by setting the
-`NO_OCL` CMake variable (add `-DNO_OCL=ON` to the CMake command).
+hwinfo automatically uses the latest C++ standard supported by your compiler. C++20 is required for GPU OpenCL support if enabled (configurable with `NO_OCL`).
 
 > **Note**
 >
