@@ -8,6 +8,15 @@ option(BUILD_EXAMPLES "Build example program" ${PROJECT_IS_TOP_LEVEL})
 option(BUILD_TESTING  "Build test program" ${PROJECT_IS_TOP_LEVEL})
 option(NO_OCL "Disable OCL" OFF)
 
+# Components
+option(HWINFO_OS "Enable OS detection" ON)
+option(HWINFO_MAINBOARD "Enable mainboard detection" ON)
+option(HWINFO_CPU "Enable CPU detection" ON)
+option(HWINFO_DISK "Enable disk detection" ON)
+option(HWINFO_RAM "Enable RAM detection" ON)
+option(HWINFO_GPU "Enable GPU detection" ON)
+option(HWINFO_BATTERY "Enable battery detection" ON)
+
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 
 if (NOT DEFINED NO_OCL)
@@ -29,11 +38,8 @@ if (NOT DEFINED NO_OCL)
     add_compile_definitions(NOMINMAX)
 endif ()
 
-include_directories({PROJECT_SOURCE_DIR}/include)
+set(HWINFO_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 add_subdirectory(src)
-target_include_directories(HWinfo PUBLIC ${PROJECT_SOURCE_DIR}/include/)
-
-install(DIRECTORY include/hwinfo DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 if (NOT PROJECT_IS_TOP_LEVEL)
     return()
