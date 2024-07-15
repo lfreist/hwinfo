@@ -7,4 +7,4 @@ FetchContent_Declare(
   GIT_TAG 11.0.1)
 FetchContent_MakeAvailable(fmt)
 
-target_link_libraries(Example PRIVATE hwinfo::HWinfo fmt::fmt)
+target_link_libraries(Example PRIVATE hwinfo::hwinfo fmt::fmt)
