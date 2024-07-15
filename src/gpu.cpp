@@ -1,6 +1,8 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
+#ifdef HWINFO_GPU
+
 #include <hwinfo/gpu.h>
 
 #include <string>
@@ -35,3 +37,5 @@ const std::string& GPU::vendor_id() const { return _vendor_id; }
 const std::string& GPU::device_id() const { return _device_id; }
 
 }  // namespace hwinfo
+
+#endif  // HWINFO_GPU

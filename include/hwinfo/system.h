@@ -3,6 +3,9 @@
 
 #pragma once
 
+#if defined(HWINFO_CPU) && defined(HWINFO_GPU) && defined(HWINFO_RAM) && defined(HWINFO_DISK)
+#define HWINFO_SYSTEM
+
 #include <hwinfo/cpu.h>
 #include <hwinfo/disk.h>
 #include <hwinfo/gpu.h>
@@ -29,3 +32,5 @@ class System {
 };
 
 }  // namespace hwinfo
+
+#endif  // HWINFO_SYSTEM

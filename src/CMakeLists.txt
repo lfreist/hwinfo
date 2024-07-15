@@ -8,6 +8,24 @@ add_library(hwinfo::HWinfo ALIAS hwinfo)
 
 target_include_directories(hwinfo PUBLIC ${PROJECT_SOURCE_DIR}/include/)
 
+# C++ options based on CMake options
+set(HWINFO_DEFINITIONS "")
+set(OPTIONS_LIST
+    HWINFO_OS
+    HWINFO_MAINBOARD
+    HWINFO_CPU
+    HWINFO_DISK
+    HWINFO_RAM
+    HWINFO_GPU
+    HWINFO_BATTERY)
+foreach(OPTION IN LISTS OPTIONS_LIST)
+  if(${OPTION})
+    list(APPEND HWINFO_DEFINITIONS ${OPTION})
+  endif()
+endforeach()
+
+target_compile_definitions(hwinfo PUBLIC ${HWINFO_DEFINITIONS})
+
 install(TARGETS hwinfo DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(DIRECTORY include/hwinfo DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
@@ -27,6 +45,8 @@ target_include_directories(
   PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
+target_compile_definitions(hwinfo_utils_filesystem PUBLIC ${HWINFO_DEFINITIONS})
+
 # wmi_wrapper on windows
 add_library(
   hwinfo_utils_wmi
@@ -42,6 +62,8 @@ target_include_directories(
   hwinfo_utils_wmi PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
+target_compile_definitions(hwinfo_utils_wmi PUBLIC ${HWINFO_DEFINITIONS})
+
 # PCIMapper on Unix
 add_library(hwinfo_utils_PCIMapper PCIMapper.cpp)
 add_library(hwinfo::utils::PCIMapper ALIAS hwinfo_utils_PCIMapper)
@@ -50,6 +72,8 @@ target_include_directories(
   hwinfo_utils_PCIMapper
   PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+target_compile_definitions(hwinfo_utils_PCIMapper PUBLIC ${HWINFO_DEFINITIONS})
 
 # battery
 if(HWINFO_BATTERY)
@@ -70,6 +94,8 @@ if(HWINFO_BATTERY)
 
   target_link_libraries(hwinfo_battery PRIVATE hwinfo::utils::filesystem
                                                hwinfo::utils::wmi)
+
+  target_compile_definitions(hwinfo_battery PUBLIC ${HWINFO_DEFINITIONS})
 
   install(TARGETS hwinfo_battery DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
@@ -96,6 +122,8 @@ if(HWINFO_CPU)
   target_link_libraries(hwinfo_cpu PRIVATE hwinfo::utils::filesystem
                                            hwinfo::utils::wmi)
 
+  target_compile_definitions(hwinfo_cpu PUBLIC ${HWINFO_DEFINITIONS})
+
   target_link_libraries(hwinfo PUBLIC hwinfo_cpu)
 
   install(TARGETS hwinfo_cpu DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -117,6 +145,8 @@ if(HWINFO_DISK)
   target_include_directories(
     hwinfo_disk PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
                        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+  target_compile_definitions(hwinfo_disk PUBLIC ${HWINFO_DEFINITIONS})
 
   target_link_libraries(hwinfo_disk PRIVATE hwinfo::utils::filesystem
                                             hwinfo::utils::wmi)
@@ -152,6 +182,8 @@ if(HWINFO_GPU)
     hwinfo_gpu PRIVATE hwinfo::utils::filesystem hwinfo::utils::wmi
                        hwinfo::utils::PCIMapper)
 
+  target_compile_definitions(hwinfo_gpu PUBLIC ${HWINFO_DEFINITIONS})
+
   if(HWINFO_GPU_OPENCL)
     if(NOT TARGET miss-opencl_static)
       add_subdirectory(${PROJECT_SOURCE_DIR}/external/miss-opencl)
@@ -184,6 +216,8 @@ if(HWINFO_MAINBOARD)
     hwinfo_mainboard PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
                             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
+  target_compile_definitions(hwinfo_mainboard PUBLIC ${HWINFO_DEFINITIONS})
+
   target_link_libraries(hwinfo_mainboard PRIVATE hwinfo::utils::wmi)
 
   install(TARGETS hwinfo_mainboard DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -208,6 +242,8 @@ if(HWINFO_OS)
     hwinfo_os PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
                      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
+  target_compile_definitions(hwinfo_os PUBLIC ${HWINFO_DEFINITIONS})
+
   target_link_libraries(hwinfo_os PRIVATE hwinfo::utils::wmi)
 
   target_link_libraries(hwinfo PUBLIC hwinfo_os)
@@ -230,6 +266,8 @@ if(HWINFO_RAM)
   target_include_directories(
     hwinfo_ram PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
                       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+  target_compile_definitions(hwinfo_ram PUBLIC ${HWINFO_DEFINITIONS})
 
   target_link_libraries(hwinfo_ram PRIVATE hwinfo::utils::wmi)
 

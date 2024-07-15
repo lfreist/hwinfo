@@ -1,6 +1,8 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
+#ifdef HWINFO_BATTERY
+
 #include "hwinfo/battery.h"
 
 namespace hwinfo {
@@ -53,3 +55,5 @@ uint32_t Battery::energyFull() {
 double Battery::capacity() { return static_cast<double>(energyNow()) / energyFull(); }
 
 }  // namespace hwinfo
+
+#endif

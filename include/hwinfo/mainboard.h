@@ -3,6 +3,8 @@
 
 #pragma once
 
+#ifdef HWINFO_MAINBOARD
+
 #include <hwinfo/platform.h>
 
 #include <string>
@@ -29,3 +31,5 @@ class MainBoard {
 };
 
 }  // namespace hwinfo
+
+#endif  // HWINFO_MAINBOARD
