@@ -1,25 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
 
-# Use the latest C++ standard available
-if("${CMAKE_CXX_STANDARD}" STREQUAL "")
-    if(DEFINED CMAKE_CXX23_STANDARD_COMPILE_OPTION OR DEFINED CMAKE_CXX23_EXTENSION_COMPILE_OPTION)
-        set(CMAKE_CXX_STANDARD 23)
-    elseif(DEFINED CMAKE_CXX20_STANDARD_COMPILE_OPTION OR DEFINED CMAKE_CXX20_EXTENSION_COMPILE_OPTION)
-        set(CMAKE_CXX_STANDARD 20)
-    elseif(DEFINED CMAKE_CXX17_STANDARD_COMPILE_OPTION OR DEFINED
-                                                            CMAKE_CXX17_EXTENSION_COMPILE_OPTION
-    )
-        set(CMAKE_CXX_STANDARD 17)
-    elseif(DEFINED CMAKE_CXX14_STANDARD_COMPILE_OPTION OR DEFINED
-                                                            CMAKE_CXX14_EXTENSION_COMPILE_OPTION
-    )
-        set(CMAKE_CXX_STANDARD 14)
-    else()
-        set(CMAKE_CXX_STANDARD 11)
-    endif()
-endif()
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 project(hwinfo VERSION 1.0.0 LANGUAGES CXX)
 include(GNUInstallDirs)
 
@@ -43,6 +23,26 @@ if (DEFINED NO_OCL)
     message(WARNING "NO_OCL is deprecated, use HWINFO_GPU_OPENCL instead")
     set(HWINFO_GPU_OPENCL NOT NO_OCL)
 endif()
+
+# Use the latest C++ standard available
+if("${CMAKE_CXX_STANDARD}" STREQUAL "")
+    if(DEFINED CMAKE_CXX23_STANDARD_COMPILE_OPTION OR DEFINED CMAKE_CXX23_EXTENSION_COMPILE_OPTION)
+        set(CMAKE_CXX_STANDARD 23)
+    elseif(DEFINED CMAKE_CXX20_STANDARD_COMPILE_OPTION OR DEFINED CMAKE_CXX20_EXTENSION_COMPILE_OPTION)
+        set(CMAKE_CXX_STANDARD 20)
+    elseif(DEFINED CMAKE_CXX17_STANDARD_COMPILE_OPTION OR DEFINED
+                                                            CMAKE_CXX17_EXTENSION_COMPILE_OPTION
+    )
+        set(CMAKE_CXX_STANDARD 17)
+    elseif(DEFINED CMAKE_CXX14_STANDARD_COMPILE_OPTION OR DEFINED
+                                                            CMAKE_CXX14_EXTENSION_COMPILE_OPTION
+    )
+        set(CMAKE_CXX_STANDARD 14)
+    else()
+        set(CMAKE_CXX_STANDARD 11)
+    endif()
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(HWINFO_GPU_OPENCL)
     if(NOT TARGET miss-opencl_static)
