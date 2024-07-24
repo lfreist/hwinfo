@@ -88,14 +88,22 @@ if (HWINFO_GPU)
             windows/utils/wmi_wrapper.cpp
             apple/utils/filesystem.cpp
             linux/utils/filesystem.cpp
+
+            PCIMapper.cpp
     )
 
     add_library(hwinfo_gpu SHARED ${GPU_SRC_FILES})
     target_compile_definitions(hwinfo_gpu PUBLIC HWINFO_GPU -DHWINFO_EXPORTS)
+    if(HWINFO_GPU_OPENCL)
+        target_compile_definitions(hwinfo_gpu PUBLIC USE_OCL)
+    endif ()
     target_include_directories(hwinfo_gpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 
     add_library(hwinfo_gpu_static STATIC ${GPU_SRC_FILES})
     target_compile_definitions(hwinfo_gpu_static PUBLIC HWINFO_GPU)
+    if(HWINFO_GPU_OPENCL)
+        target_compile_definitions(hwinfo_gpu_static PUBLIC USE_OCL)
+    endif ()
     target_include_directories(hwinfo_gpu_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 endif ()
 # ______________________________________________________________________________________________________________________

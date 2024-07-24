@@ -5,10 +5,8 @@ project(hwinfo VERSION 1.0.0 LANGUAGES CXX)
 if (WIN32)
     add_definitions(-DWIN32)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
-    if (BUILD_SHARED_LIBS)
-        add_definitions(-DHWINFO_EXPORTS)
-    endif()
 endif()
+
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
@@ -36,23 +34,7 @@ if (DEFINED NO_OCL)
 endif()
 
 # Use the latest C++ standard available
-if("${CMAKE_CXX_STANDARD}" STREQUAL "")
-    if(DEFINED CMAKE_CXX23_STANDARD_COMPILE_OPTION OR DEFINED CMAKE_CXX23_EXTENSION_COMPILE_OPTION)
-        set(CMAKE_CXX_STANDARD 23)
-    elseif(DEFINED CMAKE_CXX20_STANDARD_COMPILE_OPTION OR DEFINED CMAKE_CXX20_EXTENSION_COMPILE_OPTION)
-        set(CMAKE_CXX_STANDARD 20)
-    elseif(DEFINED CMAKE_CXX17_STANDARD_COMPILE_OPTION OR DEFINED
-                                                            CMAKE_CXX17_EXTENSION_COMPILE_OPTION
-    )
-        set(CMAKE_CXX_STANDARD 17)
-    elseif(DEFINED CMAKE_CXX14_STANDARD_COMPILE_OPTION OR DEFINED
-                                                            CMAKE_CXX14_EXTENSION_COMPILE_OPTION
-    )
-        set(CMAKE_CXX_STANDARD 14)
-    else()
-        set(CMAKE_CXX_STANDARD 11)
-    endif()
-endif()
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(HWINFO_GPU_OPENCL)
@@ -61,7 +43,6 @@ if(HWINFO_GPU_OPENCL)
     endif()
 endif()
 
-# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
@@ -79,5 +60,5 @@ endif()
 if(BUILD_TESTING)
     include(CTest)
     add_subdirectory(test)
-    add_test(Example examples/Example)
+    add_test(system_infoMain system_infoMain)
 endif()
