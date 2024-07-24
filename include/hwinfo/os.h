@@ -11,7 +11,7 @@
 
 namespace hwinfo {
 
-class OS {
+class HWINFO_API OS {
  public:
   OS();
   ~OS() = default;

@@ -2,10 +2,10 @@
 
 #ifdef HWINFO_WINDOWS
 
+#include <hwinfo/utils/filesystem.h>
+
 #include <string>
 #include <vector>
-
-#include "hwinfo/utils/filesystem.h"
 
 bool hwinfo::filesystem::exists(const std::string& path) {
   // TODO: implement if needed

@@ -13,7 +13,7 @@
 
 namespace hwinfo {
 
-class GPU {
+class HWINFO_API GPU {
   friend std::vector<GPU> getAllGPUs();
 
  public:

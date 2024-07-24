@@ -5,13 +5,15 @@
 
 #ifdef HWINFO_BATTERY
 
+#include <hwinfo/platform.h>
+
 #include <cstdint>
 #include <string>
 #include <vector>
 
 namespace hwinfo {
 
-class Battery {
+class HWINFO_API Battery {
   friend std::vector<Battery> getAllBatteries();
 
  public:

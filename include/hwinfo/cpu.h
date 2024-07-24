@@ -30,7 +30,7 @@ struct Jiffies {
 };
 #endif
 
-class CPU {
+class HWINFO_API CPU {
   friend std::vector<CPU> getAllCPUs();
 
  public:
@@ -53,9 +53,11 @@ class CPU {
   std::vector<double> threadsUtilisation() const;
   // double currentTemperature_Celsius() const;
   const std::vector<std::string>& flags() const;
-  void init_jiffies() const;
 
  private:
+#ifndef HWINFO_WINDOWS
+  void init_jiffies() const;
+#endif
   CPU() = default;
 
   int _id{-1};

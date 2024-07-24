@@ -13,7 +13,7 @@ namespace WMI {
 _WMI::_WMI() {
   auto res = CoInitializeSecurity(nullptr, -1, nullptr, nullptr, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE,
                                   nullptr, EOAC_NONE, nullptr);
-  res &= CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+  res &= CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
   res &= CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&locator);
   if (locator) {
     res &= locator->ConnectServer(_bstr_t("ROOT\\CIMV2"), nullptr, nullptr, nullptr, 0, nullptr, nullptr, &service);

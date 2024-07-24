@@ -1,277 +1,170 @@
-# hwinfo (all in one target)
-add_library(hwinfo hwinfo.cpp)
+# ----- hwinfo ---------------------------------------------------------------------------------------------------------
+add_library(hwinfo INTERFACE)
+target_include_directories(hwinfo INTERFACE $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 add_library(hwinfo::hwinfo ALIAS hwinfo)
 
-# for backward compatibility
-add_library(HWinfo ALIAS hwinfo)
-add_library(hwinfo::HWinfo ALIAS hwinfo)
+add_library(hwinfo_static INTERFACE)
+target_include_directories(hwinfo_static INTERFACE $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
+add_library(hwinfo::hwinfo_static ALIAS hwinfo_static)
 
-target_include_directories(hwinfo PUBLIC ${PROJECT_SOURCE_DIR}/include/)
+# === Components =======================================================================================================
+# ----- BATTERY --------------------------------------------------------------------------------------------------------
+if (HWINFO_BATTERY)
+    set(BATTERY_SRC_FILES
+            battery.cpp
+            apple/battery.cpp
+            linux/battery.cpp
+            windows/battery.cpp
 
-# C++ options based on CMake options
-set(HWINFO_DEFINITIONS "")
-set(OPTIONS_LIST
-    HWINFO_OS
-    HWINFO_MAINBOARD
-    HWINFO_CPU
-    HWINFO_DISK
-    HWINFO_RAM
-    HWINFO_GPU
-    HWINFO_BATTERY)
-foreach(OPTION IN LISTS OPTIONS_LIST)
-  if(${OPTION})
-    list(APPEND HWINFO_DEFINITIONS ${OPTION})
-  endif()
-endforeach()
+            windows/utils/wmi_wrapper.cpp
+    )
 
-target_compile_definitions(hwinfo PUBLIC ${HWINFO_DEFINITIONS})
+    add_library(hwinfo_battery SHARED ${BATTERY_SRC_FILES})
+    target_compile_definitions(hwinfo_battery PUBLIC HWINFO_BATTERY -DHWINFO_EXPORTS)
+    target_include_directories(hwinfo_battery PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 
-install(TARGETS hwinfo DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(DIRECTORY include/hwinfo DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    add_library(hwinfo_battery_static STATIC ${BATTERY_SRC_FILES})
+    target_compile_definitions(hwinfo_battery_static PUBLIC HWINFO_BATTERY)
+    target_include_directories(hwinfo_battery_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 
-# filesystem_utils
-add_library(
-  hwinfo_utils_filesystem
-  # apple specific definitions
-  apple/utils/filesystem.cpp
-  # linux specific definitions
-  linux/utils/filesystem.cpp
-  # windows specific definitions
-  windows/utils/filesystem.cpp)
-add_library(hwinfo::utils::filesystem ALIAS hwinfo_utils_filesystem)
+    target_link_libraries(hwinfo INTERFACE hwinfo_battery hwinfo_cpu hwinfo_disk hwinfo_gpu hwinfo_mainboard hwinfo_os hwinfo_ram)
+    target_link_libraries(hwinfo_static INTERFACE hwinfo_battery hwinfo_cpu hwinfo_disk hwinfo_gpu hwinfo_mainboard hwinfo_os hwinfo_ram)
+endif ()
+# ______________________________________________________________________________________________________________________
 
-target_include_directories(
-  hwinfo_utils_filesystem
-  PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
-         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+# ----- CPU ------------------------------------------------------------------------------------------------------------
+if (HWINFO_CPU)
+    set(CPU_SRC_FILES
+            cpu.cpp
+            apple/cpu.cpp
+            linux/cpu.cpp
+            windows/cpu.cpp
 
-target_compile_definitions(hwinfo_utils_filesystem PUBLIC ${HWINFO_DEFINITIONS})
+            windows/utils/wmi_wrapper.cpp
+            apple/utils/filesystem.cpp
+            linux/utils/filesystem.cpp
+    )
 
-# wmi_wrapper on windows
-add_library(
-  hwinfo_utils_wmi
-  # windows specific definitions
-  windows/utils/wmi_wrapper.cpp)
-add_library(hwinfo::utils::wmi ALIAS hwinfo_utils_wmi)
+    add_library(hwinfo_cpu SHARED ${CPU_SRC_FILES})
+    target_compile_definitions(hwinfo_cpu PUBLIC HWINFO_CPU -DHWINFO_EXPORTS)
+    target_include_directories(hwinfo_cpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 
-if(WIN32 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-  target_link_libraries(hwinfo_utils_wmi PRIVATE "wbemuuid")
+    add_library(hwinfo_cpu_static STATIC ${CPU_SRC_FILES})
+    target_compile_definitions(hwinfo_cpu_static PUBLIC HWINFO_CPU)
+    target_include_directories(hwinfo_cpu_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 endif()
+# ______________________________________________________________________________________________________________________
 
-target_include_directories(
-  hwinfo_utils_wmi PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
-                          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+# ----- DISK -----------------------------------------------------------------------------------------------------------
+if (HWINFO_DISK)
+    set(DISK_SRC_FILES
+            disk.cpp
+            apple/disk.cpp
+            linux/disk.cpp
+            windows/disk.cpp
 
-target_compile_definitions(hwinfo_utils_wmi PUBLIC ${HWINFO_DEFINITIONS})
+            windows/utils/wmi_wrapper.cpp
+            linux/utils/filesystem.cpp
+    )
 
-# PCIMapper on Unix
-add_library(hwinfo_utils_PCIMapper PCIMapper.cpp)
-add_library(hwinfo::utils::PCIMapper ALIAS hwinfo_utils_PCIMapper)
+    add_library(hwinfo_disk SHARED ${DISK_SRC_FILES})
+    target_compile_definitions(hwinfo_disk PUBLIC HWINFO_DISK -DHWINFO_EXPORTS)
+    target_include_directories(hwinfo_disk PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 
-target_include_directories(
-  hwinfo_utils_PCIMapper
-  PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
-         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    add_library(hwinfo_disk_static STATIC ${DISK_SRC_FILES})
+    target_compile_definitions(hwinfo_disk_static PUBLIC HWINFO_DISK)
+    target_include_directories(hwinfo_disk_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
+endif ()
+# ______________________________________________________________________________________________________________________
 
-target_compile_definitions(hwinfo_utils_PCIMapper PUBLIC ${HWINFO_DEFINITIONS})
+# ----- GPU ------------------------------------------------------------------------------------------------------------
+if (HWINFO_GPU)
+    set(GPU_SRC_FILES
+            gpu.cpp
+            apple/gpu.cpp
+            linux/gpu.cpp
+            windows/gpu.cpp
 
-# battery
-if(HWINFO_BATTERY)
-  add_library(
-    hwinfo_battery
-    battery.cpp
-    # apple specific definitions
-    apple/battery.cpp
-    # linux specific definitions
-    linux/battery.cpp
-    # windows specific definitions
-    windows/battery.cpp)
-  add_library(hwinfo::battery ALIAS hwinfo_battery)
+            windows/utils/wmi_wrapper.cpp
+            apple/utils/filesystem.cpp
+            linux/utils/filesystem.cpp
+    )
 
-  target_include_directories(
-    hwinfo_battery PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
-                          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    add_library(hwinfo_gpu SHARED ${GPU_SRC_FILES})
+    target_compile_definitions(hwinfo_gpu PUBLIC HWINFO_GPU -DHWINFO_EXPORTS)
+    target_include_directories(hwinfo_gpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 
-  target_link_libraries(hwinfo_battery PRIVATE hwinfo::utils::filesystem
-                                               hwinfo::utils::wmi)
+    add_library(hwinfo_gpu_static STATIC ${GPU_SRC_FILES})
+    target_compile_definitions(hwinfo_gpu_static PUBLIC HWINFO_GPU)
+    target_include_directories(hwinfo_gpu_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
+endif ()
+# ______________________________________________________________________________________________________________________
 
-  target_compile_definitions(hwinfo_battery PUBLIC ${HWINFO_DEFINITIONS})
+# ----- Mainboard ------------------------------------------------------------------------------------------------------
+if (HWINFO_MAINBOARD)
+    set(MAINBOARD_SRC_FILES
+            mainboard.cpp
+            apple/mainboard.cpp
+            linux/mainboard.cpp
+            windows/mainboard.cpp
 
-  install(TARGETS hwinfo_battery DESTINATION ${CMAKE_INSTALL_LIBDIR})
+            windows/utils/wmi_wrapper.cpp
+            apple/utils/filesystem.cpp
+            linux/utils/filesystem.cpp
+    )
 
-  target_link_libraries(hwinfo PUBLIC hwinfo_battery)
-endif()
+    add_library(hwinfo_mainboard SHARED ${MAINBOARD_SRC_FILES})
+    target_compile_definitions(hwinfo_mainboard PUBLIC HWINFO_MAINBOARD -DHWINFO_EXPORTS)
+    target_include_directories(hwinfo_mainboard PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 
-# cpu
-if(HWINFO_CPU)
-  add_library(
-    hwinfo_cpu
-    cpu.cpp
-    # apple specific definitions
-    apple/cpu.cpp
-    # linux specific definitions
-    linux/cpu.cpp
-    # windows specific definitions
-    windows/cpu.cpp)
-  add_library(hwinfo::cpu ALIAS hwinfo_cpu)
+    add_library(hwinfo_mainboard_static STATIC ${MAINBOARD_SRC_FILES})
+    target_compile_definitions(hwinfo_mainboard_static PUBLIC HWINFO_MAINBOARD)
+    target_include_directories(hwinfo_mainboard_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
+endif ()
+# ______________________________________________________________________________________________________________________
 
-  target_include_directories(
-    hwinfo_cpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
-                      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+# ----- OS -------------------------------------------------------------------------------------------------------------
+if (HWINFO_OS)
+    set(OS_SRC_FILES
+            os.cpp
+            apple/os.cpp
+            linux/os.cpp
+            windows/os.cpp
 
-  target_link_libraries(hwinfo_cpu PRIVATE hwinfo::utils::filesystem
-                                           hwinfo::utils::wmi)
+            windows/utils/wmi_wrapper.cpp
+            apple/utils/filesystem.cpp
+            linux/utils/filesystem.cpp
+    )
 
-  target_compile_definitions(hwinfo_cpu PUBLIC ${HWINFO_DEFINITIONS})
+    add_library(hwinfo_os SHARED ${OS_SRC_FILES})
+    target_compile_definitions(hwinfo_os PUBLIC HWINFO_OS -DHWINFO_EXPORTS)
+    target_include_directories(hwinfo_os PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 
-  target_link_libraries(hwinfo PUBLIC hwinfo_cpu)
+    add_library(hwinfo_os_static STATIC ${OS_SRC_FILES})
+    target_compile_definitions(hwinfo_os_static PUBLIC HWINFO_OS)
+    target_include_directories(hwinfo_os_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
+endif ()
+# ______________________________________________________________________________________________________________________
 
-  install(TARGETS hwinfo_cpu DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif()
+# ----- RAM ------------------------------------------------------------------------------------------------------------
+if (HWINFO_RAM)
+    set(RAM_SRC_FILES
+            ram.cpp
+            apple/ram.cpp
+            linux/ram.cpp
+            windows/ram.cpp
 
-# disk
-if(HWINFO_DISK)
-  add_library(
-    hwinfo_disk
-    disk.cpp
-    # apple specific definitions
-    apple/disk.cpp
-    # linux specific definitions
-    linux/disk.cpp
-    # windows specific definitions
-    windows/disk.cpp)
-  add_library(hwinfo::disk ALIAS hwinfo_disk)
+            windows/utils/wmi_wrapper.cpp
+            apple/utils/filesystem.cpp
+            linux/utils/filesystem.cpp
+    )
 
-  target_include_directories(
-    hwinfo_disk PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
-                       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    add_library(hwinfo_ram SHARED ${RAM_SRC_FILES})
+    target_compile_definitions(hwinfo_ram PUBLIC HWINFO_RAM -DHWINFO_EXPORTS)
+    target_include_directories(hwinfo_ram PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 
-  target_compile_definitions(hwinfo_disk PUBLIC ${HWINFO_DEFINITIONS})
-
-  target_link_libraries(hwinfo_disk PRIVATE hwinfo::utils::filesystem
-                                            hwinfo::utils::wmi)
-
-  if(APPLE)
-    target_link_libraries(hwinfo_disk PRIVATE "-framework IOKit"
-                                              "-framework CoreFoundation")
-  endif()
-
-  install(TARGETS hwinfo_disk DESTINATION ${CMAKE_INSTALL_LIBDIR})
-
-  target_link_libraries(hwinfo PUBLIC hwinfo_disk)
-endif()
-
-# gpu
-if(HWINFO_GPU)
-  add_library(
-    hwinfo_gpu
-    gpu.cpp
-    # apple specific definitions
-    apple/gpu.cpp
-    # linux specific definitions
-    linux/gpu.cpp
-    # windows specific definitions
-    windows/gpu.cpp)
-  add_library(hwinfo::gpu ALIAS hwinfo_gpu)
-
-  target_include_directories(
-    hwinfo_gpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
-                      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-
-  target_link_libraries(
-    hwinfo_gpu PRIVATE hwinfo::utils::filesystem hwinfo::utils::wmi
-                       hwinfo::utils::PCIMapper)
-
-  target_compile_definitions(hwinfo_gpu PUBLIC ${HWINFO_DEFINITIONS})
-
-  if(HWINFO_GPU_OPENCL)
-    if(NOT TARGET miss-opencl_static)
-      add_subdirectory(${PROJECT_SOURCE_DIR}/external/miss-opencl)
-    endif()
-
-    target_compile_definitions(hwinfo_gpu PRIVATE USE_OCL NOMINMAX)
-
-    target_link_libraries(hwinfo_gpu PRIVATE miss-opencl_static)
-  endif()
-
-  install(TARGETS hwinfo_gpu DESTINATION ${CMAKE_INSTALL_LIBDIR})
-
-  target_link_libraries(hwinfo PUBLIC hwinfo_gpu)
-endif()
-
-# mainboard
-if(HWINFO_MAINBOARD)
-  add_library(
-    hwinfo_mainboard
-    mainboard.cpp
-    # apple specific definitions
-    apple/mainboard.cpp
-    # linux specific definitions
-    linux/mainboard.cpp
-    # windows specific definitions
-    windows/mainboard.cpp)
-  add_library(hwinfo::mainboard ALIAS hwinfo_mainboard)
-
-  target_include_directories(
-    hwinfo_mainboard PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
-                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-
-  target_compile_definitions(hwinfo_mainboard PUBLIC ${HWINFO_DEFINITIONS})
-
-  target_link_libraries(hwinfo_mainboard PRIVATE hwinfo::utils::wmi)
-
-  install(TARGETS hwinfo_mainboard DESTINATION ${CMAKE_INSTALL_LIBDIR})
-
-  target_link_libraries(hwinfo PUBLIC hwinfo_mainboard)
-endif()
-
-# os
-if(HWINFO_OS)
-  add_library(
-    hwinfo_os
-    os.cpp
-    # apple specific definitions
-    apple/os.cpp
-    # linux specific definitions
-    linux/os.cpp
-    # windows specific definitions
-    windows/os.cpp)
-  add_library(hwinfo::os ALIAS hwinfo_os)
-
-  target_include_directories(
-    hwinfo_os PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
-                     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-
-  target_compile_definitions(hwinfo_os PUBLIC ${HWINFO_DEFINITIONS})
-
-  target_link_libraries(hwinfo_os PRIVATE hwinfo::utils::wmi)
-
-  target_link_libraries(hwinfo PUBLIC hwinfo_os)
-  install(TARGETS hwinfo_os DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif()
-
-# ram
-if(HWINFO_RAM)
-  add_library(
-    hwinfo_ram
-    ram.cpp
-    # apple specific definitions
-    apple/ram.cpp
-    # linux specific definitions
-    linux/ram.cpp
-    # windows specific definitions
-    windows/ram.cpp)
-  add_library(hwinfo::ram ALIAS hwinfo_ram)
-
-  target_include_directories(
-    hwinfo_ram PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>
-                      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-
-  target_compile_definitions(hwinfo_ram PUBLIC ${HWINFO_DEFINITIONS})
-
-  target_link_libraries(hwinfo_ram PRIVATE hwinfo::utils::wmi)
-
-  target_link_libraries(hwinfo PUBLIC hwinfo_ram)
-
-  install(TARGETS hwinfo_ram DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif()
+    add_library(hwinfo_ram_static STATIC ${RAM_SRC_FILES})
+    target_compile_definitions(hwinfo_ram_static PUBLIC HWINFO_RAM)
+    target_include_directories(hwinfo_ram_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
+endif ()
+# ______________________________________________________________________________________________________________________

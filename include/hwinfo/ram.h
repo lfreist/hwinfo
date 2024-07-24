@@ -13,7 +13,7 @@
 
 namespace hwinfo {
 
-class Memory {
+class HWINFO_API Memory {
  public:
   struct Module {
     int id;

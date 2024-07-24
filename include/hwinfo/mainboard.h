@@ -11,7 +11,7 @@
 
 namespace hwinfo {
 
-class MainBoard {
+class HWINFO_API MainBoard {
   friend std::string get_dmi_by_name(const std::string& name);
 
  public:

@@ -42,8 +42,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
                "cache size:", cpu.L1CacheSize_Bytes(), cpu.L2CacheSize_Bytes(), cpu.L3CacheSize_Bytes());
     // clang-format on
 
-    auto threads_utility = cpu.threadsUtilisation();
-    auto threads_speed = cpu.currentClockSpeed_MHz();
+    std::vector<double> threads_utility = cpu.threadsUtilisation();
+    std::vector<int64_t> threads_speed = cpu.currentClockSpeed_MHz();
     assert((threads_utility.size() == threads_speed.size()));
     for (size_t thread_id = 0; thread_id != threads_utility.size(); ++thread_id) {
       fmt::print("{:<20} Thread {}: {} MHz ({}%)\n", " ", thread_id, threads_speed[thread_id],

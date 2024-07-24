@@ -182,7 +182,7 @@ TODO
 
 ## Example
 
-See [example.cpp](examples/example.cpp)
+See [system_infoMain.cpp](examples/system_infoMain.cpp)
 
 The output should look similar to this one:
 

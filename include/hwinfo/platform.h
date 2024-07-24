@@ -8,6 +8,19 @@
 #endif
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #define HWINFO_WINDOWS
+#ifdef _WIN32
+#ifdef HWINFO_EXPORTS
+#define HWINFO_API __declspec(dllexport)
+#else
+#ifdef HWINFO_IMPORTS
+#define HWINFO_API __declspec(dllimport)
+#else
+#define HWINFO_API
+#endif
+#endif
+#else
+#define HWINFO_API
+#endif
 #endif
 
 #if defined(__x86_64__) || defined(__x86_64) || defined(__amd64__) || defined(_M_X64)

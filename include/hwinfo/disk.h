@@ -13,10 +13,10 @@
 
 namespace hwinfo {
 
-const unsigned short block_size =
-    512;  // Linux always considers sectors to be 512 bytes long independently of the devices real block size.
+// Linux always considers sectors to be 512 bytes long independently of the devices real block size.
+const unsigned short block_size = 512;
 
-class Disk {
+class HWINFO_API Disk {
   friend std::vector<Disk> getAllDisks();
 
  public:
