@@ -70,10 +70,17 @@ if (HWINFO_DISK)
     add_library(hwinfo_disk SHARED ${DISK_SRC_FILES})
     target_compile_definitions(hwinfo_disk PUBLIC HWINFO_DISK -DHWINFO_EXPORTS)
     target_include_directories(hwinfo_disk PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
+    if(APPLE)
+        target_link_libraries(hwinfo_disk PRIVATE "-framework IOKit"
+                "-framework CoreFoundation")
+    endif()
 
     add_library(hwinfo_disk_static STATIC ${DISK_SRC_FILES})
     target_compile_definitions(hwinfo_disk_static PUBLIC HWINFO_DISK)
     target_include_directories(hwinfo_disk_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
+    if(APPLE)
+        target_link_libraries(hwinfo_disk_static PRIVATE "-framework IOKit" "-framework CoreFoundation")
+    endif()
 endif ()
 # ______________________________________________________________________________________________________________________
 
