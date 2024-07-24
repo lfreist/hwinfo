@@ -3,6 +3,8 @@
 
 #pragma once
 
+#ifdef HWINFO_DISK
+
 #include <hwinfo/platform.h>
 
 #include <cstdint>
@@ -39,3 +41,5 @@ class Disk {
 std::vector<Disk> getAllDisks();
 
 }  // namespace hwinfo
+
+#endif  // HWINFO_DISK

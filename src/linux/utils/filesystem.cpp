@@ -55,6 +55,8 @@ int64_t hwinfo::filesystem::get_specs_by_file_path(const std::string& path) {
   }
 }
 
+#if defined(HWINFO_CPU)
+
 hwinfo::Jiffies hwinfo::filesystem::get_jiffies(int index) {
   // std::string text = "cpu  349585 0 30513 875546 0 935 0 0 0 0";
 
@@ -91,5 +93,7 @@ hwinfo::Jiffies hwinfo::filesystem::get_jiffies(int index) {
 
   return {all, working};
 }
+
+#endif  // HWINFO_CPU
 
 #endif  // HWINFO_UNIX

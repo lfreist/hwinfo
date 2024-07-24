@@ -1,0 +1,52 @@
+#!/bin/bash -ex
+# bash or pwsh
+
+# Test default (all)
+cmake -B ./build -DCMAKE_BUILD_TYPE=Release
+cmake --build ./build --parallel --config Release
+cd build
+ctest -C Release -V
+cd ..
+
+# Test OS target
+rm build/CMakeCache.txt
+cmake -B ./build -DCMAKE_BUILD_TYPE=Debug -DHWINFO_OS=ON -DHWINFO_MAINBOARD=OFF -DHWINFO_CPU=OFF -DHWINFO_DISK=OFF -DHWINFO_RAM=OFF -DHWINFO_GPU=OFF -DHWINFO_GPU_OPENCL=OFF -DHWINFO_BATTERY=OFF
+cmake --build ./build --parallel --config Debug -t hwinfo_os
+
+# Test mainboard target
+rm build/CMakeCache.txt
+cmake -B ./build -DCMAKE_BUILD_TYPE=Debug -DHWINFO_OS=OFF -DHWINFO_MAINBOARD=ON -DHWINFO_CPU=OFF -DHWINFO_DISK=OFF -DHWINFO_RAM=OFF -DHWINFO_GPU=OFF -DHWINFO_GPU_OPENCL=OFF -DHWINFO_BATTERY=OFF
+cmake --build ./build --parallel --config Debug -t hwinfo_mainboard
+
+# Test CPU target
+rm build/CMakeCache.txt
+cmake -B ./build -DCMAKE_BUILD_TYPE=Debug -DHWINFO_OS=OFF -DHWINFO_MAINBOARD=OFF -DHWINFO_CPU=ON -DHWINFO_DISK=OFF -DHWINFO_RAM=OFF -DHWINFO_GPU=OFF -DHWINFO_GPU_OPENCL=OFF -DHWINFO_BATTERY=OFF
+cmake --build ./build --parallel --config Debug -t hwinfo_cpu
+
+# Test disk target
+rm build/CMakeCache.txt
+cmake -B ./build -DCMAKE_BUILD_TYPE=Debug -DHWINFO_OS=OFF -DHWINFO_MAINBOARD=OFF -DHWINFO_CPU=OFF -DHWINFO_DISK=ON -DHWINFO_RAM=OFF -DHWINFO_GPU=OFF -DHWINFO_GPU_OPENCL=OFF -DHWINFO_BATTERY=OFF
+cmake --build ./build --parallel --config Debug -t hwinfo_disk
+
+# Test RAM target
+rm build/CMakeCache.txt
+cmake -B ./build -DCMAKE_BUILD_TYPE=Debug -DHWINFO_OS=OFF -DHWINFO_MAINBOARD=OFF -DHWINFO_CPU=OFF -DHWINFO_DISK=OFF -DHWINFO_RAM=ON -DHWINFO_GPU=OFF -DHWINFO_GPU_OPENCL=OFF -DHWINFO_BATTERY=OFF
+cmake --build ./build --parallel --config Debug -t hwinfo_ram
+
+# Test GPU target
+rm build/CMakeCache.txt
+cmake -B ./build -DCMAKE_BUILD_TYPE=Debug -DHWINFO_OS=OFF -DHWINFO_MAINBOARD=OFF -DHWINFO_CPU=OFF -DHWINFO_DISK=OFF -DHWINFO_RAM=OFF -DHWINFO_GPU=ON -DHWINFO_GPU_OPENCL=OFF -DHWINFO_BATTERY=OFF
+cmake --build ./build --parallel --config Debug -t hwinfo_gpu
+
+# # Test GPU target with OpenCL
+# rm build/CMakeCache.txt
+# cmake -B ./build -DCMAKE_BUILD_TYPE=Debug -DHWINFO_OS=OFF -DHWINFO_MAINBOARD=OFF -DHWINFO_CPU=OFF -DHWINFO_DISK=OFF -DHWINFO_RAM=OFF -DHWINFO_GPU=ON -DHWINFO_GPU_OPENCL=ON -DHWINFO_BATTERY=OFF
+# cmake --build ./build --parallel --config Debug -t hwinfo_gpu
+
+# Test battery target
+rm build/CMakeCache.txt
+cmake -B ./build -DCMAKE_BUILD_TYPE=Debug -DHWINFO_OS=OFF -DHWINFO_MAINBOARD=OFF -DHWINFO_CPU=OFF -DHWINFO_DISK=OFF -DHWINFO_RAM=OFF -DHWINFO_GPU=OFF -DHWINFO_GPU_OPENCL=OFF -DHWINFO_BATTERY=ON
+cmake --build ./build --parallel --config Debug -t hwinfo_battery
+
+# Clean up
+rm build/CMakeCache.txt

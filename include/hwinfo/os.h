@@ -3,6 +3,8 @@
 
 #pragma once
 
+#ifdef HWINFO_OS
+
 #include <hwinfo/platform.h>
 
 #include <string>
@@ -33,3 +35,5 @@ class OS {
 };
 
 }  // namespace hwinfo
+
+#endif  // HWINFO_OS

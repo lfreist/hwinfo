@@ -12,8 +12,7 @@
 hwinfo provides an easy-to-use and modern C++ API for retrieving hardware information of your systems components such as
 CPU, RAM, GPU, Disks, Mainboard, ...
 
-hwinfo builds using C++20. However, if your compiler does not support C++20, you can fall back to C++11 by setting the
-`NO_OCL` CMake variable (add `-DNO_OCL=ON` to the CMake command).
+hwinfo automatically uses the latest C++ standard supported by your compiler. C++20 is required for GPU OpenCL support if enabled (configurable with `HWINFO_GPU_OPENCL`).
 
 > **Note**
 >
@@ -73,6 +72,37 @@ hwinfo builds using C++20. However, if your compiler does not support C++20, you
 |                  | Technology         |  ✔️   |   ❌    |    ❌    |
 |                  | Capacity           |  ✔️   |   ✔️   |   ️❌    |
 |                  | Charging           |  ✔️   |   ✔️   |    ❌    |
+
+
+All components are available via the `hwinfo::hwinfo` target, or via individual CMake targets, which you can choose and link against depending on your needs.
+
+```cmake
+target_link_libraries(your_target PRIVATE hwinfo::hwinfo)
+```
+or
+
+```cmake
+target_link_libraries(
+  your_target
+  PRIVATE hwinfo::cpu
+          hwinfo::gpu
+          hwinfo::ram
+          hwinfo::mainboard
+          hwinfo::disk
+          hwinfo::os
+          hwinfo::battery)
+```
+
+The CMake options control which components will be built and available in the library:
+
+- `HWINFO_OS` "Enable OS detection" (default to `ON`)
+- `HWINFO_MAINBOARD` "Enable mainboard detection" (default to `ON`)
+- `HWINFO_CPU` "Enable CPU detection" (default to `ON`)
+- `HWINFO_DISK` "Enable disk detection" (default to `ON`)
+- `HWINFO_RAM` "Enable RAM detection" (default to `ON`)
+- `HWINFO_GPU` "Enable GPU detection" (default to `ON`)
+- `HWINFO_GPU_OPENCL` "Enable usage of OpenCL in GPU information" (default to `OFF`)
+- `HWINFO_BATTERY` "Enable battery detection" (default to `ON`)
 
 ## API
 
@@ -231,7 +261,7 @@ Disk 4:
 
 ```
 
-## Include `hwinfo` in your cmake project
+## Directly including `hwinfo` in your cmake project
 
 1. Download `hwinfo` into your project (e.g. in `<project-root>/third_party/hwinfo`)
     ```
@@ -242,6 +272,8 @@ Disk 4:
 2. Simply add the following to your `<project-root>/CMakeLists.txt` file:
     ```cmake
     # file: <project-root>/CMakeLists.txt
+
+    # define the HWINFO_* options if you want to change the default values
 
     add_subdirectory(third_party/hwinfo)
     ```
@@ -258,5 +290,5 @@ Disk 4:
 4. Link it in cmake
     ```cmake
     add_executable(your_executable your_executable.cpp)
-    target_link_libraries(your_executable PUBLIC hwinfo::HWinfo)
+    target_link_libraries(your_executable PUBLIC hwinfo::hwinfo)
     ```

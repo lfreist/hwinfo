@@ -3,6 +3,8 @@
 
 #pragma once
 
+#ifdef HWINFO_CPU
+
 #include <hwinfo/platform.h>
 #include <hwinfo/utils/wmi_wrapper.h>
 
@@ -74,3 +76,5 @@ class CPU {
 std::vector<CPU> getAllCPUs();
 
 }  // namespace hwinfo
+
+#endif  // HWINFO_CPU
