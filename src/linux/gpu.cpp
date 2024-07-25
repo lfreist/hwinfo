@@ -11,7 +11,7 @@
 #include <hwinfo/utils/filesystem.h>
 
 #ifdef USE_OCL
-#include <missocl/opencl.h>
+#include <hwinfo/opencl/device.h>
 #endif
 
 #include <fstream>
@@ -85,7 +85,7 @@ std::vector<GPU> getAllGPUs() {
     id++;
   }
 #ifdef USE_OCL
-  auto cl_gpus = mcl::DeviceManager::get_list<mcl::Filter::GPU>();
+  auto cl_gpus = opencl_::DeviceManager::get_list<opencl_::Filter::GPU>();
   for (auto& gpu : gpus) {
     for (auto* cl_gpu : cl_gpus) {
       if (cl_gpu->name().find(gpu._device_id)) {

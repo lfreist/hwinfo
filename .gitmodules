@@ -1,3 +1,0 @@
-[submodule "external/miss-opencl"]
-	path = external/miss-opencl
-	url = https://github.com/lfreist/miss-ocl

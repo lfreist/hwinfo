@@ -10,7 +10,7 @@
 
 using hwinfo::unit::bytes_to_MiB;
 
-int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
+int main(int argc, char** argv) {
   fmt::print(
       "hwinfo is an open source, MIT licensed project that implements a platform independent "
       "hardware and system information gathering API for C++.\n\n"

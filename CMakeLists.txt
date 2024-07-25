@@ -4,7 +4,7 @@ project(hwinfo VERSION 1.0.0 LANGUAGES CXX)
 
 if (WIN32)
     add_definitions(-DWIN32)
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -24,24 +24,8 @@ option(HWINFO_CPU "Enable CPU detection" ON)
 option(HWINFO_DISK "Enable disk detection" ON)
 option(HWINFO_RAM "Enable RAM detection" ON)
 option(HWINFO_GPU "Enable GPU detection" ON)
-option(HWINFO_GPU_OPENCL "Enable usage of OpenCL in GPU information" OFF)
+option(HWINFO_GPU_OPENCL "Enable usage of OpenCL in GPU information" ON)
 option(HWINFO_BATTERY "Enable battery detection" ON)
-
-# deprecated NO_OCL
-if (DEFINED NO_OCL)
-    message(WARNING "NO_OCL is deprecated, use HWINFO_GPU_OPENCL instead")
-    set(HWINFO_GPU_OPENCL NOT NO_OCL)
-endif()
-
-# Use the latest C++ standard available
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-if(HWINFO_GPU_OPENCL)
-    if(NOT TARGET miss-opencl_static)
-        add_subdirectory(${PROJECT_SOURCE_DIR}/external/miss-opencl)
-    endif()
-endif()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

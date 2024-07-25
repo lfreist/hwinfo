@@ -104,10 +104,15 @@ if (HWINFO_GPU)
             PCIMapper.cpp
     )
 
+    if (HWINFO_GPU_OPENCL)
+        add_subdirectory(opencl)
+    endif ()
+
     add_library(hwinfo_gpu SHARED ${GPU_SRC_FILES})
     target_compile_definitions(hwinfo_gpu PUBLIC HWINFO_GPU -DHWINFO_EXPORTS)
     if(HWINFO_GPU_OPENCL)
         target_compile_definitions(hwinfo_gpu PUBLIC USE_OCL)
+        target_link_libraries(hwinfo_gpu PRIVATE opencl_device)
     endif ()
     target_include_directories(hwinfo_gpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 
@@ -115,6 +120,7 @@ if (HWINFO_GPU)
     target_compile_definitions(hwinfo_gpu_static PUBLIC HWINFO_GPU)
     if(HWINFO_GPU_OPENCL)
         target_compile_definitions(hwinfo_gpu_static PUBLIC USE_OCL)
+        target_link_libraries(hwinfo_gpu_static PRIVATE opencl_device)
     endif ()
     target_include_directories(hwinfo_gpu_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
 endif ()

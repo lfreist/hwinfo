@@ -15,7 +15,7 @@
 #pragma comment(lib, "wbemuuid.lib")
 
 #ifdef USE_OCL
-#include <missocl/opencl.h>
+#include <hwinfo/opencl/device.h>
 #endif
 
 namespace hwinfo {
@@ -80,7 +80,7 @@ std::vector<GPU> getAllGPUs() {
     gpus.push_back(std::move(gpu));
   }
 #ifdef USE_OCL
-  auto cl_gpus = mcl::DeviceManager::get_list<mcl::Filter::GPU>();
+  auto cl_gpus = opencl_::DeviceManager::get_list<opencl_::Filter::GPU>();
   for (auto& gpu : gpus) {
     for (auto* cl_gpu : cl_gpus) {
       if (cl_gpu->name() == gpu.name()) {
