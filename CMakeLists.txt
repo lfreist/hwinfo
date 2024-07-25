@@ -24,7 +24,7 @@ option(HWINFO_CPU "Enable CPU detection" ON)
 option(HWINFO_DISK "Enable disk detection" ON)
 option(HWINFO_RAM "Enable RAM detection" ON)
 option(HWINFO_GPU "Enable GPU detection" ON)
-option(HWINFO_GPU_OPENCL "Enable usage of OpenCL in GPU information" ON)
+option(HWINFO_GPU_OPENCL "Enable usage of OpenCL in GPU information" OFF)
 option(HWINFO_BATTERY "Enable battery detection" ON)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
