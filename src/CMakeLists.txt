@@ -33,8 +33,8 @@ if (HWINFO_BATTERY)
         target_link_libraries(hwinfo_battery_static PRIVATE "-framework IOKit" "-framework CoreFoundation")
     endif()
 
-    target_link_libraries(hwinfo INTERFACE hwinfo_battery hwinfo_cpu hwinfo_disk hwinfo_gpu hwinfo_mainboard hwinfo_os hwinfo_ram)
-    target_link_libraries(hwinfo_static INTERFACE hwinfo_battery hwinfo_cpu hwinfo_disk hwinfo_gpu hwinfo_mainboard hwinfo_os hwinfo_ram)
+    target_link_libraries(hwinfo INTERFACE hwinfo_battery)
+    target_link_libraries(hwinfo_static INTERFACE hwinfo_battery_static)
 endif ()
 # ______________________________________________________________________________________________________________________
 
@@ -58,6 +58,9 @@ if (HWINFO_CPU)
     add_library(hwinfo_cpu_static STATIC ${CPU_SRC_FILES})
     target_compile_definitions(hwinfo_cpu_static PUBLIC HWINFO_CPU)
     target_include_directories(hwinfo_cpu_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
+
+    target_link_libraries(hwinfo INTERFACE hwinfo_cpu)
+    target_link_libraries(hwinfo_static INTERFACE hwinfo_cpu_static)
 endif()
 # ______________________________________________________________________________________________________________________
 
@@ -86,6 +89,9 @@ if (HWINFO_DISK)
     if(APPLE)
         target_link_libraries(hwinfo_disk_static PRIVATE "-framework IOKit" "-framework CoreFoundation")
     endif()
+
+    target_link_libraries(hwinfo INTERFACE hwinfo_disk)
+    target_link_libraries(hwinfo_static INTERFACE hwinfo_disk_static)
 endif ()
 # ______________________________________________________________________________________________________________________
 
@@ -123,6 +129,9 @@ if (HWINFO_GPU)
         target_link_libraries(hwinfo_gpu_static PRIVATE opencl_device)
     endif ()
     target_include_directories(hwinfo_gpu_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
+
+    target_link_libraries(hwinfo INTERFACE hwinfo_gpu)
+    target_link_libraries(hwinfo_static INTERFACE hwinfo_gpu_static)
 endif ()
 # ______________________________________________________________________________________________________________________
 
@@ -146,6 +155,9 @@ if (HWINFO_MAINBOARD)
     add_library(hwinfo_mainboard_static STATIC ${MAINBOARD_SRC_FILES})
     target_compile_definitions(hwinfo_mainboard_static PUBLIC HWINFO_MAINBOARD)
     target_include_directories(hwinfo_mainboard_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
+
+    target_link_libraries(hwinfo INTERFACE hwinfo_mainboard)
+    target_link_libraries(hwinfo_static INTERFACE hwinfo_mainboard_static)
 endif ()
 # ______________________________________________________________________________________________________________________
 
@@ -169,6 +181,9 @@ if (HWINFO_OS)
     add_library(hwinfo_os_static STATIC ${OS_SRC_FILES})
     target_compile_definitions(hwinfo_os_static PUBLIC HWINFO_OS)
     target_include_directories(hwinfo_os_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
+
+    target_link_libraries(hwinfo INTERFACE hwinfo_os)
+    target_link_libraries(hwinfo_static INTERFACE hwinfo_os_static)
 endif ()
 # ______________________________________________________________________________________________________________________
 
@@ -192,5 +207,8 @@ if (HWINFO_RAM)
     add_library(hwinfo_ram_static STATIC ${RAM_SRC_FILES})
     target_compile_definitions(hwinfo_ram_static PUBLIC HWINFO_RAM)
     target_include_directories(hwinfo_ram_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}>)
+
+    target_link_libraries(hwinfo INTERFACE hwinfo_ram)
+    target_link_libraries(hwinfo_static INTERFACE hwinfo_ram_static)
 endif ()
 # ______________________________________________________________________________________________________________________
