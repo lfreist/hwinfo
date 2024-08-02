@@ -3,8 +3,6 @@
 
 #pragma once
 
-#ifdef HWINFO_BATTERY
-
 #include <hwinfo/platform.h>
 
 #include <cstdint>
@@ -50,5 +48,3 @@ class HWINFO_API Battery {
 std::vector<Battery> getAllBatteries();
 
 }  // namespace hwinfo
-
-#endif  // HWINFO_BATTERY

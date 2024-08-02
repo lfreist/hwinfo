@@ -3,8 +3,6 @@
 
 #pragma once
 
-#ifdef HWINFO_RAM
-
 #include <hwinfo/platform.h>
 
 #include <cstdint>
@@ -39,5 +37,3 @@ class HWINFO_API Memory {
 };
 
 }  // namespace hwinfo
-
-#endif  // HWINFO_RAM

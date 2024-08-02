@@ -1,8 +1,6 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#ifdef HWINFO_DISK
-
 #include <hwinfo/disk.h>
 
 namespace hwinfo {
@@ -23,5 +21,3 @@ int64_t Disk::size_Bytes() const { return _size_Bytes; }
 int Disk::id() const { return _id; }
 
 }  // namespace hwinfo
-
-#endif  // HWINFO_DISK

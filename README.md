@@ -12,8 +12,6 @@
 hwinfo provides an easy-to-use and modern C++ API for retrieving hardware information of your systems components such as
 CPU, RAM, GPU, Disks, Mainboard, ...
 
-hwinfo automatically uses the latest C++ standard supported by your compiler. C++20 is required for GPU OpenCL support if enabled (configurable with `HWINFO_GPU_OPENCL`).
-
 > **Note**
 >
 > If you face any issues, find bugs or if your platform is not supported yet, do not hesitate
@@ -22,17 +20,16 @@ hwinfo automatically uses the latest C++ standard supported by your compiler. C+
 ## Content
 
 * [Supported Components](#supported-components)
-* [API](#API)
 * [Build hwinfo](#build-hwinfo)
 * [Example](#example)
-* [Include hwinfo to cmake project](#include-hwinfo-in-your-cmake-project)
+* [Include hwinfo to cmake project](#include-hwinfo-to-cmake-project)
 
 ## Supported Components
 
 > **Note**
 >
 > The listed components that are not yet implemented (indicated with ❌) are in development and will be supported in
-> later releases. **You are welcome to start contributing and help improving this library!**
+> future releases. **You are welcome to start contributing and help improving this library!**
 
 | Component        | Info               | Linux | Apple  | Windows |
 |------------------|:-------------------|:-----:|:------:|:-------:|
@@ -50,7 +47,7 @@ hwinfo automatically uses the latest C++ standard supported by your compiler. C+
 |                  | Name               |   ❌   |   ❌    |   ✔️    |
 |                  | Serial Number      |   ❌   |   ❌    |   ✔️    |
 |                  | Total Memory Size  |  ✔️   |   ✔️   |   ✔️    |
-|                  | Free Memory Size   |  ✔️   |   ❌    |    ❌    |
+|                  | Free Memory Size   |  ✔️   |   ❌    |   ✔️    |
 | Mainboard        | Vendor             |  ✔️   |   ❌    |   ✔️    |
 |                  | Model              |  ✔️   |   ❌    |   ✔️    |
 |                  | Version            |  ✔️   |   ❌    |   ✔️    |
@@ -104,67 +101,6 @@ The CMake options control which components will be built and available in the li
 - `HWINFO_GPU_OPENCL` "Enable usage of OpenCL in GPU information" (default to `OFF`)
 - `HWINFO_BATTERY` "Enable battery detection" (default to `ON`)
 
-## API
-
-This section describes, how you can get information about the supported components of your computer.
-
-### CPU
-
-hwinfo supports reading CPU information on boards with multiple sockets and CPUs installed.
-`getAllSockets()` returns a `std::vector<Socket>`. A `Socket` object represents a physical socket and holds information
-about the installed CPU. You can access these information via `Socket::CPU()` which retuns a `CPU` instance.
-
-> Why not just retrieving a `std::vector<CPU>`?
-> The reason for this lies within how linux handles CPUs. For linux systems, the cores of a multi core CPU are
-> considered as different physical CPUs.
-> Thus, I added the `Socket` layer to make clear, that multiple elements in the yielded `std::vector<Socket>` vector
-> mean that there are two CPUs on two different sockets installed.
-
-The following methods are available for `CPU`:
-
-- `const std::string& CPU::vendor() const` "GenuineIntel"
-- `const std::string& CPU::modelName() const` "Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz"
-- `int64_t CPU::cacheSize_Bytes() const` 16384000
-- `int CPU::numPhysicalCores() const` 8
-- `int CPU::numLogicalCores() const` 16
-- `int64_t CPU::maxClockSpeed_MHz() const` 5100000
-- `int64_t CPU::regularClockSpeed_MHz() const` 3800000
-- `int64_t CPU::minClockSpeed_MHz() const` 1800000
-- `int64_t CPU::currentClockSpeed_MHz() const` 4700189
-- `const std::vector<std::string>& CPU::flags() cosnt` {"SSE", "AVX", ...}
-
-### GPU
-
-You can also get information about all installed GPUs using hwinfo.
-`getAllGPUs()` returns a `std::vector<GPU>`. A `GPU` object represents a physical GPU.
-
-The following methods are available for `GPU`:
-
-- `const std::string& GPU::vendor() const` "NVIDIA"
-- `const std::string& GPU::name() const` "NVIDIA GeForce RTX 3070 Ti"
-- `const std::string& GPU::driverVersion() const` "31.0.15.2698" (empty for linux)
-- `int64_t GPU::memory_Bytes() const` 8190000000
-- `int64_t GPU::min_frequency_MHz() const`
-- `int64_t GPU::current_frequency_MHz() const`
-- `int64_t GPU::max_frequency_MHz() const`
-- `int GPU::id() const` 0
-
-### RAM
-
-TODO
-
-### OS
-
-TODO
-
-### Baseboard
-
-TODO
-
-### Disk
-
-TODO
-
 ## Build `hwinfo`
 
 > Requirements: git, cmake, c++ compiler (gcc, clang, MSVC)
@@ -176,9 +112,10 @@ TODO
 2. Build using cmake:
     ```bash
     mkdir build
-    cmake -B build -DCMAKE_BUILD_TYPE=Release  # -DNO_OCL=ON (for C++11)
+    cmake -B build -DCMAKE_BUILD_TYPE=Release
     cmake --build build
     ```
+   This builds static and dynamic libraries. Static library cmake targets are named `<target>_static` (e.g. `hwinfo_static`)
 
 ## Example
 
@@ -261,7 +198,41 @@ Disk 4:
 
 ```
 
-## Directly including `hwinfo` in your cmake project
+## include hwinfo to cmake project
+
+### Include installed version
+
+1. Install hwinfo
+   ```
+   git clone https://github.com/lfreist/hwinfo && cd hwinfo
+   mkdir build
+   cmake -B build && cmake --build build
+   cmake --install build
+   ```
+2. Simply add the following to your `CMakeLists.txt` file:
+    ```cmake
+    # file: CMakeLists.txt
+    
+    find_package(hwinfo REQUIRED)
+    ```
+3. Include `hwinfo` into your `.cpp/.h` files:
+    ```c++
+    // file: your_executable.cpp
+
+    #include <hwinfo/hwinfo.h>
+
+   int main(int argc, char** argv) {
+     // Your code
+   }
+    ```
+4. Link it in cmake
+    ```cmake
+    add_executable(your_executable your_executable.cpp)
+    target_link_libraries(your_executable PUBLIC hwinfo::hwinfo)
+    ```
+
+
+### As git submodule
 
 1. Download `hwinfo` into your project (e.g. in `<project-root>/third_party/hwinfo`)
     ```

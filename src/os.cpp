@@ -1,8 +1,6 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#ifdef HWINFO_OS
-
 #include "hwinfo/os.h"
 
 #include <string>
@@ -31,5 +29,3 @@ bool OS::isBigEndian() const { return _bigEndian; }
 bool OS::isLittleEndian() const { return _littleEndian; }
 
 }  // namespace hwinfo
-
-#endif  // HWINFO_OS

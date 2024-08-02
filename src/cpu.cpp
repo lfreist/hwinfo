@@ -1,9 +1,7 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#ifdef HWINFO_CPU
-
-#include "hwinfo/cpu.h"
+#include <hwinfo/cpu.h>
 
 #include <string>
 #include <vector>
@@ -44,5 +42,3 @@ int64_t CPU::regularClockSpeed_MHz() const { return _regularClockSpeed_MHz; }
 const std::vector<std::string>& CPU::flags() const { return _flags; }
 
 }  // namespace hwinfo
-
-#endif  // HWINFO_CPU

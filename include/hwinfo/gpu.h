@@ -3,8 +3,6 @@
 
 #pragma once
 
-#ifdef HWINFO_GPU
-
 #include <hwinfo/platform.h>
 
 #include <cstdint>
@@ -45,5 +43,3 @@ class HWINFO_API GPU {
 
 std::vector<GPU> getAllGPUs();
 }  // namespace hwinfo
-
-#endif  // HWINFO_GPU

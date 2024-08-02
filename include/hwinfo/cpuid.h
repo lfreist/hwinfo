@@ -3,9 +3,7 @@
 
 #pragma once
 
-#ifdef HWINFO_CPU
-
-#include "hwinfo/platform.h"
+#include <hwinfo/platform.h>
 
 #if defined(HWINFO_X86)
 
@@ -54,5 +52,3 @@ inline void cpuid(uint32_t func_id, uint32_t sub_func_id, uint32_t regs[4]) {
 }  // namespace hwinfo
 
 #endif  // HWINFO_X86
-
-#endif  // HWINFO_CPU

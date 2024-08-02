@@ -15,12 +15,15 @@
 #include <string>
 #include <vector>
 
-bool hwinfo::filesystem::exists(const std::string& path) {
+namespace hwinfo {
+namespace filesystem {
+
+bool exists(const std::string& path) {
   struct stat sb {};
   return stat(path.c_str(), &sb) == 0;
 }
 
-std::vector<std::string> hwinfo::filesystem::getDirectoryEntries(const std::string& path) {
+std::vector<std::string> getDirectoryEntries(const std::string& path) {
   std::vector<std::string> children;
   struct dirent* entry = nullptr;
   DIR* dp = nullptr;
@@ -37,7 +40,7 @@ std::vector<std::string> hwinfo::filesystem::getDirectoryEntries(const std::stri
   return children;
 }
 
-int64_t hwinfo::filesystem::get_specs_by_file_path(const std::string& path) {
+int64_t get_specs_by_file_path(const std::string& path) {
   std::string line;
   std::ifstream stream(path);
 
@@ -55,11 +58,7 @@ int64_t hwinfo::filesystem::get_specs_by_file_path(const std::string& path) {
   }
 }
 
-#if defined(HWINFO_CPU)
-
-hwinfo::Jiffies hwinfo::filesystem::get_jiffies(int index) {
-  // std::string text = "cpu  349585 0 30513 875546 0 935 0 0 0 0";
-
+Jiffies get_jiffies(int index) {
   std::ifstream filestat("/proc/stat");
   if (!filestat.is_open()) {
     return {};
@@ -94,6 +93,7 @@ hwinfo::Jiffies hwinfo::filesystem::get_jiffies(int index) {
   return {all, working};
 }
 
-#endif  // HWINFO_CPU
+}  // namespace filesystem
+}  // namespace hwinfo
 
 #endif  // HWINFO_UNIX

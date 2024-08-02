@@ -3,8 +3,6 @@
 
 #pragma once
 
-#ifdef HWINFO_MAINBOARD
-
 #include <hwinfo/platform.h>
 
 #include <string>
@@ -18,10 +16,10 @@ class HWINFO_API MainBoard {
   MainBoard();
   ~MainBoard() = default;
 
-  const std::string& vendor() const;
-  const std::string& name() const;
-  const std::string& version() const;
-  const std::string& serialNumber() const;
+  HWI_NODISCARD const std::string& vendor() const;
+  HWI_NODISCARD const std::string& name() const;
+  HWI_NODISCARD const std::string& version() const;
+  HWI_NODISCARD const std::string& serialNumber() const;
 
  private:
   std::string _vendor;
@@ -31,5 +29,3 @@ class HWINFO_API MainBoard {
 };
 
 }  // namespace hwinfo
-
-#endif  // HWINFO_MAINBOARD

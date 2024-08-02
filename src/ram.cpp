@@ -1,8 +1,6 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#ifdef HWINFO_RAM
-
 #include <hwinfo/ram.h>
 
 namespace hwinfo {
@@ -20,5 +18,3 @@ int64_t Memory::total_Bytes() const {
 }
 
 }  // namespace hwinfo
-
-#endif  // HWINFO_RAM

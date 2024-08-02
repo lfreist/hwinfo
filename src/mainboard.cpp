@@ -1,8 +1,6 @@
 // Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
 // This software is part of HWBenchmark
 
-#ifdef HWINFO_MAINBOARD
-
 #include <hwinfo/mainboard.h>
 
 namespace hwinfo {
@@ -20,5 +18,3 @@ const std::string& MainBoard::version() const { return _version; }
 const std::string& MainBoard::serialNumber() const { return _serialNumber; }
 
 }  // namespace hwinfo
-
-#endif  // HWINFO_MAINBOARD
