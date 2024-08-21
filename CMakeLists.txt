@@ -15,6 +15,10 @@ include(GNUInstallDirs)
 
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}" PROJECT_IS_TOP_LEVEL)
 
+option(HWINFO_SHARED "Shared build" ON)
+option(HWINFO_STATIC "Static build" OFF)
+
+
 option(BUILD_EXAMPLES "Build example program" ${PROJECT_IS_TOP_LEVEL})
 option(BUILD_TESTING  "Build test program" ${PROJECT_IS_TOP_LEVEL})
 
@@ -27,6 +31,12 @@ option(HWINFO_RAM "Enable RAM information" ON)
 option(HWINFO_GPU "Enable GPU information" ON)
 option(HWINFO_GPU_OPENCL "Enable OpenCL for more GPU information" OFF)
 option(HWINFO_BATTERY "Enable battery information" ON)
+
+if(NOT HWINFO_STATIC AND HWINFO_SHARED)
+  set(HWINFO_BUILD SHARED)
+else(HWINFO_STATIC)
+  set(HWINFO_BUILD STATIC)
+endif()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -63,5 +73,4 @@ if(BUILD_TESTING)
     include(CTest)
     add_subdirectory(test)
     add_test(system_info system_info)
-    add_test(system_info_stand_alone system_info_stand_alone)
 endif()

@@ -13,9 +13,7 @@ else ()
 endif ()
 
 add_executable(system_info system_infoMain.cpp)
-add_executable(system_info_stand_alone system_infoMain.cpp)
 
 target_link_libraries(system_info PRIVATE hwinfo::hwinfo fmt::fmt)
-target_link_libraries(system_info_stand_alone PRIVATE hwinfo::hwinfo_static fmt::fmt)
 
-install(TARGETS system_info system_info_stand_alone)
+install(TARGETS system_info)

@@ -4,11 +4,6 @@ target_include_directories(hwinfo INTERFACE $<BUILD_INTERFACE:${HWINFO_INCLUDE_D
 add_library(hwinfo::hwinfo ALIAS hwinfo)
 set_target_properties(hwinfo PROPERTIES OUTPUT_NAME "hwinfo")
 
-add_library(hwinfo_static INTERFACE)
-target_include_directories(hwinfo_static INTERFACE $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-add_library(hwinfo::hwinfo_static ALIAS hwinfo_static)
-set_target_properties(hwinfo_static PROPERTIES OUTPUT_NAME "hwinfo")
-
 # === Components =======================================================================================================
 # ----- BATTERY --------------------------------------------------------------------------------------------------------
 if (HWINFO_BATTERY)
@@ -21,26 +16,20 @@ if (HWINFO_BATTERY)
             windows/utils/wmi_wrapper.cpp
     )
 
-    add_library(hwinfo_battery SHARED ${BATTERY_SRC_FILES})
-    target_compile_definitions(hwinfo_battery PUBLIC -DHWINFO_EXPORTS)
+    add_library(hwinfo_battery ${HWINFO_BUILD} ${BATTERY_SRC_FILES})
+    if(${HWINFO_SHARED})
+        target_compile_definitions(hwinfo_battery PUBLIC -DHWINFO_EXPORTS)
+    endif()
     target_include_directories(hwinfo_battery PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
     if(APPLE)
         target_link_libraries(hwinfo_battery PRIVATE "-framework IOKit" "-framework CoreFoundation")
     endif()
 
-    add_library(hwinfo_battery_static STATIC ${BATTERY_SRC_FILES})
-    target_include_directories(hwinfo_battery_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-    if(APPLE)
-        target_link_libraries(hwinfo_battery_static PRIVATE "-framework IOKit" "-framework CoreFoundation")
-    endif()
-
     target_link_libraries(hwinfo INTERFACE hwinfo_battery)
-    target_link_libraries(hwinfo_static INTERFACE hwinfo_battery_static)
 
     set_target_properties(hwinfo_battery PROPERTIES OUTPUT_NAME "hwinfo_battery")
-    set_target_properties(hwinfo_battery_static PROPERTIES OUTPUT_NAME "hwinfo_battery")
 
-    install(TARGETS hwinfo_battery hwinfo_battery_static
+    install(TARGETS hwinfo_battery
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib)
@@ -61,20 +50,17 @@ if (HWINFO_CPU)
             linux/utils/filesystem.cpp
     )
 
-    add_library(hwinfo_cpu SHARED ${CPU_SRC_FILES})
-    target_compile_definitions(hwinfo_cpu PUBLIC -DHWINFO_EXPORTS)
+    add_library(hwinfo_cpu ${HWINFO_BUILD} ${CPU_SRC_FILES})
+    if(${HWINFO_SHARED})
+        target_compile_definitions(hwinfo_cpu PUBLIC -DHWINFO_EXPORTS)
+    endif()
     target_include_directories(hwinfo_cpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
-    add_library(hwinfo_cpu_static STATIC ${CPU_SRC_FILES})
-    target_include_directories(hwinfo_cpu_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-
     target_link_libraries(hwinfo INTERFACE hwinfo_cpu)
-    target_link_libraries(hwinfo_static INTERFACE hwinfo_cpu_static)
 
     set_target_properties(hwinfo_cpu PROPERTIES OUTPUT_NAME "hwinfo_cpu")
-    set_target_properties(hwinfo_cpu_static PROPERTIES OUTPUT_NAME "hwinfo_cpu")
 
-    install(TARGETS hwinfo_cpu hwinfo_cpu_static
+    install(TARGETS hwinfo_cpu
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib)
@@ -94,26 +80,21 @@ if (HWINFO_DISK)
             linux/utils/filesystem.cpp
     )
 
-    add_library(hwinfo_disk SHARED ${DISK_SRC_FILES})
-    target_compile_definitions(hwinfo_disk PUBLIC -DHWINFO_EXPORTS)
+    add_library(hwinfo_disk ${HWINFO_BUILD} ${DISK_SRC_FILES})
+    if(${HWINFO_SHARED})
+        target_compile_definitions(hwinfo_disk PUBLIC -DHWINFO_EXPORTS)
+    endif()
     target_include_directories(hwinfo_disk PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
     if(APPLE)
         target_link_libraries(hwinfo_disk PRIVATE "-framework IOKit" "-framework CoreFoundation")
     endif()
 
-    add_library(hwinfo_disk_static STATIC ${DISK_SRC_FILES})
-    target_include_directories(hwinfo_disk_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-    if(APPLE)
-        target_link_libraries(hwinfo_disk_static PRIVATE "-framework IOKit" "-framework CoreFoundation")
-    endif()
 
     target_link_libraries(hwinfo INTERFACE hwinfo_disk)
-    target_link_libraries(hwinfo_static INTERFACE hwinfo_disk_static)
 
     set_target_properties(hwinfo_disk PROPERTIES OUTPUT_NAME "hwinfo_disk")
-    set_target_properties(hwinfo_disk_static PROPERTIES OUTPUT_NAME "hwinfo_disk")
 
-    install(TARGETS hwinfo_disk hwinfo_disk_static
+    install(TARGETS hwinfo_disk
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib)
@@ -140,28 +121,22 @@ if (HWINFO_GPU)
         add_subdirectory(opencl)
     endif ()
 
-    add_library(hwinfo_gpu SHARED ${GPU_SRC_FILES})
-    target_compile_definitions(hwinfo_gpu PUBLIC -DHWINFO_EXPORTS)
+    add_library(hwinfo_gpu ${HWINFO_BUILD} ${GPU_SRC_FILES})
+    if(${HWINFO_SHARED})
+        target_compile_definitions(hwinfo_gpu PUBLIC -DHWINFO_EXPORTS)
+    endif()
     if(HWINFO_GPU_OPENCL)
         target_compile_definitions(hwinfo_gpu PUBLIC USE_OCL)
         target_link_libraries(hwinfo_gpu PRIVATE opencl_device)
     endif ()
     target_include_directories(hwinfo_gpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
-    add_library(hwinfo_gpu_static STATIC ${GPU_SRC_FILES})
-    if(HWINFO_GPU_OPENCL)
-        target_compile_definitions(hwinfo_gpu_static PUBLIC USE_OCL)
-        target_link_libraries(hwinfo_gpu_static PRIVATE opencl_device)
-    endif ()
-    target_include_directories(hwinfo_gpu_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
     target_link_libraries(hwinfo INTERFACE hwinfo_gpu)
-    target_link_libraries(hwinfo_static INTERFACE hwinfo_gpu_static)
 
     set_target_properties(hwinfo_gpu PROPERTIES OUTPUT_NAME "hwinfo_gpu")
-    set_target_properties(hwinfo_gpu_static PROPERTIES OUTPUT_NAME "hwinfo_gpu")
 
-    install(TARGETS hwinfo_gpu hwinfo_gpu_static
+    install(TARGETS hwinfo_gpu
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib)
@@ -185,20 +160,17 @@ if (HWINFO_MAINBOARD)
             linux/utils/filesystem.cpp
     )
 
-    add_library(hwinfo_mainboard SHARED ${MAINBOARD_SRC_FILES})
-    target_compile_definitions(hwinfo_mainboard PUBLIC -DHWINFO_EXPORTS)
+    add_library(hwinfo_mainboard ${HWINFO_BUILD} ${MAINBOARD_SRC_FILES})
+    if(${HWINFO_SHARED})
+        target_compile_definitions(hwinfo_mainboard PUBLIC -DHWINFO_EXPORTS)
+    endif()
     target_include_directories(hwinfo_mainboard PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
-    add_library(hwinfo_mainboard_static STATIC ${MAINBOARD_SRC_FILES})
-    target_include_directories(hwinfo_mainboard_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-
     target_link_libraries(hwinfo INTERFACE hwinfo_mainboard)
-    target_link_libraries(hwinfo_static INTERFACE hwinfo_mainboard_static)
 
     set_target_properties(hwinfo_mainboard PROPERTIES OUTPUT_NAME "hwinfo_mainboard")
-    set_target_properties(hwinfo_mainboard_static PROPERTIES OUTPUT_NAME "hwinfo_mainboard")
 
-    install(TARGETS hwinfo_mainboard hwinfo_mainboard_static
+    install(TARGETS hwinfo_mainboard
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib)
@@ -219,20 +191,19 @@ if (HWINFO_OS)
             linux/utils/filesystem.cpp
     )
 
-    add_library(hwinfo_os SHARED ${OS_SRC_FILES})
-    target_compile_definitions(hwinfo_os PUBLIC -DHWINFO_EXPORTS)
+    add_library(hwinfo_os ${HWINFO_BUILD} ${OS_SRC_FILES})
+    if(${HWINFO_SHARED})
+        target_compile_definitions(hwinfo_os PUBLIC -DHWINFO_EXPORTS)
+    endif()
     target_include_directories(hwinfo_os PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
-    add_library(hwinfo_os_static STATIC ${OS_SRC_FILES})
-    target_include_directories(hwinfo_os_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
 
     target_link_libraries(hwinfo INTERFACE hwinfo_os)
-    target_link_libraries(hwinfo_static INTERFACE hwinfo_os_static)
 
     set_target_properties(hwinfo_os PROPERTIES OUTPUT_NAME "hwinfo_os")
-    set_target_properties(hwinfo_os_static PROPERTIES OUTPUT_NAME "hwinfo_os")
 
-    install(TARGETS hwinfo_os hwinfo_os_static
+    install(TARGETS hwinfo_os
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib)
@@ -253,20 +224,17 @@ if (HWINFO_RAM)
             linux/utils/filesystem.cpp
     )
 
-    add_library(hwinfo_ram SHARED ${RAM_SRC_FILES})
-    target_compile_definitions(hwinfo_ram PUBLIC -DHWINFO_EXPORTS)
+    add_library(hwinfo_ram ${HWINFO_BUILD} ${RAM_SRC_FILES})
+    if(${HWINFO_SHARED})
+        target_compile_definitions(hwinfo_ram PUBLIC -DHWINFO_EXPORTS)
+    endif()
     target_include_directories(hwinfo_ram PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
-    add_library(hwinfo_ram_static STATIC ${RAM_SRC_FILES})
-    target_include_directories(hwinfo_ram_static PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-
     target_link_libraries(hwinfo INTERFACE hwinfo_ram)
-    target_link_libraries(hwinfo_static INTERFACE hwinfo_ram_static)
 
     set_target_properties(hwinfo_ram PROPERTIES OUTPUT_NAME "hwinfo_ram")
-    set_target_properties(hwinfo_ram_static PROPERTIES OUTPUT_NAME "hwinfo_ram")
 
-    install(TARGETS hwinfo_ram hwinfo_ram_static
+    install(TARGETS hwinfo_ram
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib)
@@ -276,7 +244,7 @@ endif ()
 
 install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/platform.h ${HWINFO_INCLUDE_DIR}/hwinfo/hwinfo.h  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 install(DIRECTORY ${HWINFO_INCLUDE_DIR}/hwinfo/utils DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
-install(TARGETS hwinfo hwinfo_static
+install(TARGETS hwinfo
         EXPORT hwinfoTargets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
