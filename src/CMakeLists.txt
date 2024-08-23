@@ -32,7 +32,8 @@ if (HWINFO_BATTERY)
     install(TARGETS hwinfo_battery
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib)
+            ARCHIVE DESTINATION lib
+            RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/battery.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 endif ()
 # ______________________________________________________________________________________________________________________
@@ -63,7 +64,8 @@ if (HWINFO_CPU)
     install(TARGETS hwinfo_cpu
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib)
+            ARCHIVE DESTINATION lib
+            RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/cpu.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 endif()
 # ______________________________________________________________________________________________________________________
@@ -97,7 +99,8 @@ if (HWINFO_DISK)
     install(TARGETS hwinfo_disk
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib)
+            ARCHIVE DESTINATION lib
+            RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/disk.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 endif ()
 # ______________________________________________________________________________________________________________________
@@ -139,7 +142,8 @@ if (HWINFO_GPU)
     install(TARGETS hwinfo_gpu
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib)
+            ARCHIVE DESTINATION lib
+            RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/gpu.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
     if(HWINFO_GPU_OPENCL)
         install(DIRECTORY ${HWINFO_INCLUDE_DIR}/hwinfo/opencl DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
@@ -173,7 +177,8 @@ if (HWINFO_MAINBOARD)
     install(TARGETS hwinfo_mainboard
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib)
+            ARCHIVE DESTINATION lib
+            RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/mainboard.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 endif ()
 # ______________________________________________________________________________________________________________________
@@ -206,7 +211,8 @@ if (HWINFO_OS)
     install(TARGETS hwinfo_os
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib)
+            ARCHIVE DESTINATION lib
+            RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/os.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 endif ()
 # ______________________________________________________________________________________________________________________
@@ -237,7 +243,9 @@ if (HWINFO_RAM)
     install(TARGETS hwinfo_ram
             EXPORT hwinfoTargets
             LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib)
+            ARCHIVE DESTINATION lib
+            RUNTIME DESTINATION bin)
+
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/ram.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 endif ()
 # ______________________________________________________________________________________________________________________
@@ -248,4 +256,5 @@ install(TARGETS hwinfo
         EXPORT hwinfoTargets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
 )
