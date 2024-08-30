@@ -1,7 +1,7 @@
 # ----- hwinfo ---------------------------------------------------------------------------------------------------------
 add_library(hwinfo INTERFACE)
 target_include_directories(hwinfo INTERFACE $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-add_library(hwinfo::hwinfo ALIAS hwinfo)
+add_library(lfreist-hwinfo::hwinfo ALIAS hwinfo)
 set_target_properties(hwinfo PROPERTIES OUTPUT_NAME "hwinfo")
 
 # === Components =======================================================================================================
@@ -30,7 +30,7 @@ if (HWINFO_BATTERY)
     set_target_properties(hwinfo_battery PROPERTIES OUTPUT_NAME "hwinfo_battery")
 
     install(TARGETS hwinfo_battery
-            EXPORT hwinfoTargets
+            EXPORT lfreist-hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
@@ -62,7 +62,7 @@ if (HWINFO_CPU)
     set_target_properties(hwinfo_cpu PROPERTIES OUTPUT_NAME "hwinfo_cpu")
 
     install(TARGETS hwinfo_cpu
-            EXPORT hwinfoTargets
+            EXPORT lfreist-hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
@@ -97,7 +97,7 @@ if (HWINFO_DISK)
     set_target_properties(hwinfo_disk PROPERTIES OUTPUT_NAME "hwinfo_disk")
 
     install(TARGETS hwinfo_disk
-            EXPORT hwinfoTargets
+            EXPORT lfreist-hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
@@ -140,7 +140,7 @@ if (HWINFO_GPU)
     set_target_properties(hwinfo_gpu PROPERTIES OUTPUT_NAME "hwinfo_gpu")
 
     install(TARGETS hwinfo_gpu
-            EXPORT hwinfoTargets
+            EXPORT lfreist-hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
@@ -175,7 +175,7 @@ if (HWINFO_MAINBOARD)
     set_target_properties(hwinfo_mainboard PROPERTIES OUTPUT_NAME "hwinfo_mainboard")
 
     install(TARGETS hwinfo_mainboard
-            EXPORT hwinfoTargets
+            EXPORT lfreist-hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
@@ -209,7 +209,7 @@ if (HWINFO_OS)
     set_target_properties(hwinfo_os PROPERTIES OUTPUT_NAME "hwinfo_os")
 
     install(TARGETS hwinfo_os
-            EXPORT hwinfoTargets
+            EXPORT lfreist-hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
@@ -241,7 +241,7 @@ if (HWINFO_RAM)
     set_target_properties(hwinfo_ram PROPERTIES OUTPUT_NAME "hwinfo_ram")
 
     install(TARGETS hwinfo_ram
-            EXPORT hwinfoTargets
+            EXPORT lfreist-hwinfoTargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
@@ -253,7 +253,7 @@ endif ()
 install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/platform.h ${HWINFO_INCLUDE_DIR}/hwinfo/hwinfo.h  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 install(DIRECTORY ${HWINFO_INCLUDE_DIR}/hwinfo/utils DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 install(TARGETS hwinfo
-        EXPORT hwinfoTargets
+        EXPORT lfreist-hwinfoTargets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin

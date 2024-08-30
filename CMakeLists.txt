@@ -46,21 +46,21 @@ add_subdirectory(src)
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/hwinfoConfigVersion.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/lfreist-hwinfoConfigVersion.cmake"
         VERSION ${PROJECT_VERSION}
         COMPATIBILITY AnyNewerVersion
 )
-configure_file(cmake/hwinfoConfig.cmake.in
-        "${CMAKE_CURRENT_BINARY_DIR}/hwinfoConfig.cmake"
+configure_file(cmake/lfreist-hwinfoConfig.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/lfreist-hwinfoConfig.cmake"
         @ONLY
 )
 install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/hwinfoConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/hwinfoConfigVersion.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/lfreist-hwinfoConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/lfreist-hwinfoConfigVersion.cmake"
         DESTINATION lib/cmake/hwinfo
 )
-install(EXPORT hwinfoTargets
-        FILE hwinfoTargets.cmake
+install(EXPORT lfreist-hwinfoTargets
+        FILE lfreist-hwinfoTargets.cmake
         NAMESPACE hwinfo::
         DESTINATION lib/cmake/hwinfo
 )
