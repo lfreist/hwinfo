@@ -228,7 +228,7 @@ Disk 4:
 4. Link it in cmake
     ```cmake
     add_executable(your_executable your_executable.cpp)
-    target_link_libraries(your_executable PUBLIC hwinfo::hwinfo)
+    target_link_libraries(your_executable PUBLIC lfreist-hwinfo::hwinfo)
     ```
 
 
@@ -261,5 +261,5 @@ Disk 4:
 4. Link it in cmake
     ```cmake
     add_executable(your_executable your_executable.cpp)
-    target_link_libraries(your_executable PUBLIC hwinfo::hwinfo)
+    target_link_libraries(your_executable PUBLIC lfreist-hwinfo::hwinfo)
     ```
