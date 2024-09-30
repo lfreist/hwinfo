@@ -9,7 +9,21 @@ endif()
 
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set (CMAKE_CXX_STANDARD 11)
+
+# if standard not provided, use the latest supported by the compiler
+if("${CMAKE_CXX_STANDARD}" STREQUAL "")
+  function(_set_language_standard output language)
+    foreach(version IN LISTS ARGN)
+      if(DEFINED "CMAKE_${language}${version}_STANDARD_COMPILE_OPTION"
+        OR DEFINED "CMAKE_${language}${version}_EXTENSION_COMPILE_OPTION"
+      )
+        set("${output}" "${version}" PARENT_SCOPE)
+        break()
+      endif()
+    endforeach()
+  endfunction()
+  _set_language_standard(CMAKE_CXX_STANDARD CXX 20 17 14 11)
+endif()
 
 include(GNUInstallDirs)
 
