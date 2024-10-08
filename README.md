@@ -112,8 +112,8 @@ The CMake options control which components will be built and available in the li
 2. Build using cmake:
     ```bash
     mkdir build
-    cmake -B build -DCMAKE_BUILD_TYPE=Release
-    cmake --build build
+    cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CONFIGURATION_TYPES=Release
+    cmake --build build --config Release
     ```
    This builds static and dynamic libraries. Static library cmake targets are named `<target>_static` (e.g. `hwinfo_static`)
 
