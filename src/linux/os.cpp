@@ -48,7 +48,7 @@ OS::OS() {
     }
   }
   {  // architecture
-    struct stat buffer{};
+    struct stat buffer {};
     _64bit = stat("/lib64/ld-linux-x86-64.so.2", &buffer) == 0;
     _32bit = !_64bit;
   }
