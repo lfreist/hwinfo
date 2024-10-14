@@ -179,5 +179,32 @@ int main(int argc, char** argv) {
   } else {
     fmt::print("No Disks installed or detected\n");
   }
+
+  std::vector<hwinfo::Network> networks = hwinfo::getAllNetworks();
+  fmt::print("--------------------------------- Networks -----------------------------------\n");
+  if (!networks.empty()) {
+    int network_counter = 0;
+    for (const auto& network : networks) {
+      // clang-format off
+      if (network.ip4().size() > 0 || network.ip6().size() > 0) {
+        fmt::print(
+            "Network {}:\n"
+            "{:<20} {}\n"
+            "{:<20} {}\n"
+            "{:<20} {}\n"
+            "{:<20} {}\n"
+            "{:<20} {}\n",
+            network_counter++,
+            "description:", network.description(),
+            "interface index:", network.interfaceIndex(),
+            "mac:", network.mac(),
+            "ipv4:", network.ip4(),
+            "ipv6:", network.ip6());
+      }
+      // clang-format on
+    }
+  } else {
+    fmt::print("No Networks installed or detected\n");
+  }
   return EXIT_SUCCESS;
 }

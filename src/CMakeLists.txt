@@ -250,6 +250,40 @@ if (HWINFO_RAM)
 endif ()
 # ______________________________________________________________________________________________________________________
 
+# ----- NETWORK --------------------------------------------------------------------------------------------------------
+if (HWINFO_NETWORK)
+    set(NETWORK_SRC_FILES
+            network.cpp
+            apple/network.cpp
+            linux/network.cpp
+            windows/network.cpp
+
+            windows/utils/wmi_wrapper.cpp
+            apple/utils/filesystem.cpp
+            linux/utils/filesystem.cpp
+    )
+
+    add_library(hwinfo_network ${HWINFO_BUILD} ${NETWORK_SRC_FILES})
+    if(${HWINFO_SHARED})
+        target_compile_definitions(hwinfo_network PUBLIC -DHWINFO_EXPORTS)
+    endif()
+    target_include_directories(hwinfo_network PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+
+
+    target_link_libraries(hwinfo INTERFACE hwinfo_network)
+
+    set_target_properties(hwinfo_network PROPERTIES OUTPUT_NAME "hwinfo_network")
+
+    install(TARGETS hwinfo_network
+            EXPORT lfreist-hwinfoTargets
+            LIBRARY DESTINATION lib
+            ARCHIVE DESTINATION lib
+            RUNTIME DESTINATION bin)
+    install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/network.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
+endif ()
+# ______________________________________________________________________________________________________________________
+
 install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/platform.h ${HWINFO_INCLUDE_DIR}/hwinfo/hwinfo.h  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 install(DIRECTORY ${HWINFO_INCLUDE_DIR}/hwinfo/utils DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 install(TARGETS hwinfo
