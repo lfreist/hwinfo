@@ -1,3 +1,14 @@
+# **THIS IS A FORK**
+
+The upstream library needs to be built and **installed on the build machine**. This verion of the library does not need to be installed.
+
+
+<br/>
+
+---
+
+<br/>
+
 [![Linux (clang)](https://github.com/lfreist/hwinfo/actions/workflows/build-linux-clang.yml/badge.svg)](https://github.com/lfreist/hwinfo/actions/workflows/build-linux-clang.yml)
 [![Linux (gcc)](https://github.com/lfreist/hwinfo/actions/workflows/build-linux-gcc.yml/badge.svg)](https://github.com/lfreist/hwinfo/actions/workflows/build-linux-gcc.yml)
 
