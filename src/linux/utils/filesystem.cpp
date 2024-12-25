@@ -75,16 +75,16 @@ Jiffies get_jiffies(int index) {
   std::istringstream iss(line);
   std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
 
-  const int jiffies_0 = std::stoi(results[1]);
-  const int jiffies_1 = std::stoi(results[2]);
-  const int jiffies_2 = std::stoi(results[3]);
-  const int jiffies_3 = std::stoi(results[4]);
-  const int jiffies_4 = std::stoi(results[5]);
-  const int jiffies_5 = std::stoi(results[6]);
-  const int jiffies_6 = std::stoi(results[7]);
-  const int jiffies_7 = std::stoi(results[8]);
-  const int jiffies_8 = std::stoi(results[9]);
-  const int jiffies_9 = std::stoi(results[10]);
+  const int64_t jiffies_0 = std::stol(results[1]);
+  const int64_t jiffies_1 = std::stol(results[2]);
+  const int64_t jiffies_2 = std::stol(results[3]);
+  const int64_t jiffies_3 = std::stol(results[4]);
+  const int64_t jiffies_4 = std::stol(results[5]);
+  const int64_t jiffies_5 = std::stol(results[6]);
+  const int64_t jiffies_6 = std::stol(results[7]);
+  const int64_t jiffies_7 = std::stol(results[8]);
+  const int64_t jiffies_8 = std::stol(results[9]);
+  const int64_t jiffies_9 = std::stol(results[10]);
 
   int64_t all = jiffies_0 + jiffies_1 + jiffies_2 + jiffies_3 + jiffies_4 + jiffies_5 + jiffies_6 + jiffies_7 +
                 jiffies_8 + jiffies_9;
