@@ -168,12 +168,14 @@ int main(int argc, char** argv) {
                  "{:<20} {}\n"
                  "{:<20} {}\n"
                  "{:<20} {}\n"
+                 "{:<20} {}\n"
                  "{:<20} {}\n",
                  disk_counter++,
                  "vendor:", disk.vendor(),
                  "model:", disk.model(),
                  "serial-number:", disk.serialNumber(),
-                 "size:", disk.size_Bytes());
+                 "size:", disk.size_Bytes(),
+                 "free:", disk.free_size_Bytes());
       // clang-format on
     }
   } else {

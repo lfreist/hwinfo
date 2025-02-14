@@ -24,6 +24,7 @@ class HWINFO_API Disk {
   HWI_NODISCARD const std::string& model() const;
   HWI_NODISCARD const std::string& serialNumber() const;
   HWI_NODISCARD int64_t size_Bytes() const;
+  HWI_NODISCARD int64_t free_size_Bytes() const;
   HWI_NODISCARD int id() const;
 
  private:
@@ -33,6 +34,7 @@ class HWINFO_API Disk {
   std::string _model;
   std::string _serialNumber;
   int64_t _size_Bytes{-1};
+  int64_t _free_size_Bytes{-1};
   int _id{-1};
 };
 
