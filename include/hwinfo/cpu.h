@@ -6,9 +6,9 @@
 #include <hwinfo/platform.h>
 #include <hwinfo/utils/wmi_wrapper.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 namespace hwinfo {
 
