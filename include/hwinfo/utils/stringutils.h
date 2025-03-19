@@ -180,7 +180,13 @@ inline std::string wstring_to_string() { return ""; }
  * @return
  */
 inline std::string wstring_to_std_string(const std::wstring& ws) {
-  std::string str_locale = std::setlocale(LC_ALL, "");
+  std::string str_locale = std::setlocale(LC_ALL, NULL);
+
+#if _MSC_VER
+  std::setlocale(LC_ALL, ".65001");
+#else
+  std::setlocale(LC_ALL, ".UTF-8");
+#endif
   const wchar_t* wch_src = ws.c_str();
 
 #ifdef _MSC_VER
