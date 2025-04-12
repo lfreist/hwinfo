@@ -169,6 +169,9 @@ if (HWINFO_MAINBOARD)
         target_compile_definitions(hwinfo_mainboard PUBLIC -DHWINFO_EXPORTS)
     endif()
     target_include_directories(hwinfo_mainboard PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    if(APPLE)
+        target_link_libraries(hwinfo_mainboard PRIVATE "-framework IOKit" "-framework CoreFoundation")
+    endif()
 
     target_link_libraries(hwinfo INTERFACE hwinfo_mainboard)
 
