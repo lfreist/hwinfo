@@ -23,4 +23,7 @@ int64_t Disk::free_size_Bytes() const { return _free_size_Bytes; }
 // _____________________________________________________________________________________________________________________
 int Disk::id() const { return _id; }
 
+// _____________________________________________________________________________________________________________________
+const std::vector<std::string>& Disk::volumes() const { return _volumes; }
+
 }  // namespace hwinfo

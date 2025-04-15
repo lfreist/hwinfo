@@ -231,6 +231,8 @@ std::vector<Disk> getAllDisks() {
           // Get free space for the found mount point
           const std::string& mountPoint = it->second;
           disk._free_size_Bytes = getFreeDiskSpace(mountPoint);
+
+          disk._volumes.push_back(mountPoint);
         }
       }
 

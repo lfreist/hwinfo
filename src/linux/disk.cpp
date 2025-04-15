@@ -93,7 +93,7 @@ int64_t getDiskSize_Bytes(const std::string& path) {
 
 // _____________________________________________________________________________________________________________________
 int64_t getDiskFreeSize_Bytes(const std::string& path) {
-  struct statvfs stat{};
+  struct statvfs stat {};
   if (statvfs(path.c_str(), &stat) == 0)
     return static_cast<int64_t>(stat.f_bsize) * static_cast<int64_t>(stat.f_bavail);
 
@@ -121,7 +121,10 @@ std::vector<Disk> getAllDisks() {
     }
 
     disk._size_Bytes = getDiskSize_Bytes(path);
-    disk._free_size_Bytes = getDiskFreeSize_Bytes(getMountPoint("/dev/" + entry));
+
+    auto mount_point = getMountPoint("/dev/" + entry);
+    disk._free_size_Bytes = getDiskFreeSize_Bytes(mount_point);
+    disk._volumes.push_back(std::move(mount_point));
 
     disks.push_back(std::move(disk));
   }

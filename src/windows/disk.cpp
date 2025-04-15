@@ -11,6 +11,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace hwinfo {
@@ -53,45 +54,12 @@ std::wstring normalizeBackslashes(const std::wstring& path) {
   return result;
 };
 
-// -----------------------------------------------------------------------------
-// Computes free space for each physical disk
-// Gathers mappings: logical drive → partition → physical disk
-// -----------------------------------------------------------------------------
-std::unordered_map<std::wstring, uint64_t> computePhysicalFreeSpace() {
+std::unordered_map<std::wstring, std::wstring> getPartitionToLogicalMapping() {
   utils::WMI::_WMI wmi;
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
 
-  // Maps for tracking relationships
-  std::unordered_map<std::wstring, uint64_t> logicalDriveToFree;
   std::unordered_map<std::wstring, std::wstring> partitionToLogical;
-  std::unordered_map<std::wstring, std::wstring> partitionToDisk;
-
-  // -------------------------------------------------------------------------
-  // Read logical disk free space
-  // -------------------------------------------------------------------------
-  if (wmi.execute_query(L"SELECT DeviceID, FreeSpace FROM Win32_LogicalDisk")) {
-    while (wmi.enumerator) {
-      wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
-      if (!u_return || obj == nullptr) {
-        break;
-      }
-
-      VARIANT vtDeviceID, vtFreeSpace;
-      VariantInit(&vtDeviceID);
-      VariantInit(&vtFreeSpace);
-
-      if (SUCCEEDED(obj->Get(L"DeviceID", 0, &vtDeviceID, nullptr, nullptr)) &&
-          SUCCEEDED(obj->Get(L"FreeSpace", 0, &vtFreeSpace, nullptr, nullptr))) {
-        if (V_VT(&vtDeviceID) == VT_BSTR && V_VT(&vtFreeSpace) == VT_BSTR) {
-          logicalDriveToFree[vtDeviceID.bstrVal] = std::stoll(utils::wstring_to_std_string(vtFreeSpace.bstrVal));
-        }
-      }
-      VariantClear(&vtDeviceID);
-      VariantClear(&vtFreeSpace);
-      obj->Release();
-    }
-  }
 
   // -------------------------------------------------------------------------
   // Map logical drives to partitions
@@ -125,6 +93,16 @@ std::unordered_map<std::wstring, uint64_t> computePhysicalFreeSpace() {
     }
   }
 
+  return partitionToLogical;
+}
+
+std::unordered_map<std::wstring, std::wstring> getDiskToPartitionMapping() {
+  utils::WMI::_WMI wmi;
+  ULONG u_return = 0;
+  IWbemClassObject* obj = nullptr;
+
+  std::unordered_map<std::wstring, std::wstring> partitionToDisk;
+
   // -------------------------------------------------------------------------
   // Map partitions to physical disks
   // -------------------------------------------------------------------------
@@ -151,6 +129,49 @@ std::unordered_map<std::wstring, uint64_t> computePhysicalFreeSpace() {
     }
   }
 
+  return partitionToDisk;
+}
+
+// -----------------------------------------------------------------------------
+// Computes free space for each physical disk
+// Gathers mappings: logical drive → partition → physical disk
+// -----------------------------------------------------------------------------
+std::unordered_map<std::wstring, uint64_t> computePhysicalFreeSpace(
+    const std::unordered_map<std::wstring, std::wstring>& partitionToLogical,
+    const std::unordered_map<std::wstring, std::wstring>& partitionToDisk) {
+  utils::WMI::_WMI wmi;
+  ULONG u_return = 0;
+  IWbemClassObject* obj = nullptr;
+
+  // Maps for tracking relationships
+  std::unordered_map<std::wstring, uint64_t> logicalDriveToFree;
+
+  // -------------------------------------------------------------------------
+  // Read logical disk free space
+  // -------------------------------------------------------------------------
+  if (wmi.execute_query(L"SELECT DeviceID, FreeSpace FROM Win32_LogicalDisk")) {
+    while (wmi.enumerator) {
+      wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+      if (!u_return || obj == nullptr) {
+        break;
+      }
+
+      VARIANT vtDeviceID, vtFreeSpace;
+      VariantInit(&vtDeviceID);
+      VariantInit(&vtFreeSpace);
+
+      if (SUCCEEDED(obj->Get(L"DeviceID", 0, &vtDeviceID, nullptr, nullptr)) &&
+          SUCCEEDED(obj->Get(L"FreeSpace", 0, &vtFreeSpace, nullptr, nullptr))) {
+        if (V_VT(&vtDeviceID) == VT_BSTR && V_VT(&vtFreeSpace) == VT_BSTR) {
+          logicalDriveToFree[vtDeviceID.bstrVal] = std::stoll(utils::wstring_to_std_string(vtFreeSpace.bstrVal));
+        }
+      }
+      VariantClear(&vtDeviceID);
+      VariantClear(&vtFreeSpace);
+      obj->Release();
+    }
+  }
+
   // -------------------------------------------------------------------------
   // Aggregate free space for each physical disk
   // -------------------------------------------------------------------------
@@ -169,6 +190,24 @@ std::unordered_map<std::wstring, uint64_t> computePhysicalFreeSpace() {
   return physicalDiskToFree;
 }
 
+std::unordered_map<std::wstring, std::vector<std::string>> getDiskToLogicalDrivesMapping(
+    const std::unordered_map<std::wstring, std::wstring>& partitionToLogical,
+    const std::unordered_map<std::wstring, std::wstring>& partitionToDisk) {
+  std::unordered_map<std::wstring, std::vector<std::string>> diskToLogicalDrives;
+
+  for (const auto& [partitionName, logicalDriveName] : partitionToLogical) {
+    auto diskIter = partitionToDisk.find(partitionName);
+    if (diskIter != partitionToDisk.end()) {
+      // Normalize the disk path for consistent comparison
+      auto normalizedDiskPath = normalizeBackslashes(diskIter->second);
+      // Add this logical drive to the list for this disk
+      diskToLogicalDrives[normalizedDiskPath].push_back(utils::wstring_to_std_string(logicalDriveName));
+    }
+  }
+
+  return diskToLogicalDrives;
+}
+
 // _____________________________________________________________________________________________________________________
 std::vector<Disk> getAllDisks() {
   utils::WMI::_WMI wmi;
@@ -179,7 +218,12 @@ std::vector<Disk> getAllDisks() {
   }
 
   std::vector<Disk> disks;
-  auto physicalFreeSize = computePhysicalFreeSpace();
+
+  // Get all mappings upfront
+  auto partitionToLogical = getPartitionToLogicalMapping();
+  auto partitionToDisk = getDiskToPartitionMapping();
+  auto physicalFreeSize = computePhysicalFreeSpace(partitionToLogical, partitionToDisk);
+  auto diskToLogicalDrives = getDiskToLogicalDrivesMapping(partitionToLogical, partitionToDisk);
 
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
@@ -221,18 +265,26 @@ std::vector<Disk> getAllDisks() {
     }
     VariantClear(&vt_prop);
 
-    // Match the free space for this device (if found in aggregated map)
+    // Get device ID and match with pre-computed mappings
     hr = obj->Get(L"DeviceID", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
       auto deviceIdW = vt_prop.bstrVal;
+      auto normalizedDeviceId = normalizeBackslashes(deviceIdW);
       VariantClear(&vt_prop);
 
+      // Look up logical drives for this disk
+      auto logicalDrivesIter = diskToLogicalDrives.find(normalizedDeviceId);
+      if (logicalDrivesIter != diskToLogicalDrives.end()) {
+        // Add all logical drives to volumes
+        disk._volumes = logicalDrivesIter->second;
+      }
+
+      // Look up free space
       for (const auto& [rawKey, space] : physicalFreeSize) {
         auto normRawKey = normalizeBackslashes(rawKey);
-        auto normDeviceIdW = normalizeBackslashes(deviceIdW);
-
-        if (normRawKey == normDeviceIdW) {
+        if (normRawKey == normalizedDeviceId) {
           disk._free_size_Bytes = space;
+          break;  // Found the match, no need to continue
         }
       }
     }

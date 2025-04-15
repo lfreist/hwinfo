@@ -19,10 +19,14 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 
 ## Content
 
-* [Supported Components](#supported-components)
-* [Build hwinfo](#build-hwinfo)
-* [Example](#example)
-* [Include hwinfo to cmake project](#include-hwinfo-to-cmake-project)
+- [hwinfo](#hwinfo)
+  - [Content](#content)
+  - [Supported Components](#supported-components)
+  - [Build `hwinfo`](#build-hwinfo)
+  - [Example](#example)
+  - [include hwinfo to cmake project](#include-hwinfo-to-cmake-project)
+    - [Include installed version](#include-installed-version)
+    - [As git submodule](#as-git-submodule)
 
 ## Supported Components
 
@@ -58,6 +62,7 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 |                  | Serial-Number      |  ✔️   |  ✔️   |   ✔️    |
 |                  | Size               |  ✔️   |  ✔️   |   ✔️    |
 |                  | Free Size          |  ✔️   |  ✔️   |   ✔️    |
+|                  | Volumes            |  ✔️   |  ✔️   |   ✔️    |
 | Operating System | Name               |  ✔️   |  ✔️   |   ✔️    |
 |                  | Short Name         |  ✔️   |  ❌️   |   ✔️    |
 |                  | Version            |  ✔️   |  ✔️   |    ❌    |
