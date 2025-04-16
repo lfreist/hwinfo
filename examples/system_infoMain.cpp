@@ -1,7 +1,8 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include <fmt/core.h>
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <hwinfo/hwinfo.h>
 #include <hwinfo/utils/unit.h>
 
@@ -168,12 +169,16 @@ int main(int argc, char** argv) {
                  "{:<20} {}\n"
                  "{:<20} {}\n"
                  "{:<20} {}\n"
+                 "{:<20} {}\n"
+                 "{:<20} {}\n"
                  "{:<20} {}\n",
                  disk_counter++,
                  "vendor:", disk.vendor(),
                  "model:", disk.model(),
                  "serial-number:", disk.serialNumber(),
-                 "size:", disk.size_Bytes());
+                 "size:", disk.size_Bytes(),
+                 "free:", disk.free_size_Bytes(),
+                 "volumes:", fmt::join(disk.volumes(), ", "));
       // clang-format on
     }
   } else {

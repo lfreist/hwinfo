@@ -19,10 +19,14 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 
 ## Content
 
-* [Supported Components](#supported-components)
-* [Build hwinfo](#build-hwinfo)
-* [Example](#example)
-* [Include hwinfo to cmake project](#include-hwinfo-to-cmake-project)
+- [hwinfo](#hwinfo)
+  - [Content](#content)
+  - [Supported Components](#supported-components)
+  - [Build `hwinfo`](#build-hwinfo)
+  - [Example](#example)
+  - [include hwinfo to cmake project](#include-hwinfo-to-cmake-project)
+    - [Include installed version](#include-installed-version)
+    - [As git submodule](#as-git-submodule)
 
 ## Supported Components
 
@@ -31,47 +35,49 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 > The listed components that are not yet implemented (indicated with ❌) are in development and will be supported in
 > future releases. **You are welcome to start contributing and help improving this library!**
 
-| Component        | Info               | Linux | Apple  | Windows |
-|------------------|:-------------------|:-----:|:------:|:-------:|
-| CPU              | Vendor             |  ✔️   |   ❌️   |   ✔️    |
-|                  | Model              |  ✔️   |   ✔️   |   ✔️    |
-|                  | Frequency          |  ✔️   |   ❌️   |   ✔️    |
-|                  | Physical Cores     |  ✔️   |   ✔️   |   ✔️    |
-|                  | Logical Cores      |  ✔️   |   ✔️   |   ✔️    |
-|                  | Cache Size         |  ✔️   |   ❌️   |   ✔️    |
-| GPU              | Vendor             |  ✔️   |   ❌️   |   ✔️    |
-|                  | Model              |  ✔️   |   ❌️   |   ✔️    |
-|                  | Memory Size        |   ❌   |   ❌    |   ✔️    |
-| Memory (RAM)     | Vendor             |   ❌   |   ❌    |   ✔️    |
-|                  | Model              |   ❌   |   ❌    |   ✔️    |
-|                  | Name               |   ❌   |   ❌    |   ✔️    |
-|                  | Serial Number      |   ❌   |   ❌    |   ✔️    |
-|                  | Total Memory Size  |  ✔️   |   ✔️   |   ✔️    |
-|                  | Free Memory Size   |  ✔️   |   ❌    |   ✔️    |
-| Mainboard        | Vendor             |  ✔️   |   ❌    |   ✔️    |
-|                  | Model              |  ✔️   |   ❌    |   ✔️    |
-|                  | Version            |  ✔️   |   ❌    |   ✔️    |
-|                  | Serial-Number      |   ❌   |   ❌    |   ✔️    |
-|                  | Bios               |   ❌   |   ❌    |    ❌    |
-| Disk             | Vendor             |  ✔️   |   ✔️   |   ✔️    |
-|                  | Model              |  ✔️   |   ✔️   |   ✔️    |
-|                  | Serial-Number      |  ✔️   |   ✔️   |   ✔️    |
-|                  | Size               |  ✔️   |   ✔️   |   ✔️    |
-| Operating System | Name               |  ✔️   |   ✔️   |   ✔️    |
-|                  | Short Name         |  ✔️   |   ❌️   |   ✔️    |
-|                  | Version            |  ✔️   |   ✔️   |    ❌    |
-|                  | Kernel             |  ✔️   |   ✔️   |    ❌    |
-|                  | Architecture (Bit) |  ✔️   |   ✔️   |   ✔️    |
-|                  | Endianess          |  ✔️   |   ✔️   |   ✔️    |
-| Battery          | Vendor             |  ✔️   |   ❌️   |    ❌    |
-|                  | Model              |  ✔️   |   ❌    |    ❌    |
-|                  | Serial Number      |  ✔️   |   ✔️   |    ❌    |
-|                  | Technology         |  ✔️   |   ❌    |    ❌    |
-|                  | Capacity           |  ✔️   |   ✔️   |   ️❌    |
-|                  | Charging           |  ✔️   |   ✔️   |    ❌    |
+| Component        | Info               | Linux | Apple | Windows |
+|------------------|:-------------------|:-----:|:-----:|:-------:|
+| CPU              | Vendor             |  ✔️   |  ❌️   |   ✔️    |
+|                  | Model              |  ✔️   |  ✔️   |   ✔️    |
+|                  | Frequency          |  ✔️   |  ❌️   |   ✔️    |
+|                  | Physical Cores     |  ✔️   |  ✔️   |   ✔️    |
+|                  | Logical Cores      |  ✔️   |  ✔️   |   ✔️    |
+|                  | Cache Size         |  ✔️   |  ❌️   |   ✔️    |
+| GPU              | Vendor             |  ✔️   |  ❌️   |   ✔️    |
+|                  | Model              |  ✔️   |  ❌️   |   ✔️    |
+|                  | Memory Size        |   ❌   |   ❌   |   ✔️    |
+| Memory (RAM)     | Vendor             |   ❌   |   ❌   |   ✔️    |
+|                  | Model              |   ❌   |   ❌   |   ✔️    |
+|                  | Name               |   ❌   |   ❌   |   ✔️    |
+|                  | Serial Number      |   ❌   |   ❌   |   ✔️    |
+|                  | Total Memory Size  |  ✔️   |  ✔️   |   ✔️    |
+|                  | Free Memory Size   |  ✔️   |   ❌   |   ✔️    |
+| Mainboard        | Vendor             |  ✔️   |   ❌   |   ✔️    |
+|                  | Model              |  ✔️   |   ❌   |   ✔️    |
+|                  | Version            |  ✔️   |   ❌   |   ✔️    |
+|                  | Serial-Number      |   ❌   |   ❌   |   ✔️    |
+|                  | Bios               |   ❌   |   ❌   |    ❌    |
+| Disk             | Vendor             |  ✔️   |  ✔️   |   ✔️    |
+|                  | Model              |  ✔️   |  ✔️   |   ✔️    |
+|                  | Serial-Number      |  ✔️   |  ✔️   |   ✔️    |
+|                  | Size               |  ✔️   |  ✔️   |   ✔️    |
+|                  | Free Size          |  ✔️   |  ✔️   |   ✔️    |
+|                  | Volumes            |  ✔️   |  ✔️   |   ✔️    |
+| Operating System | Name               |  ✔️   |  ✔️   |   ✔️    |
+|                  | Short Name         |  ✔️   |  ❌️   |   ✔️    |
+|                  | Version            |  ✔️   |  ✔️   |    ❌    |
+|                  | Kernel             |  ✔️   |  ✔️   |    ❌    |
+|                  | Architecture (Bit) |  ✔️   |  ✔️   |   ✔️    |
+|                  | Endianess          |  ✔️   |  ✔️   |   ✔️    |
+| Battery          | Vendor             |  ✔️   |  ❌️   |    ❌    |
+|                  | Model              |  ✔️   |   ❌   |    ❌    |
+|                  | Serial Number      |  ✔️   |  ✔️   |    ❌    |
+|                  | Technology         |  ✔️   |   ❌   |    ❌    |
+|                  | Capacity           |  ✔️   |  ✔️   |   ️❌    |
+|                  | Charging           |  ✔️   |  ✔️   |    ❌    |
 
-
-All components are available via the `hwinfo::hwinfo` target, or via individual CMake targets, which you can choose and link against depending on your needs.
+All components are available via the `hwinfo::hwinfo` target, or via individual CMake targets, which you can choose and
+link against depending on your needs.
 
 ```cmake
 target_link_libraries(your_target PRIVATE hwinfo::hwinfo)
@@ -230,7 +236,6 @@ Disk 4:
     add_executable(your_executable your_executable.cpp)
     target_link_libraries(your_executable PUBLIC lfreist-hwinfo::hwinfo)
     ```
-
 
 ### As git submodule
 
