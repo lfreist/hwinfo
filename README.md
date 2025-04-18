@@ -19,10 +19,14 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 
 ## Content
 
-* [Supported Components](#supported-components)
-* [Build hwinfo](#build-hwinfo)
-* [Example](#example)
-* [Include hwinfo to cmake project](#include-hwinfo-to-cmake-project)
+- [hwinfo](#hwinfo)
+  - [Content](#content)
+  - [Supported Components](#supported-components)
+  - [Build `hwinfo`](#build-hwinfo)
+  - [Example](#example)
+  - [include hwinfo to cmake project](#include-hwinfo-to-cmake-project)
+    - [Include installed version](#include-installed-version)
+    - [As git submodule](#as-git-submodule)
 
 ## Supported Components
 
@@ -212,8 +216,12 @@ Disk 4:
 2. Simply add the following to your `CMakeLists.txt` file:
     ```cmake
     # file: CMakeLists.txt
-    
-    find_package(hwinfo REQUIRED)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+      set(hwinfo_DIR "/usr/local/lib/cmake/hwinfo/")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+      set(hwinfo_DIR "C:/Program Files/hwinfo/lib/cmake/hwinfo")
+    endif()
+    find_package(hwinfo REQUIRED CONFIG NAMES lfreist-hwinfo)
     ```
 3. Include `hwinfo` into your `.cpp/.h` files:
     ```c++
