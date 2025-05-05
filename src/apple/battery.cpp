@@ -5,6 +5,7 @@
 
 #ifdef HWINFO_APPLE
 
+#include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/ps/IOPSKeys.h>
 #include <IOKit/ps/IOPowerSources.h>
 
