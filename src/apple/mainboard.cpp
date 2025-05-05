@@ -9,6 +9,10 @@
 
 #include "hwinfo/mainboard.h"
 
+#ifndef kIOMainPortDefault
+#define kIOMainPortDefault kIOMasterPortDefault
+#endif
+
 namespace hwinfo {
 
 std::string get_mainboard_property(CFStringRef property_name) {
