@@ -37,7 +37,7 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 
 | Component        | Info               | Linux | Apple | Windows |
 |------------------|:-------------------|:-----:|:-----:|:-------:|
-| CPU              | Vendor             |  ✔️   |  ❌️   |   ✔️    |
+| CPU              | Vendor             |  ✔️   |  ✔️   |   ✔️    |
 |                  | Model              |  ✔️   |  ✔️   |   ✔️    |
 |                  | Frequency          |  ✔️   |  ❌️   |   ✔️    |
 |                  | Physical Cores     |  ✔️   |  ✔️   |   ✔️    |
@@ -51,11 +51,11 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 |                  | Name               |   ❌   |   ❌   |   ✔️    |
 |                  | Serial Number      |   ❌   |   ❌   |   ✔️    |
 |                  | Total Memory Size  |  ✔️   |  ✔️   |   ✔️    |
-|                  | Free Memory Size   |  ✔️   |   ❌   |   ✔️    |
+|                  | Free Memory Size   |  ✔️   |  ✔️   |   ✔️    |
 | Mainboard        | Vendor             |  ✔️   |   ❌   |   ✔️    |
 |                  | Model              |  ✔️   |   ❌   |   ✔️    |
 |                  | Version            |  ✔️   |   ❌   |   ✔️    |
-|                  | Serial-Number      |   ❌   |   ❌   |   ✔️    |
+|                  | Serial-Number      |   ❌   |  ✔️   |   ✔️    |
 |                  | Bios               |   ❌   |   ❌   |    ❌    |
 | Disk             | Vendor             |  ✔️   |  ✔️   |   ✔️    |
 |                  | Model              |  ✔️   |  ✔️   |   ✔️    |

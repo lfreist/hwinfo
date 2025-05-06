@@ -7,6 +7,7 @@
 
 #include <sys/sysctl.h>
 
+#include <iostream>
 #include <sstream>
 #include <string>
 
@@ -51,6 +52,20 @@ OS::OS() {
     _version = os_version;
   } else {
     _version = "<unknown>";
+  }
+
+  if (sysctlbyname("kern.osversion", static_cast<void*>(const_cast<char*>(os_version.data())), &size, nullptr, 0) ==
+      0) {
+    os_version.resize(size);
+    os_version.pop_back();
+    _version = _version + " (" + os_version + ")";
+  }
+
+  int byteorder = 0;
+  size_t order_size = sizeof(byteorder);
+  if (sysctlbyname("hw.byteorder", &byteorder, &order_size, nullptr, 0) == 0) {
+    _bigEndian = (byteorder == 4321);
+    _littleEndian = (byteorder == 1234);
   }
 
   _64bit = true;
