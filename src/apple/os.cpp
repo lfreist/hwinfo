@@ -17,15 +17,15 @@ OS::OS() {
   _name = "macOS";
 
   // Get kernel name and version
-  _kernel = utils::getSysctlString("kern.ostype", "<unknown name>");
+  _kernel = utils::getSysctlString("kern.ostype", "<unknown name> ");
   _kernel.pop_back();
-  _kernel = _kernel + " " + utils::getSysctlString("kern.osrelease", "<unknown version>");
+  _kernel = _kernel + " " + utils::getSysctlString("kern.osrelease", "<unknown version> ");
   _kernel.pop_back();
 
   // get OS name and build version
-  _version = utils::getSysctlString("kern.osproductversion", "<unknown>");
+  _version = utils::getSysctlString("kern.osproductversion", "<unknown> ");
   _version.pop_back();
-  _version = _version + " (" + utils::getSysctlString("kern.osversion", "<unknown build>");
+  _version = _version + " (" + utils::getSysctlString("kern.osversion", "<unknown build> ");
   _version.pop_back();
   _version = _version + ")";
 
