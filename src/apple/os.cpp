@@ -11,62 +11,33 @@
 #include <string>
 
 #include "hwinfo/os.h"
+#include "hwinfo/utils/sysctl.h"
 
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 OS::OS() {
-  size_t size = 1024;
   _name = "macOS";
 
-  std::string kernel_name;
-  kernel_name.resize(size);
-  if (sysctlbyname("kern.ostype", static_cast<void*>(const_cast<char*>(kernel_name.data())), &size, nullptr, 0) == 0) {
-    kernel_name.resize(size);  // trim the string to the actual size
-    kernel_name.pop_back();    // remove unprintable character at the end
-    _kernel = kernel_name;
-  } else {
-    _kernel = "<unknown name>";
-  }
+  // Get kernel name and version
+  _kernel = utils::getSysctlString("kern.ostype", "<unknown name>");
+  _kernel.pop_back();
+  _kernel = _kernel + " " + utils::getSysctlString("kern.osrelease", "<unknown version>");
+  _kernel.pop_back();
 
-  std::string kernel_version;
-  kernel_version.resize(size);
-  if (sysctlbyname("kern.osrelease", static_cast<void*>(const_cast<char*>(kernel_version.data())), &size, nullptr, 0) ==
-      0) {
-    kernel_version.resize(size);
-    kernel_version.pop_back();
+  // get OS name and build version
+  _version = utils::getSysctlString("kern.osproductversion", "<unknown>");
+  _version.pop_back();
+  _version = _version + " (" + utils::getSysctlString("kern.osversion", "<unknown build>");
+  _version.pop_back();
+  _version = _version + ")";
 
-    _kernel = _kernel + " " + kernel_version;
-  } else {
-    _kernel = _kernel + " <unknown version>";
-  }
+  // determine endianess
+  const int byteorder = utils::getSysctlValue("hw.byteorder", 0);
+  _bigEndian = (byteorder == 4321);
+  _littleEndian = (byteorder == 1234);
 
-  std::string os_version;
-  os_version.resize(size);
-
-  if (sysctlbyname("kern.osproductversion", static_cast<void*>(const_cast<char*>(os_version.data())), &size, nullptr,
-                   0) == 0) {
-    os_version.resize(size);
-    os_version.pop_back();
-    _version = os_version;
-  } else {
-    _version = "<unknown>";
-  }
-
-  if (sysctlbyname("kern.osversion", static_cast<void*>(const_cast<char*>(os_version.data())), &size, nullptr, 0) ==
-      0) {
-    os_version.resize(size);
-    os_version.pop_back();
-    _version = _version + " (" + os_version + ")";
-  }
-
-  int byteorder = 0;
-  size_t order_size = sizeof(byteorder);
-  if (sysctlbyname("hw.byteorder", &byteorder, &order_size, nullptr, 0) == 0) {
-    _bigEndian = (byteorder == 4321);
-    _littleEndian = (byteorder == 1234);
-  }
-
+  // TODO: Actually check
   _64bit = true;
   _32bit = !_64bit;
 }
