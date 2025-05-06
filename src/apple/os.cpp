@@ -5,9 +5,6 @@
 
 #ifdef HWINFO_APPLE
 
-#include <sys/sysctl.h>
-
-#include <sstream>
 #include <string>
 
 #include "hwinfo/os.h"
