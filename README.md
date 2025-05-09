@@ -37,12 +37,12 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 
 | Component        | Info               | Linux | Apple | Windows |
 |------------------|:-------------------|:-----:|:-----:|:-------:|
-| CPU              | Vendor             |  ✔️   |  ❌️   |   ✔️    |
+| CPU              | Vendor             |  ✔️   |  ✔️   |   ✔️    |
 |                  | Model              |  ✔️   |  ✔️   |   ✔️    |
 |                  | Frequency          |  ✔️   |  ❌️   |   ✔️    |
 |                  | Physical Cores     |  ✔️   |  ✔️   |   ✔️    |
 |                  | Logical Cores      |  ✔️   |  ✔️   |   ✔️    |
-|                  | Cache Size         |  ✔️   |  ❌️   |   ✔️    |
+|                  | Cache Size         |  ✔️   |  ✔️️  |   ✔️    |
 | GPU              | Vendor             |  ✔️   |  ❌️   |   ✔️    |
 |                  | Model              |  ✔️   |  ❌️   |   ✔️    |
 |                  | Memory Size        |   ❌   |   ❌   |   ✔️    |
@@ -55,7 +55,7 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 | Mainboard        | Vendor             |  ✔️   |   ❌   |   ✔️    |
 |                  | Model              |  ✔️   |   ❌   |   ✔️    |
 |                  | Version            |  ✔️   |   ❌   |   ✔️    |
-|                  | Serial-Number      |   ❌   |   ❌   |   ✔️    |
+|                  | Serial-Number      |   ❌   |  ✔️   |   ✔️    |
 |                  | Bios               |   ❌   |   ❌   |    ❌    |
 | Disk             | Vendor             |  ✔️   |  ✔️   |   ✔️    |
 |                  | Model              |  ✔️   |  ✔️   |   ✔️    |

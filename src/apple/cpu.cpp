@@ -267,7 +267,9 @@ std::string getModelName() {
   }
   return model;
 #else
-  return utils::getSysctlString("machdep.cpu.brand_string", "<unknown>");
+  std::string name = utils::getSysctlString("machdep.cpu.brand_string", "<unknown> ");
+  name.pop_back();
+  return name;
 #endif
 }
 
