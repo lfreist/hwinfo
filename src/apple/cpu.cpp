@@ -30,6 +30,11 @@ bool isAppleSilicon() {
   return machine.find("arm64") != std::string::npos;
 }
 
+bool isPowerPC() {
+  int cputype = utils::getSysctlValue<int>("hw.cputype", -1);
+  return cputype == 18; // 18 is CPU_TYPE_POWERPC
+}
+
 // Get the number of physical CPU cores
 int getPhysicalCoreCount() { return utils::getSysctlValue<int>("hw.physicalcpu", 0); }
 
@@ -94,7 +99,6 @@ std::string getVendor() {
   vendor += std::string((const char*)&regs[1], 4);
   vendor += std::string((const char*)&regs[3], 4);
   vendor += std::string((const char*)&regs[2], 4);
-  return vendor;
 #else
   // Try to get vendor from sysctl
   auto vendor = utils::getSysctlString("machdep.cpu.vendor", "<unknown>");
@@ -104,8 +108,11 @@ std::string getVendor() {
     return "Apple";
   }
 
-  return vendor;
+  if (vendor == "<unknown>" && isPowerPC()) {
+    return "IBM";
+  }
 #endif
+  return vendor;
 }
 
 // _____________________________________________________________________________________________________________________
@@ -265,12 +272,24 @@ std::string getModelName() {
       }
     }
   }
-  return model;
 #else
-  std::string name = utils::getSysctlString("machdep.cpu.brand_string", "<unknown> ");
-  name.pop_back();
-  return name;
+  std::string model = utils::getSysctlString("machdep.cpu.brand_string", "<unknown>");
+  if (model == "<unknown>" && isAppleSilicon()) {
+    model = "Apple Silicon";
+  }
+  if (model == "<unknown>" && isPowerPC()) {
+    int cpusubtype = utils::getSysctlValue<int>("hw.cpusubtype", -1);
+    switch (cpusubtype) {
+      case 100: model = "PowerPC G5 (970)"; break;
+      case 11: model = "PowerPC G4 (7450)"; break;
+      case 10: model = "PowerPC G4 (7400)"; break;
+      case 9: model = "PowerPC G3 (750)"; break;
+      case 1: model = "PowerPC 601"; break;
+      default: model = "PowerPC (unknown subtype: " + std::to_string(cpusubtype) + ")";
+    }
+  }
 #endif
+  return model;
 }
 
 int getNumLogicalCores();
