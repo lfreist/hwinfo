@@ -52,8 +52,11 @@ OS::OS() {
   _bigEndian = (byteorder == 4321);
   _littleEndian = (byteorder == 1234);
 
-  // TODO: Actually check
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__ppc64__)
   _64bit = true;
+#else
+  _64bit = false;
+#endif
   _32bit = !_64bit;
 }
 
