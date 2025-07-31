@@ -71,6 +71,7 @@ std::vector<GPU> getAllGPUs() {
     }
     gpu._vendor_id = read_drm_by_path(path + "device/vendor");
     gpu._device_id = read_drm_by_path(path + "device/device");
+    gpu._driverVersion = read_drm_by_path(path + "device/driver/module/version");
     if (gpu._vendor_id.empty() || gpu._device_id.empty()) {
       id++;
       continue;

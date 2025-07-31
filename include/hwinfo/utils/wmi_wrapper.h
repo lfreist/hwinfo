@@ -4,7 +4,7 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <WbemIdl.h>
+#include <wbemidl.h>
 #include <comdef.h>
 
 #include <iostream>

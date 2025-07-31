@@ -4,7 +4,7 @@
 #include <hwinfo/platform.h>
 
 #ifdef HWINFO_WINDOWS
-#include <Windows.h>
+#include <windows.h>
 #include <hwinfo/ram.h>
 #include <hwinfo/utils/stringutils.h>
 #include <hwinfo/utils/wmi_wrapper.h>
