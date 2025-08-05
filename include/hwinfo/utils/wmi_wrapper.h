@@ -4,8 +4,8 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <wbemidl.h>
 #include <comdef.h>
+#include <wbemidl.h>
 
 #include <iostream>
 #include <string>

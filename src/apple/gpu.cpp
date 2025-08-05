@@ -5,12 +5,14 @@
 
 #ifdef HWINFO_APPLE
 
+#import <Foundation/Foundation.h>
+#import <Metal/Metal.h>
+
 #include <regex>
 #include <string>
 #include <vector>
 
 #include "hwinfo/gpu.h"
-#import <Metal/Metal.h>
 
 namespace hwinfo {
 
