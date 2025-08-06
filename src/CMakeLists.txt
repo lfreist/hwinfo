@@ -109,7 +109,6 @@ endif ()
 if (HWINFO_GPU)
     set(GPU_SRC_FILES
             gpu.cpp
-            apple/gpu.cpp
             linux/gpu.cpp
             windows/gpu.cpp
 
@@ -119,6 +118,10 @@ if (HWINFO_GPU)
 
             PCIMapper.cpp
     )
+    if (APPLE)
+      set(GPU_SRC_FILES ${GPU_SRC_FILES} apple/gpu.mm)
+      target_link_libraries(hwinfo_mainboard PRIVATE "-framework Metal")
+    endif()
 
     if (HWINFO_GPU_OPENCL)
         add_subdirectory(opencl)

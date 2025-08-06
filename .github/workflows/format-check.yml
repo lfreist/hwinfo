@@ -8,12 +8,12 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
-        run: sudo apt-get install -y clang-format-14
+        run: sudo apt-get install -y clang-format-18
 
       - name: Run clang-format
         run: |

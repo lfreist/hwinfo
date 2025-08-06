@@ -19,7 +19,7 @@ namespace hwinfo {
 namespace filesystem {
 
 bool exists(const std::string& path) {
-  struct stat sb {};
+  struct stat sb{};
   return stat(path.c_str(), &sb) == 0;
 }
 
