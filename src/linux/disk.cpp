@@ -94,7 +94,7 @@ int64_t getDiskSize_Bytes(const std::string& path) {
 
 // _____________________________________________________________________________________________________________________
 int64_t getDiskFreeSize_Bytes(const std::string& path) {
-  struct statvfs stat{};
+  struct statvfs stat {};
   if (statvfs(path.c_str(), &stat) == 0)
     return static_cast<int64_t>(stat.f_bsize) * static_cast<int64_t>(stat.f_bavail);
 

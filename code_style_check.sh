@@ -9,7 +9,7 @@ done < sourcelist
 
 ERROR=0
 for source in "${SOURCE_FILES[@]}"; do
-	clang-format -output-replacements-xml "$source" | grep "<replacement " &> /dev/null
+	clang-format-18 -output-replacements-xml "$source" | grep "<replacement " &> /dev/null
 	HAS_WRONG_FILES=$?
 	if [ $HAS_WRONG_FILES -ne 1 ]; then
 		printf "Checking %s: \x1b[31mFAILED!\x1b[m\n" "$source"
