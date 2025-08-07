@@ -12,7 +12,7 @@
 namespace hwinfo {
 
 std::string get_mainboard_property(CFStringRef property_name) {
-  auto platformExpert = IOServiceGetMatchingService(NULL, IOServiceMatching("IOPlatformExpertDevice"));
+  auto platformExpert = IOServiceGetMatchingService(0, IOServiceMatching("IOPlatformExpertDevice"));
   if (!platformExpert) {
     return "<unknown>";
   }
