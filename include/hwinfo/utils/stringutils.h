@@ -54,32 +54,18 @@ inline void strip(std::string& input) {
   // optimization for input size == 1
   if (input.size() == 1) {
     if (input[0] == ' ' || input[0] == '\t' || input[0] == '\n') {
-      input = "";
+      input.clear();
       return;
     } else {
       return;
     }
   }
-  size_t start_index = 0;
-  while (true) {
-    char c = input[start_index];
-    if (c != ' ' && c != '\t' && c != '\n') {
-      break;
-    }
-    start_index++;
-  }
-  size_t end_index = input.size() - 1;
-  while (true) {
-    char c = input[end_index];
-    if (c != ' ' && c != '\t' && c != '\n') {
-      break;
-    }
-    end_index--;
-  }
-  if (end_index < start_index) {
-    input.assign("");
+  size_t start_index = input.find_first_not_of(" \t\n");
+  if (start_index == std::string::npos) {
+    input.clear();
     return;
   }
+  size_t end_index = input.find_last_not_of(" \t\n");
   input.assign(input.begin() + start_index, input.begin() + end_index + 1);
 }
 
