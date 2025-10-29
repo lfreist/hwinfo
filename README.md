@@ -64,7 +64,7 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 |                  | Free Size          |  ✔️   |  ✔️   |   ✔️    |
 |                  | Volumes            |  ✔️   |  ✔️   |   ✔️    |
 | Operating System | Name               |  ✔️   |  ✔️   |   ✔️    |
-|                  | Short Name         |  ✔️   |  ❌️   |   ✔️    |
+|                  | Short Name         |  ✔️   |  ✔️   |   ✔️    |
 |                  | Version            |  ✔️   |  ✔️   |    ❌    |
 |                  | Kernel             |  ✔️   |  ✔️   |    ❌    |
 |                  | Architecture (Bit) |  ✔️   |  ✔️   |   ✔️    |
@@ -82,6 +82,7 @@ link against depending on your needs.
 ```cmake
 target_link_libraries(your_target PRIVATE hwinfo::hwinfo)
 ```
+
 or
 
 ```cmake
