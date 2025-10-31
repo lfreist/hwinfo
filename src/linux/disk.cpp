@@ -12,6 +12,7 @@
 
 #include <fstream>
 #include <regex>
+#include <sstream>
 #include <vector>
 
 namespace {

@@ -4,10 +4,10 @@
 #include <hwinfo/platform.h>
 
 #ifdef HWINFO_WINDOWS
-#include <Windows.h>
 #include <hwinfo/ram.h>
 #include <hwinfo/utils/stringutils.h>
 #include <hwinfo/utils/wmi_wrapper.h>
+#include <windows.h>
 
 #include <string>
 #include <vector>
