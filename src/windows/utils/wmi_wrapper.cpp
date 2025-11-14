@@ -14,14 +14,14 @@ _WMI::_WMI() {
   auto res = CoInitializeSecurity(nullptr, -1, nullptr, nullptr, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE,
                                   nullptr, EOAC_NONE, nullptr);
   res &= CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-  res &= CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&locator);
-  if (locator) {
-    res &= locator->ConnectServer(_bstr_t("ROOT\\CIMV2"), nullptr, nullptr, nullptr, 0, nullptr, nullptr, &service);
-    if (service)
+  res &= CoCreateInstance(__uuidof(WbemLocator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&locator));
+  if (SUCCEEDED(res)) {
+    res &= locator->ConnectServer(bstr_t(L"ROOT\\CIMV2"), nullptr, nullptr, nullptr, 0, nullptr, nullptr, &service);
+    if (SUCCEEDED(res))
       res &= CoSetProxyBlanket(service, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, nullptr, RPC_C_AUTHN_LEVEL_CALL,
                                RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, EOAC_NONE);
   }
-  if (!SUCCEEDED(res)) {
+  if (FAILED(res)) {
     throw std::runtime_error("error initializing WMI");
   }
 }
