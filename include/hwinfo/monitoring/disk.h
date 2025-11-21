@@ -14,13 +14,13 @@ struct Data {
 };
 
 // Returns free bytes for the given mount point path.
-std::uint64_t get_free_size(const std::string& mount_point);
+HWINFO_API std::uint64_t get_free_size(const std::string& mount_point);
 
 // Returns the sum of free bytes across all mount points of the given disk.
-std::uint64_t get_free_size(const Disk& disk);
+HWINFO_API std::uint64_t get_free_size(const Disk& disk);
 
 // Fetches a Data snapshot for a single mount point.
-Data fetch(const std::string& mount_point);
+HWINFO_API Data fetch(const std::string& mount_point);
 
 using Monitor = hwinfo::monitoring::Monitor<Data>;
 
