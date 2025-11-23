@@ -31,7 +31,7 @@ if (HWINFO_BATTERY)
 
     install(TARGETS hwinfo_battery
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/battery.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
@@ -63,7 +63,7 @@ if (HWINFO_CPU)
 
     install(TARGETS hwinfo_cpu
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/cpu.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
@@ -98,7 +98,7 @@ if (HWINFO_DISK)
 
     install(TARGETS hwinfo_disk
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/disk.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
@@ -141,7 +141,7 @@ if (HWINFO_GPU)
 
     install(TARGETS hwinfo_gpu
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/gpu.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
@@ -179,7 +179,7 @@ if (HWINFO_MAINBOARD)
 
     install(TARGETS hwinfo_mainboard
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/mainboard.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
@@ -213,7 +213,7 @@ if (HWINFO_OS)
 
     install(TARGETS hwinfo_os
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/os.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
@@ -245,7 +245,7 @@ if (HWINFO_RAM)
 
     install(TARGETS hwinfo_ram
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
 
@@ -280,7 +280,7 @@ if (HWINFO_NETWORK)
 
     install(TARGETS hwinfo_network
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/network.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
@@ -291,7 +291,7 @@ install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/platform.h ${HWINFO_INCLUDE_DIR}/hwin
 install(DIRECTORY ${HWINFO_INCLUDE_DIR}/hwinfo/utils DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 install(TARGETS hwinfo
         EXPORT lfreist-hwinfoTargets
-        LIBRARY DESTINATION lib
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
 )
