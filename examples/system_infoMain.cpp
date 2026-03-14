@@ -36,14 +36,14 @@ int main(int argc, char** argv) {
         cpu.id(), "vendor:", cpu.vendor(), "model:", cpu.modelName(), "physical cores:", cpu.numPhysicalCores(),
         "logical cores:", cpu.numLogicalCores(), "max frequency:", cpu.maxClockSpeed_MHz(),
         "regular frequency:", cpu.regularClockSpeed_MHz(),
-        "cache size [MiB]:", unit_prefix_to(cpu.L1CacheSize_Bytes(), IECPrefix::MEBI),
-        unit_prefix_to(cpu.L2CacheSize_Bytes(), IECPrefix::MEBI),
-        unit_prefix_to(cpu.L3CacheSize_Bytes(), IECPrefix::MEBI));
+        "cache size [KiB]:", unit_prefix_to(cpu.L1CacheSize_Bytes(), IECPrefix::KIBI),
+        unit_prefix_to(cpu.L2CacheSize_Bytes(), IECPrefix::KIBI),
+        unit_prefix_to(cpu.L3CacheSize_Bytes(), IECPrefix::KIBI));
 
     std::vector<double> threads_utility = cpu.threadsUtilisation();
     std::vector<int64_t> threads_speed = cpu.currentClockSpeed_MHz();
     for (size_t thread_id = 0; thread_id != threads_utility.size(); ++thread_id) {
-      fmt::print("{:<20} Thread {}: {} MHz ({}%)\n", " ", thread_id, threads_speed[thread_id],
+      fmt::print("{:<20} Thread {}: {} MHz ({:.2f}%)\n", " ", thread_id, threads_speed[thread_id],
                  threads_utility[thread_id] * 100.f);
     }
     // fmt::print("{}\n", cpu.currentTemperature_Celsius());
