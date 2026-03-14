@@ -34,9 +34,12 @@
 #define HWINFO_API
 #endif
 
-// macro definitions for C++ > 11 features if compiled with C++ > 11
-#if __cplusplus >= 201703L
+#if defined(__has_cpp_attribute)
+#if __has_cpp_attribute(nodiscard)
 #define HWI_NODISCARD [[nodiscard]]
-#else
+#endif
+#endif
+
+#ifndef HWI_NODISCARD
 #define HWI_NODISCARD
 #endif

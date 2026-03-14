@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace utils {
+namespace hwinfo::utils {
 
 template <typename T>
 T get_value(const std::vector<T>& data, size_t index);
@@ -30,4 +30,18 @@ inline int64_t get_value<int64_t>(const std::vector<int64_t>& data, size_t index
   }
 }
 
-}  // namespace utils
+inline bool is_power_of_two(unsigned int x) { return x > 0 && (x & (x - 1)) == 0; }
+
+template <typename T>
+inline T round_to_next_power_of_2(T val) {
+  if (val == 0) return 0;
+  if (is_power_of_two(val)) return val;
+  val |= val >> 1;
+  val |= val >> 2;
+  val |= val >> 4;
+  val |= val >> 8;
+  val |= val >> 16;
+  return val + 1;
+}
+
+}  // namespace hwinfo::utils

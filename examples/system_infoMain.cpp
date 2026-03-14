@@ -9,7 +9,7 @@
 #include <cassert>
 #include <vector>
 
-using hwinfo::unit::bytes_to_MiB;
+using namespace hwinfo::unit;
 
 int main(int argc, char** argv) {
   fmt::print(
@@ -24,115 +24,94 @@ int main(int argc, char** argv) {
       "----------------------------------- CPU ------------------------------------\n");
   const auto cpus = hwinfo::getAllCPUs();
   for (const auto& cpu : cpus) {
-    // clang-format off
-    fmt::print("Socket {}:\n"
-               "{:<20} {}\n"
-               "{:<20} {}\n"
-               "{:<20} {}\n"
-               "{:<20} {}\n"
-               "{:<20} {}\n"
-               "{:<20} {}\n"
-               "{:<20} L1: {}, L2: {}, L3: {}\n",
-               cpu.id(),
-               "vendor:", cpu.vendor(),
-               "model:", cpu.modelName(),
-               "physical cores:", cpu.numPhysicalCores(),
-               "logical cores:", cpu.numLogicalCores(),
-               "max frequency:", cpu.maxClockSpeed_MHz(),
-               "regular frequency:", cpu.regularClockSpeed_MHz(),
-               "cache size:", cpu.L1CacheSize_Bytes(), cpu.L2CacheSize_Bytes(), cpu.L3CacheSize_Bytes());
-    // clang-format on
+    fmt::print(
+        "Socket {}:\n"
+        "{:<20} {}\n"
+        "{:<20} {}\n"
+        "{:<20} {}\n"
+        "{:<20} {}\n"
+        "{:<20} {}\n"
+        "{:<20} {}\n"
+        "{:<20} L1: {}, L2: {}, L3: {}\n",
+        cpu.id(), "vendor:", cpu.vendor(), "model:", cpu.modelName(), "physical cores:", cpu.numPhysicalCores(),
+        "logical cores:", cpu.numLogicalCores(), "max frequency:", cpu.maxClockSpeed_MHz(),
+        "regular frequency:", cpu.regularClockSpeed_MHz(),
+        "cache size [MiB]:", unit_prefix_to(cpu.L1CacheSize_Bytes(), IECPrefix::MEBI),
+        unit_prefix_to(cpu.L2CacheSize_Bytes(), IECPrefix::MEBI),
+        unit_prefix_to(cpu.L3CacheSize_Bytes(), IECPrefix::MEBI));
 
     std::vector<double> threads_utility = cpu.threadsUtilisation();
     std::vector<int64_t> threads_speed = cpu.currentClockSpeed_MHz();
-    assert((threads_utility.size() == threads_speed.size()));
     for (size_t thread_id = 0; thread_id != threads_utility.size(); ++thread_id) {
       fmt::print("{:<20} Thread {}: {} MHz ({}%)\n", " ", thread_id, threads_speed[thread_id],
-                 threads_utility[thread_id] * 100);
+                 threads_utility[thread_id] * 100.f);
     }
     // fmt::print("{}\n", cpu.currentTemperature_Celsius());
   }
 
   hwinfo::OS os;
-  // clang-format off
-  fmt::print("----------------------------------- OS ------------------------------------\n"
-             "{:<20} {}\n"
-             "{:<20} {}\n"
-             "{:<20} {}\n"
-             "{:<20} {}\n"
-             "{:<20} {}\n",
-             "Operating System:", os.name(),
-             "version:", os.version(),
-             "kernel:", os.kernel(),
-             "architecture:", os.is32bit() ? "32 bit" : "64 bit",
-             "endianess:", os.isLittleEndian() ? "little endian" : "big endian");
-  // clang-format on
+  fmt::print(
+      "----------------------------------- OS ------------------------------------\n"
+      "{:<20} {}\n"
+      "{:<20} {}\n"
+      "{:<20} {}\n"
+      "{:<20} {}\n"
+      "{:<20} {}\n",
+      "Operating System:", os.name(), "version:", os.version(), "kernel:", os.kernel(),
+      "architecture:", os.is32bit() ? "32 bit" : "64 bit",
+      "endianess:", os.isLittleEndian() ? "little endian" : "big endian");
 
   auto gpus = hwinfo::getAllGPUs();
   fmt::print("----------------------------------- GPU -----------------------------------\n");
   for (const auto& gpu : gpus) {
-    // clang-format off
-    fmt::print("GPU {}:\n"
-                "{:<20} {}\n"
-                "{:<20} {}\n"
-                "{:<20} {}\n"
-                "{:<20} {}\n"
-                "{:<20} {}\n"
-                "{:<20} {}\n"
-                "{:<20} {}\n"
-                "{:<20} {}\n",
-                gpu.id(),
-                "vendor:", gpu.vendor(),
-                "model:", gpu.name(),
-                "driverVersion:", gpu.driverVersion(),
-                "memory [MiB]:", bytes_to_MiB(gpu.memory_Bytes()),
-                "frequency:", gpu.frequency_MHz(),
-                "cores:", gpu.num_cores(),
-                "vendor_id:", gpu.vendor_id(),
-                "device_id:", gpu.device_id());
-    // clang-format on
+    fmt::print(
+        "GPU {}:\n"
+        "{:<20} {}\n"
+        "{:<20} {}\n"
+        "{:<20} {}\n"
+        "{:<20} {:.2f}\n"
+        "{:<20} {}\n"
+        "{:<20} {}\n"
+        "{:<20} {}\n"
+        "{:<20} {}\n",
+        gpu.id(), "vendor:", gpu.vendor(), "model:", gpu.name(), "driverVersion:", gpu.driverVersion(),
+        "memory [GiB]:", unit_prefix_to(gpu.memory_Bytes(), IECPrefix::GIBI), "frequency:", gpu.frequency_MHz(),
+        "cores:", gpu.num_cores(), "vendor_id:", gpu.vendor_id(), "device_id:", gpu.device_id());
   }
 
   hwinfo::Memory memory;
-  // clang-format off
-  fmt::print("----------------------------------- RAM -----------------------------------\n"
-             "{:<20} {}\n"
-             "{:<20} {}\n"
-             "{:<20} {}\n",
-             "size [MiB]:", bytes_to_MiB(memory.total_Bytes()),
-             "free [MiB]:", bytes_to_MiB(memory.free_Bytes()),
-             "available [MiB]:", bytes_to_MiB(memory.available_Bytes()));
-  // clang-format on
+  std::int64_t i = memory.total_Bytes();
+  fmt::print(
+      "----------------------------------- RAM -----------------------------------\n"
+      "{:<20} {:.2f}\n"
+      "{:<20} {:.2f}\n"
+      "{:<20} {:.2f}\n",
+      "size [GiB]:", unit_prefix_to(i, IECPrefix::GIBI),
+      "free [GiB]:", unit_prefix_to(memory.free_Bytes(), IECPrefix::GIBI),
+      "available [GiB]:", unit_prefix_to(memory.available_Bytes(), IECPrefix::GIBI));
 
   for (const auto& module : memory.modules()) {
-    // clang-format off
-    fmt::print("RAM {}:\n"
-                "{:<20} {}\n"
-                "{:<20} {}\n"
-                "{:<20} {}\n"
-                "{:<20} {}\n"
-                "{:<20} {}\n",
-                module.id,
-                "vendor:", module.vendor,
-                "model:", module.model,
-                "name:", module.name,
-                "serial-number:", module.serial_number,
-                "Frequency [MHz]:", module.frequency_Hz == -1 ? -1 : static_cast<double>(module.frequency_Hz) / 1e6);
-    // clang-format on
+    fmt::print(
+        "RAM {}:\n"
+        "{:<20} {}\n"
+        "{:<20} {}\n"
+        "{:<20} {}\n"
+        "{:<20} {}\n"
+        "{:<20} {:.2f}\n",
+        module.id, "vendor:", module.vendor, "model:", module.model, "name:", module.name,
+        "serial-number:", module.serial_number,
+        "Frequency [MHz]:", module.frequency_Hz == -1 ? -1. : unit_prefix_to(module.frequency_Hz, SiPrefix::MEGA));
   }
 
   hwinfo::MainBoard main_board;
-  // clang-format off
-  fmt::print("------------------------------- Main Board --------------------------------\n"
-             "{:<20} {}\n"
-             "{:<20} {}\n"
-             "{:<20} {}\n"
-             "{:<20} {}\n",
-             "vendor:", main_board.vendor(),
-             "name:", main_board.name(),
-             "version:", main_board.version(),
-             "serial-number:", main_board.serialNumber());
-  // clang-format on
+  fmt::print(
+      "------------------------------- Main Board --------------------------------\n"
+      "{:<20} {}\n"
+      "{:<20} {}\n"
+      "{:<20} {}\n"
+      "{:<20} {}\n",
+      "vendor:", main_board.vendor(), "name:", main_board.name(), "version:", main_board.version(),
+      "serial-number:", main_board.serialNumber());
 
   std::vector<hwinfo::Battery> batteries = hwinfo::getAllBatteries();
 
@@ -140,20 +119,16 @@ int main(int argc, char** argv) {
   if (!batteries.empty()) {
     int battery_counter = 0;
     for (auto& battery : batteries) {
-      // clang-format off
-      fmt::print("Battery {}:\n"
-                 "{:<20} {}\n"
-                 "{:<20} {}\n"
-                 "{:<20} {}\n"
-                 "{:<20} {}\n"
-                 "{:<20} {}\n",
-                 battery_counter++,
-                 "vendor:", battery.vendor(),
-                 "model:", battery.model(),
-                 "serial-number:", battery.serialNumber(),
-                 "charging:", battery.charging() ? "yes" : "no",
-                 "capacity:", battery.capacity());
-      // clang-format on
+      fmt::print(
+          "Battery {}:\n"
+          "{:<20} {}\n"
+          "{:<20} {}\n"
+          "{:<20} {}\n"
+          "{:<20} {}\n"
+          "{:<20} {:.2f}\n",
+          battery_counter++, "vendor:", battery.vendor(), "model:", battery.model(),
+          "serial-number:", battery.serialNumber(), "charging:", battery.charging() ? "yes" : "no",
+          "capacity:", battery.capacity());
     }
   } else {
     fmt::print("No Batteries installed or detected\n");
@@ -164,22 +139,18 @@ int main(int argc, char** argv) {
   if (!disks.empty()) {
     int disk_counter = 0;
     for (const auto& disk : disks) {
-      // clang-format off
-      fmt::print("Disk {}:\n"
-                 "{:<20} {}\n"
-                 "{:<20} {}\n"
-                 "{:<20} {}\n"
-                 "{:<20} {}\n"
-                 "{:<20} {}\n"
-                 "{:<20} {}\n",
-                 disk_counter++,
-                 "vendor:", disk.vendor(),
-                 "model:", disk.model(),
-                 "serial-number:", disk.serialNumber(),
-                 "size:", disk.size_Bytes(),
-                 "free:", disk.free_size_Bytes(),
-                 "volumes:", fmt::join(disk.volumes(), ", "));
-      // clang-format on
+      fmt::print(
+          "Disk {}:\n"
+          "{:<20} {}\n"
+          "{:<20} {}\n"
+          "{:<20} {}\n"
+          "{:<20} {:.2f}\n"
+          "{:<20} {:.2f}\n"
+          "{:<20} {}\n",
+          disk_counter++, "vendor:", disk.vendor(), "model:", disk.model(), "serial-number:", disk.serialNumber(),
+          "size [GiB]:", unit_prefix_to(disk.size_Bytes(), IECPrefix::GIBI),
+          "free [GiB]:", unit_prefix_to(disk.free_size_Bytes(), IECPrefix::GIBI),
+          "volumes:", fmt::join(disk.volumes(), ", "));
     }
   } else {
     fmt::print("No Disks installed or detected\n");
@@ -190,8 +161,7 @@ int main(int argc, char** argv) {
   if (!networks.empty()) {
     int network_counter = 0;
     for (const auto& network : networks) {
-      // clang-format off
-      if (network.ip4().size() > 0 || network.ip6().size() > 0) {
+      if (!network.ip4().empty() || !network.ip6().empty()) {
         fmt::print(
             "Network {}:\n"
             "{:<20} {}\n"
@@ -199,14 +169,9 @@ int main(int argc, char** argv) {
             "{:<20} {}\n"
             "{:<20} {}\n"
             "{:<20} {}\n",
-            network_counter++,
-            "description:", network.description(),
-            "interface index:", network.interfaceIndex(),
-            "mac:", network.mac(),
-            "ipv4:", network.ip4(),
-            "ipv6:", network.ip6());
+            network_counter++, "description:", network.description(), "interface index:", network.interfaceIndex(),
+            "mac:", network.mac(), "ipv4:", network.ip4(), "ipv6:", network.ip6());
       }
-      // clang-format on
     }
   } else {
     fmt::print("No Networks installed or detected\n");
