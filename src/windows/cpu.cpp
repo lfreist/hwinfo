@@ -39,7 +39,7 @@ std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
     return result;
   }
   for (auto& v : data) {
-    double performance = std::stod(v) / 100;
+    double performance = std::stod(v) / 100.f;
     result.push_back(static_cast<int64_t>(static_cast<double>(_maxClockSpeed_MHz) * performance));
   }
   return result;
@@ -47,7 +47,7 @@ std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
 
 double CPU::currentUtilisation() const {
   auto res = utils::WMI::query<std::string>(L"Win32_PerfFormattedData_Counters_ProcessorInformation",
-                                            L"PercentProcessorUtility", L"Name=" + std::to_wstring(0) + L",_Total");
+                                            L"PercentProcessorUtility", L"Name='" + std::to_wstring(_id) + L",_Total'");
   if (res.empty()) {
     return -1.f;
   }
@@ -68,20 +68,18 @@ double CPU::threadUtilisation(int thread_id) const {
 }
 
 std::vector<double> CPU::threadsUtilisation() const {
-  std::vector<double> thread_utility;
+  std::vector<double> thread_utility(_numLogicalCores, -1.f);
   thread_utility.reserve(_numLogicalCores);
   auto data = utils::WMI::query<std::string>(L"Win32_PerfFormattedData_Counters_ProcessorInformation",
                                              L"PercentProcessorUtility");
   if (data.empty()) {
-    thread_utility.resize(_numLogicalCores, -1.f);
     return thread_utility;
   }
-  for (const auto& v : data) {
-    if (v.empty()) {
-      thread_utility.push_back(-1.f);
-    } else {
-      thread_utility.push_back(std::stod(v) / 100.f);
+  for ( std::size_t i = 0; i < thread_utility.size() && i < data.size(); ++i) {
+    if (data[i].empty()) {
+      continue;
     }
+    thread_utility[i] = std::stod(data[i]) / 100.f;
   }
   return thread_utility;
 }

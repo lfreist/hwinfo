@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
 
     std::vector<double> threads_utility = cpu.threadsUtilisation();
     std::vector<int64_t> threads_speed = cpu.currentClockSpeed_MHz();
-    fmt::print("Thread Utilisation:\n");
+    fmt::print("{:<20}: ({:.2f}%)\n", "Thread Utilisation", cpu.currentUtilisation());
     for (size_t thread_id = 0; thread_id != threads_utility.size(); ++thread_id) {
       fmt::print("{:<20}: {} MHz ({:.2f}%)\n", fmt::format("  Thread {:>2}", thread_id), threads_speed[thread_id],
                  threads_utility[thread_id] * 100.f);
