@@ -35,8 +35,10 @@ int main(int argc, char** argv) {
         "{:<20} L1: {}, L2: {}, L3: {}\n",
         cpu.id(), "vendor:", cpu.vendor(), "model:", cpu.modelName(), "physical cores:", cpu.numPhysicalCores(),
         "logical cores:", cpu.numLogicalCores(), "max frequency:", cpu.maxClockSpeed_MHz(),
-        "regular frequency:", cpu.regularClockSpeed_MHz(), "cache size [MiB]:", unit_prefix_to(cpu.L1CacheSize_Bytes(), IECPrefix::MEBI),
-        unit_prefix_to(cpu.L2CacheSize_Bytes(), IECPrefix::MEBI), unit_prefix_to(cpu.L3CacheSize_Bytes(), IECPrefix::MEBI));
+        "regular frequency:", cpu.regularClockSpeed_MHz(),
+        "cache size [MiB]:", unit_prefix_to(cpu.L1CacheSize_Bytes(), IECPrefix::MEBI),
+        unit_prefix_to(cpu.L2CacheSize_Bytes(), IECPrefix::MEBI),
+        unit_prefix_to(cpu.L3CacheSize_Bytes(), IECPrefix::MEBI));
 
     std::vector<double> threads_utility = cpu.threadsUtilisation();
     std::vector<int64_t> threads_speed = cpu.currentClockSpeed_MHz();
@@ -146,7 +148,9 @@ int main(int argc, char** argv) {
           "{:<20} {:.2f}\n"
           "{:<20} {}\n",
           disk_counter++, "vendor:", disk.vendor(), "model:", disk.model(), "serial-number:", disk.serialNumber(),
-          "size [GiB]:", unit_prefix_to(disk.size_Bytes(), IECPrefix::GIBI), "free [GiB]:", unit_prefix_to(disk.free_size_Bytes(), IECPrefix::GIBI), "volumes:", fmt::join(disk.volumes(), ", "));
+          "size [GiB]:", unit_prefix_to(disk.size_Bytes(), IECPrefix::GIBI),
+          "free [GiB]:", unit_prefix_to(disk.free_size_Bytes(), IECPrefix::GIBI),
+          "volumes:", fmt::join(disk.volumes(), ", "));
     }
   } else {
     fmt::print("No Disks installed or detected\n");
