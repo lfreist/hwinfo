@@ -20,19 +20,19 @@ int main(int argc, char** argv) {
       "Thanks for using hwinfo!\n\n");
 
   fmt::print(
-      "Hardware Report:\n\n"
+      "Hardware Report:\n"
       "----------------------------------- CPU ------------------------------------\n");
   const auto cpus = hwinfo::getAllCPUs();
   for (const auto& cpu : cpus) {
     fmt::print(
         "Socket {}:\n"
-        "{:<20} {}\n"
-        "{:<20} {}\n"
-        "{:<20} {}\n"
-        "{:<20} {}\n"
-        "{:<20} {}\n"
-        "{:<20} {}\n"
-        "{:<20} L1: {}, L2: {}, L3: {}\n",
+        "  {:<20} {}\n"
+        "  {:<20} {}\n"
+        "  {:<20} {}\n"
+        "  {:<20} {}\n"
+        "  {:<20} {}\n"
+        "  {:<20} {}\n"
+        "  {:<20} L1: {}, L2: {}, L3: {}\n",
         cpu.id(), "vendor:", cpu.vendor(), "model:", cpu.modelName(), "physical cores:", cpu.numPhysicalCores(),
         "logical cores:", cpu.numLogicalCores(), "max frequency:", cpu.maxClockSpeed_MHz(),
         "regular frequency:", cpu.regularClockSpeed_MHz(),
@@ -42,8 +42,9 @@ int main(int argc, char** argv) {
 
     std::vector<double> threads_utility = cpu.threadsUtilisation();
     std::vector<int64_t> threads_speed = cpu.currentClockSpeed_MHz();
+    fmt::print("Thread Utilisation:\n");
     for (size_t thread_id = 0; thread_id != threads_utility.size(); ++thread_id) {
-      fmt::print("{:<20} Thread {}: {} MHz ({:.2f}%)\n", " ", thread_id, threads_speed[thread_id],
+      fmt::print("{:<20}: {} MHz ({:.2f}%)\n", fmt::format("  Thread {:>2}", thread_id), threads_speed[thread_id],
                  threads_utility[thread_id] * 100.f);
     }
     // fmt::print("{}\n", cpu.currentTemperature_Celsius());
