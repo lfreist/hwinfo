@@ -26,13 +26,13 @@ int main(int argc, char** argv) {
   for (const auto& cpu : cpus) {
     fmt::print(
         "Socket {}:\n"
-        "  {:<20} {}\n"
-        "  {:<20} {}\n"
-        "  {:<20} {}\n"
-        "  {:<20} {}\n"
-        "  {:<20} {}\n"
-        "  {:<20} {}\n"
-        "  {:<20} L1: {}, L2: {}, L3: {}\n",
+        "  {:<18} {}\n"
+        "  {:<18} {}\n"
+        "  {:<18} {}\n"
+        "  {:<18} {}\n"
+        "  {:<18} {}\n"
+        "  {:<18} {}\n"
+        "  {:<18} L1: {}, L2: {}, L3: {}\n",
         cpu.id(), "vendor:", cpu.vendor(), "model:", cpu.modelName(), "physical cores:", cpu.numPhysicalCores(),
         "logical cores:", cpu.numLogicalCores(), "max frequency:", cpu.maxClockSpeed_MHz(),
         "regular frequency:", cpu.regularClockSpeed_MHz(),
@@ -42,9 +42,9 @@ int main(int argc, char** argv) {
 
     std::vector<double> threads_utility = cpu.threadsUtilisation();
     std::vector<int64_t> threads_speed = cpu.currentClockSpeed_MHz();
-    fmt::print("{:<20}: ({:.2f}%)\n", "Thread Utilisation", cpu.currentUtilisation());
+    fmt::print("  {:<18} ({:.2f}%)\n", "Utilisation:", cpu.currentUtilisation());
     for (size_t thread_id = 0; thread_id != threads_utility.size(); ++thread_id) {
-      fmt::print("{:<20}: {} MHz ({:.2f}%)\n", fmt::format("  Thread {:>2}", thread_id), threads_speed[thread_id],
+      fmt::print("  {:<18} {} MHz ({:.2f}%)\n", fmt::format("  Thread {:>2}", thread_id), threads_speed[thread_id],
                  threads_utility[thread_id] * 100.f);
     }
     // fmt::print("{}\n", cpu.currentTemperature_Celsius());
@@ -67,14 +67,14 @@ int main(int argc, char** argv) {
   for (const auto& gpu : gpus) {
     fmt::print(
         "GPU {}:\n"
-        "{:<20} {}\n"
-        "{:<20} {}\n"
-        "{:<20} {}\n"
-        "{:<20} {:.2f}\n"
-        "{:<20} {}\n"
-        "{:<20} {}\n"
-        "{:<20} {}\n"
-        "{:<20} {}\n",
+        "  {:<18} {}\n"
+        "  {:<18} {}\n"
+        "  {:<18} {}\n"
+        "  {:<18} {:.2f}\n"
+        "  {:<18} {}\n"
+        "  {:<18} {}\n"
+        "  {:<18} {}\n"
+        "  {:<18} {}\n",
         gpu.id(), "vendor:", gpu.vendor(), "model:", gpu.name(), "driverVersion:", gpu.driverVersion(),
         "memory [GiB]:", unit_prefix_to(gpu.memory_Bytes(), IECPrefix::GIBI), "frequency:", gpu.frequency_MHz(),
         "cores:", gpu.num_cores(), "vendor_id:", gpu.vendor_id(), "device_id:", gpu.device_id());
@@ -94,11 +94,11 @@ int main(int argc, char** argv) {
   for (const auto& module : memory.modules()) {
     fmt::print(
         "RAM {}:\n"
-        "{:<20} {}\n"
-        "{:<20} {}\n"
-        "{:<20} {}\n"
-        "{:<20} {}\n"
-        "{:<20} {:.2f}\n",
+        "  {:<18} {}\n"
+        "  {:<18} {}\n"
+        "  {:<18} {}\n"
+        "  {:<18} {}\n"
+        "  {:<18} {:.2f}\n",
         module.id, "vendor:", module.vendor, "model:", module.model, "name:", module.name,
         "serial-number:", module.serial_number,
         "Frequency [MHz]:", module.frequency_Hz == -1 ? -1. : unit_prefix_to(module.frequency_Hz, SiPrefix::MEGA));
@@ -122,11 +122,11 @@ int main(int argc, char** argv) {
     for (auto& battery : batteries) {
       fmt::print(
           "Battery {}:\n"
-          "{:<20} {}\n"
-          "{:<20} {}\n"
-          "{:<20} {}\n"
-          "{:<20} {}\n"
-          "{:<20} {:.2f}\n",
+          "  {:<18} {}\n"
+          "  {:<18} {}\n"
+          "  {:<18} {}\n"
+          "  {:<18} {}\n"
+          "  {:<18} {:.2f}\n",
           battery_counter++, "vendor:", battery.vendor(), "model:", battery.model(),
           "serial-number:", battery.serialNumber(), "charging:", battery.charging() ? "yes" : "no",
           "capacity:", battery.capacity());
@@ -142,12 +142,12 @@ int main(int argc, char** argv) {
     for (const auto& disk : disks) {
       fmt::print(
           "Disk {}:\n"
-          "{:<20} {}\n"
-          "{:<20} {}\n"
-          "{:<20} {}\n"
-          "{:<20} {:.2f}\n"
-          "{:<20} {:.2f}\n"
-          "{:<20} {}\n",
+          "  {:<18} {}\n"
+          "  {:<18} {}\n"
+          "  {:<18} {}\n"
+          "  {:<18} {:.2f}\n"
+          "  {:<18} {:.2f}\n"
+          "  {:<18} {}\n",
           disk_counter++, "vendor:", disk.vendor(), "model:", disk.model(), "serial-number:", disk.serialNumber(),
           "size [GiB]:", unit_prefix_to(disk.size_Bytes(), IECPrefix::GIBI),
           "free [GiB]:", unit_prefix_to(disk.free_size_Bytes(), IECPrefix::GIBI),
@@ -165,11 +165,11 @@ int main(int argc, char** argv) {
       if (!network.ip4().empty() || !network.ip6().empty()) {
         fmt::print(
             "Network {}:\n"
-            "{:<20} {}\n"
-            "{:<20} {}\n"
-            "{:<20} {}\n"
-            "{:<20} {}\n"
-            "{:<20} {}\n",
+            "  {:<18} {}\n"
+            "  {:<18} {}\n"
+            "  {:<18} {}\n"
+            "  {:<18} {}\n"
+            "  {:<18} {}\n",
             network_counter++, "description:", network.description(), "interface index:", network.interfaceIndex(),
             "mac:", network.mac(), "ipv4:", network.ip4(), "ipv6:", network.ip6());
       }
