@@ -20,7 +20,10 @@ const std::string& GPU::driverVersion() const { return _driverVersion; }
 int GPU::id() const { return _id; }
 
 // _____________________________________________________________________________________________________________________
-int64_t GPU::memory_Bytes() const { return _memory_Bytes; }
+int64_t GPU::dedicated_memory_Bytes() const { return _dedicated_memory_Bytes; }
+
+// _____________________________________________________________________________________________________________________
+int64_t GPU::shared_memory_Bytes() const { return _shared_memory_Bytes; }
 
 // _____________________________________________________________________________________________________________________
 int64_t GPU::frequency_MHz() const { return _frequency_MHz; }

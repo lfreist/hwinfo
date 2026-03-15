@@ -27,7 +27,10 @@ enum class IECPrefix : std::uint64_t {
  */
 inline double unit_prefix_to(std::uint64_t value, IECPrefix prefix) {
   if (utils::is_power_of_two(value)) {
-    return static_cast<double>(value / static_cast<std::uint64_t>(prefix));
+    auto res = static_cast<double>(value / static_cast<std::uint64_t>(prefix));
+    if (res != 0) {
+      return res;
+    }
   }
   return static_cast<double>(value) / static_cast<double>(prefix);
 }

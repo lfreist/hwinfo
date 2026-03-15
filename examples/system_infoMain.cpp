@@ -31,21 +31,18 @@ int main(int argc, char** argv) {
         "  {:<18} {}\n"
         "  {:<18} {}\n"
         "  {:<18} {}\n"
-        "  {:<18} {}\n"
-        "  {:<18} L1: {}, L2: {}, L3: {}\n",
+        "  {:<18} {}\n",
         cpu.id(), "vendor:", cpu.vendor(), "model:", cpu.modelName(), "physical cores:", cpu.numPhysicalCores(),
         "logical cores:", cpu.numLogicalCores(), "max frequency:", cpu.maxClockSpeed_MHz(),
-        "regular frequency:", cpu.regularClockSpeed_MHz(),
-        "cache size [KiB]:", unit_prefix_to(cpu.L1CacheSize_Bytes(), IECPrefix::KIBI),
-        unit_prefix_to(cpu.L2CacheSize_Bytes(), IECPrefix::KIBI),
-        unit_prefix_to(cpu.L3CacheSize_Bytes(), IECPrefix::KIBI));
+        "regular frequency:", cpu.regularClockSpeed_MHz());
 
-    std::vector<double> threads_utility = cpu.threadsUtilisation();
-    std::vector<int64_t> threads_speed = cpu.currentClockSpeed_MHz();
-    fmt::print("  {:<18} ({:.2f}%)\n", "Utilisation:", cpu.currentUtilisation());
-    for (size_t thread_id = 0; thread_id != threads_utility.size(); ++thread_id) {
-      fmt::print("  {:<18} {} MHz ({:.2f}%)\n", fmt::format("  Thread {:>2}", thread_id), threads_speed[thread_id],
-                 threads_utility[thread_id] * 100.f);
+    fmt::print("  {:<18}\n", "Cores:");
+    for (const auto& core : cpu.cores()) {
+      fmt::print("  {:<18}\n", fmt::format("  Core {:>2}", core.id));
+      fmt::print("    {:<16}: {}\n", "SMT", core.smt ? "yes" : "no");
+      fmt::print("    {:<16}: L1 {}, L2 {}, L3 {}\n", "Cache [KiB]", unit_prefix_to(core.cache_bytes[0], IECPrefix::KIBI), unit_prefix_to(core.cache_bytes[1], IECPrefix::KIBI), unit_prefix_to(core.cache_bytes[2], IECPrefix::KIBI));
+      fmt::print("    {:<16}: {}\n", "Regular Frequency [MHz]", unit_prefix_to(core.regular_frequency_hz, SiPrefix::MEGA));
+      fmt::print("    {:<16}: {}\n", "Max Frequency [MHz]", unit_prefix_to(core.max_frequency_hz, SiPrefix::MEGA));
     }
     // fmt::print("{}\n", cpu.currentTemperature_Celsius());
   }
@@ -70,13 +67,13 @@ int main(int argc, char** argv) {
         "  {:<18} {}\n"
         "  {:<18} {}\n"
         "  {:<18} {}\n"
-        "  {:<18} {:.2f}\n"
+        "  {:<18} {:.2f} | {:.2f}\n"
         "  {:<18} {}\n"
         "  {:<18} {}\n"
         "  {:<18} {}\n"
         "  {:<18} {}\n",
         gpu.id(), "vendor:", gpu.vendor(), "model:", gpu.name(), "driverVersion:", gpu.driverVersion(),
-        "memory [GiB]:", unit_prefix_to(gpu.memory_Bytes(), IECPrefix::GIBI), "frequency:", gpu.frequency_MHz(),
+        "memory [GiB]:", unit_prefix_to(gpu.dedicated_memory_Bytes(), IECPrefix::GIBI), unit_prefix_to(gpu.shared_memory_Bytes(), IECPrefix::GIBI), "frequency:", gpu.frequency_MHz(),
         "cores:", gpu.num_cores(), "vendor_id:", gpu.vendor_id(), "device_id:", gpu.device_id());
   }
 

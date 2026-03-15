@@ -18,15 +18,6 @@ const std::string& CPU::modelName() const { return _modelName; }
 const std::string& CPU::vendor() const { return _vendor; }
 
 // _____________________________________________________________________________________________________________________
-int64_t CPU::L1CacheSize_Bytes() const { return _L1CacheSize_Bytes; }
-
-// _____________________________________________________________________________________________________________________
-int64_t CPU::L2CacheSize_Bytes() const { return _L2CacheSize_Bytes; }
-
-// _____________________________________________________________________________________________________________________
-int64_t CPU::L3CacheSize_Bytes() const { return _L3CacheSize_Bytes; }
-
-// _____________________________________________________________________________________________________________________
 int CPU::numPhysicalCores() const { return _numPhysicalCores; }
 
 // _____________________________________________________________________________________________________________________
@@ -40,5 +31,8 @@ int64_t CPU::regularClockSpeed_MHz() const { return _regularClockSpeed_MHz; }
 
 // _____________________________________________________________________________________________________________________
 const std::vector<std::string>& CPU::flags() const { return _flags; }
+
+// _____________________________________________________________________________________________________________________
+const std::vector<CPU::Core>& CPU::cores() const { return _cores; }
 
 }  // namespace hwinfo

@@ -20,7 +20,8 @@ class HWINFO_API GPU {
   HWI_NODISCARD const std::string& vendor() const;
   HWI_NODISCARD const std::string& name() const;
   HWI_NODISCARD const std::string& driverVersion() const;
-  HWI_NODISCARD int64_t memory_Bytes() const;
+  HWI_NODISCARD int64_t dedicated_memory_Bytes() const;
+  HWI_NODISCARD int64_t shared_memory_Bytes() const;
   HWI_NODISCARD int64_t frequency_MHz() const;
   HWI_NODISCARD int num_cores() const;
   HWI_NODISCARD int id() const;
@@ -32,7 +33,8 @@ class HWINFO_API GPU {
   std::string _vendor{};
   std::string _name{};
   std::string _driverVersion{};
-  int64_t _memory_Bytes{0};
+  int64_t _dedicated_memory_Bytes{0};
+  int64_t _shared_memory_Bytes{0};
   int64_t _frequency_MHz{0};
   int _num_cores{0};
   int _id{0};
