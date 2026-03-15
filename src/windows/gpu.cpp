@@ -75,7 +75,7 @@ std::vector<GPU> getAllGPUs() {
         gpu._driverVersion = cl_gpu->driver_version();
         gpu._frequency_MHz = static_cast<int64_t>(cl_gpu->clock_frequency_MHz());
         gpu._num_cores = static_cast<int>(cl_gpu->cores());
-        gpu._memory_Bytes = utils::round_to_next_power_of_2(static_cast<int64_t>(cl_gpu->memory_Bytes()));
+        gpu._dedicated_memory_Bytes = cl_gpu->memory_Bytes();
         break;
       }
     }
