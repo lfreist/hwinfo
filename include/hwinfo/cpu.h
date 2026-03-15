@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <map>
 
 using namespace std::chrono_literals;
 
@@ -34,6 +35,11 @@ struct Jiffies {
 #endif
 
 namespace monitor::cpu {
+
+#ifndef HWINFO_WINDOWS
+void init_jiffies();
+static bool jiffies_initialized = false;
+#endif
 
 double utilization(std::chrono::milliseconds sleep = 200ms);
 std::vector<double> core_utilization(std::chrono::milliseconds sleep = 200ms);
@@ -67,10 +73,6 @@ class HWINFO_API CPU {
   HWI_NODISCARD const std::vector<Core>& cores() const;
 
  private:
-#ifndef HWINFO_WINDOWS
-  void init_jiffies() const;
-  mutable bool _jiffies_initialized = false;
-#endif
   CPU() = default;
 
   int _id{-1};

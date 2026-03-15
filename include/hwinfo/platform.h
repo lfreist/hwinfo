@@ -20,6 +20,16 @@
 #define HWINFO_X86
 #endif
 
+#if defined(__arm__) || defined(_M_ARM)
+#define HWINFO_ARM32
+#elif defined(__aarch64__) || defined(_M_ARM64)
+#define HWINFO_AARCH64
+#endif
+
+#if defined(HWINFO_ARM32) || defined(HWINFO_AARCH64)
+#define HWINFO_ARM
+#endif
+
 // dll exports/imports for windows shared libraries
 #ifdef _WIN32
 #ifdef HWINFO_EXPORTS

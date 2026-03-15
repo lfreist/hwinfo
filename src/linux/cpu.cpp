@@ -21,6 +21,13 @@
 
 namespace hwinfo {
 
+inline uint64_t readSysfsUint(const std::string& path) {
+  std::ifstream f(path);
+  uint64_t val = 0;
+  if (f >> val) return val;
+  return 0;
+}
+
 // _____________________________________________________________________________________________________________________
 int64_t getMaxClockSpeed_MHz(const int& core_id) {
   int64_t Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) +
@@ -70,8 +77,20 @@ std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
   return res;
 }
 
+namespace monitor::cpu {
+
 // _____________________________________________________________________________________________________________________
-double CPU::currentUtilisation() const {
+void init_jiffies() {
+  if (!jiffies_initialized) {
+    // Sleep 1 sec just for the start cause the usage needs to have a delta value which is depending on the unix file
+    // read it's just for the init, you don't need to wait if the delta is already created ...
+    std::this_thread::sleep_for(1s);
+    jiffies_initialized = true;
+  }
+}
+
+// _____________________________________________________________________________________________________________________
+double utilization(std::chrono::milliseconds sleep) {
   init_jiffies();
   // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
   //       I will not support it because I only have a 1 socket target device
@@ -92,13 +111,13 @@ double CPU::currentUtilisation() const {
 }
 
 // _____________________________________________________________________________________________________________________
-double CPU::threadUtilisation(int thread_index) const {
+double coreUtilization(int thread_index) {
   init_jiffies();
   // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
   //       I will not support it because I only have a 1 socket target device
   static std::vector<Jiffies> last(0);
   if (last.empty()) {
-    last.resize(_numLogicalCores);
+    last.resize(std::thread::hardware_concurrency());
   }
 
   Jiffies current = filesystem::get_jiffies(thread_index + 1);  // thread_index works only with 1 socket right now
@@ -116,23 +135,15 @@ double CPU::threadUtilisation(int thread_index) const {
 }
 
 // _____________________________________________________________________________________________________________________
-std::vector<double> CPU::threadsUtilisation() const {
-  std::vector<double> thread_utility(CPU::_numLogicalCores);
-  for (int thread_idx = 0; thread_idx < CPU::_numLogicalCores; ++thread_idx) {
-    thread_utility[thread_idx] = threadUtilisation(thread_idx);
+std::vector<double> core_utilization() {
+  std::vector<double> thread_utility(std::thread::hardware_concurrency());
+  for (int thread_idx = 0; thread_idx < thread_utility.size(); ++thread_idx) {
+    thread_utility[thread_idx] = coreUtilization(thread_idx);
   }
   return thread_utility;
 }
 
-// _____________________________________________________________________________________________________________________
-void CPU::init_jiffies() const {
-  if (!_jiffies_initialized) {
-    // Sleep 1 sec just for the start cause the usage needs to have a delta value which is depending on the unix file
-    // read it's just for the init, you don't need to wait if the delta is already created ...
-    std::this_thread::sleep_for(std::chrono::duration<double>(1));
-    _jiffies_initialized = true;
-  }
-}
+}  // namespace monitor::cpu
 
 // CPU Temp -> Works | But requires Im_sensors
 // double CPU::currentTemperature_Celsius() const {
@@ -182,60 +193,159 @@ void CPU::init_jiffies() const {
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
 std::vector<CPU> getAllCPUs() {
-  std::vector<CPU> cpus;
+  std::ifstream file("/proc/cpuinfo");
+  if (!file.is_open()) return {};
 
-  std::ifstream cpuinfo("/proc/cpuinfo");
-  if (!cpuinfo.is_open()) {
-    return {};
-  }
-  std::string file((std::istreambuf_iterator<char>(cpuinfo)), (std::istreambuf_iterator<char>()));
-  cpuinfo.close();
-  auto cpu_blocks_string = utils::split(file, "\n\n");
-  std::map<const std::string, const std::string> cpu_block;
-  int physical_id = -1;
-  bool next_add = false;
-  for (const auto& block : cpu_blocks_string) {
-    CPU cpu;
-    auto lines = utils::split(block, '\n');
-    for (auto& line : lines) {
-      auto line_pairs = utils::split(line, ":");
-      if (line_pairs.size() < 2) {
+  std::map<int, CPU> cpuMap;
+  std::string line;
+
+  // Temporary storage for the "current" logical processor block being parsed
+  std::string fallback_vendor;
+  std::string fallback_model;
+  auto flushBlock = [&]() {
+    if (currentBlock.empty()) return;
+
+    // Determine Physical CPU ID (Default to 0 for single-socket ARM/RISC-V)
+    int physId = 0;
+    if (currentBlock.count("physical id")) {
+      physId = std::stoi(currentBlock["physical id"]);
+    }
+
+    if (cpuMap.find(physId) == cpuMap.end()) {
+      cpuMap.insert({physId, CPU()});
+    }
+    CPU& cpu = cpuMap.at(physId);
+    cpu._id = physId;
+
+    if (cpu._modelName.empty()) {
+      if (currentBlock.count("model name")) {
+        cpu._modelName = currentBlock["model name"];
+      }
+      else if (currentBlock.count("cpu")) {
+        cpu._modelName = currentBlock["cpu"];  // RISC-V
+      }
+      else if (currentBlock.count("Model")) {
+        cpu._modelName = currentBlock["Model"];  // ARM
+      } else {
+        cpu._modelName = fallback_model;  // some ARM only have the "Hardware" entry
+      }
+    }
+
+    if (cpu._vendor.empty()) {
+      if (currentBlock.count("vendor_id")) {
+        cpu._vendor = currentBlock["vendor_id"];
+      }
+      else if (currentBlock.count("CPU implementer")) {
+        cpu._vendor = currentBlock["CPU implementer"];
+      } else {
+        cpu._vendor = fallback_vendor;
+      }
+    }
+
+    // 2. Flags
+    if (cpu._flags.empty()) {
+      std::string fStr = currentBlock.count("flags") ? currentBlock["flags"]
+                                                     : (currentBlock.count("Features")
+                                                            ? currentBlock["Features"]
+                                                            : (currentBlock.count("isa") ? currentBlock["isa"] : ""));
+      std::stringstream ss(fStr);
+      std::string flag;
+      while (ss >> flag) cpu._flags.push_back(flag);
+    }
+
+    // 3. Core Logic
+    int coreId = currentBlock.count("core id")
+                     ? std::stoi(currentBlock["core id"])
+                     : (currentBlock.count("processor") ? std::stoi(currentBlock["processor"]) : 0);
+
+    // Check if we've already added this physical core (handle SMT)
+    auto it = std::find_if(cpu._cores.begin(), cpu._cores.end(),
+                           [coreId](const CPU::Core& c) { return c.id == (uint64_t)coreId; });
+
+    if (it == cpu._cores.end()) {
+      CPU::Core core;
+      core.id = coreId;
+      core.smt = false;  // Default
+
+      // Check SMT via sysfs (more reliable than cpuinfo)
+      std::string threadPath =
+          "/sys/devices/system/cpu/cpu" + currentBlock["processor"] + "/topology/thread_siblings_list";
+      std::ifstream tsf(threadPath);
+      std::string siblings;
+      if (tsf >> siblings && siblings.find_first_of(",-") != std::string::npos) {
+        core.smt = true;
+      }
+
+      // Frequency and Cache from sysfs (Architecture Independent)
+      std::string cpuPath = "/sys/devices/system/cpu/cpu" + currentBlock["processor"];
+      core.max_frequency_hz = readSysfsUint(cpuPath + "/cpufreq/cpuinfo_max_freq") * 1000;
+      core.regular_frequency_hz = readSysfsUint(cpuPath + "/cpufreq/base_frequency") * 1000;
+
+      for (int i = 0; i < 3; ++i) {
+        core.cache_bytes[i] =
+            readSysfsUint(cpuPath + "/cache/index" + std::to_string(i + 1) + "/size") * 1024;  // Simple KB to B
+      }
+
+      cpu._cores.push_back(core);
+    }
+
+    cpu._numLogicalCores++;
+    currentBlock.clear();
+  };
+
+
+  std::vector<std::map<std::string, std::string>> blocks;
+  {
+    auto emplace_block = [&blocks](std::map<std::string, std::string>&& block){
+      blocks.emplace_back(std::move(block));
+    };
+    std::map<std::string, std::string> currentBlock;
+    while (std::getline(file, line)) {
+      if (line.empty()) {
+        if (currentBlock.count("Processor")) {
+          fallback_model = currentBlock["Processor"];
+        } else if (currentBlock.count("Hardware")) {
+          fallback_vendor = currentBlock["Hardware"];
+        }
+        blocks.emplace_back(std::move(currentBlock));
+        currentBlock = {};
         continue;
       }
-      auto name = line_pairs[0];
-      auto value = line_pairs[1];
-      utils::strip(name);
-      utils::strip(value);
-      if (name == "vendor_id") {
-        cpu._vendor = value;
-      } else if (name == "model name") {
-        cpu._modelName = value;
-      } else if (name == "cache size") {
-        cpu._L3CacheSize_Bytes = std::stoi(utils::split(value, " ")[0]) * 1024;
-      } else if (name == "siblings") {
-        cpu._numLogicalCores = std::stoi(value);
-      } else if (name == "cpu cores") {
-        cpu._numPhysicalCores = std::stoi(value);
-      } else if (name == "flags") {
-        cpu._flags = utils::split(value, " ");
-      } else if (name == "physical id") {
-        int tmp_phys_id = std::stoi(value);
-        if (physical_id == tmp_phys_id) {
-          continue;
-        }
-        cpu._id = tmp_phys_id;
-        next_add = true;
+      auto split = utils::split(line, ':');
+      if (split.size() == 2) {
+        std::string key(std::move(split[0]));
+        std::string val(std::move(split[1]));
+        utils::strip(key);
+        utils::strip(val);
+        currentBlock[key] = val;
       }
     }
-    if (next_add) {
-      cpu._maxClockSpeed_MHz = getMaxClockSpeed_MHz(cpu._id);
-      cpu._regularClockSpeed_MHz = getRegularClockSpeed_MHz(cpu._id);
-      next_add = false;
-      physical_id++;
-      cpus.push_back(std::move(cpu));
+    if (not currentBlock.empty()) {
+      if (currentBlock.count("Processor")) {
+        fallback_model = currentBlock["Processor"];
+      } else if (currentBlock.count("Hardware")) {
+        fallback_vendor = currentBlock["Hardware"];
+      }
+      blocks.emplace_back(std::move(currentBlock));
     }
   }
-  return cpus;
+
+  // Finalize CPU-level stats
+  std::vector<CPU> result;
+  for (auto& pair : cpuMap) {
+    pair.second._numPhysicalCores = pair.second._cores.size();
+
+    // Calculate max clock from cores
+    for (const auto& c : pair.second._cores) {
+      pair.second._maxClockSpeed_MHz =
+          std::max(pair.second._maxClockSpeed_MHz, (int64_t)(c.max_frequency_hz / 1000000));
+      pair.second._regularClockSpeed_MHz =
+          std::max(pair.second._regularClockSpeed_MHz, (int64_t)(c.regular_frequency_hz / 1000000));
+    }
+    result.push_back(std::move(pair.second));
+  }
+
+  return result;
 }
 
 }  // namespace hwinfo

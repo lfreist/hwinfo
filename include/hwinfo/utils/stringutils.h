@@ -48,25 +48,13 @@ inline void replaceAll(std::string& input, const char from, const char to) {
  * @param input
  */
 inline void strip(std::string& input) {
-  if (input.empty()) {
-    return;
-  }
-  // optimization for input size == 1
-  if (input.size() == 1) {
-    if (input[0] == ' ' || input[0] == '\t' || input[0] == '\n') {
-      input.clear();
-      return;
-    } else {
-      return;
-    }
-  }
-  size_t start_index = input.find_first_not_of(" \t\n");
-  if (start_index == std::string::npos) {
+  auto start = input.find_first_not_of(" \t\r\n");
+  auto end = input.find_last_not_of(" \t\r\n");
+  if (start == std::string::npos) {
     input.clear();
-    return;
+  } else {
+    input = input.substr(start, end - start + 1);
   }
-  size_t end_index = input.find_last_not_of(" \t\n");
-  input.assign(input.begin() + start_index, input.begin() + end_index + 1);
 }
 
 /**
