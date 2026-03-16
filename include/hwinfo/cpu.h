@@ -17,29 +17,8 @@ using namespace std::chrono_literals;
 
 namespace hwinfo {
 
-#ifdef HWINFO_UNIX
-struct Jiffies {
-  Jiffies() {
-    working = -1;
-    all = -1;
-  }
-
-  Jiffies(int64_t _all, int64_t _working) {
-    all = _all;
-    working = _working;
-  }
-
-  int64_t working;
-  int64_t all;
-};
-#endif
 
 namespace monitor::cpu {
-
-#ifndef HWINFO_WINDOWS
-void init_jiffies();
-static bool jiffies_initialized = false;
-#endif
 
 double utilization(std::chrono::milliseconds sleep = 200ms);
 std::vector<double> core_utilization(std::chrono::milliseconds sleep = 200ms);

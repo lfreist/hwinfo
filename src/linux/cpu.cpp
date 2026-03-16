@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cmath>
 #include <fstream>
+#include <iterator>
 #include <map>
 #include <string>
 #include <thread>
@@ -15,9 +16,64 @@
 
 #include "hwinfo/cpu.h"
 #include "hwinfo/unix/cpu.h"
-#include "hwinfo/utils/filesystem.h"
 #include "hwinfo/utils/stringutils.h"
 #include "hwinfo/utils/unit.h"
+
+struct Jiffies {
+  Jiffies() {
+    working = -1;
+    all = -1;
+  }
+
+  Jiffies(int64_t _all, int64_t _working) {
+    all = _all;
+    working = _working;
+  }
+
+  int64_t working;
+  int64_t all;
+};
+
+namespace {
+
+bool jiffies_initialized = false;
+
+Jiffies get_jiffies(int index) {
+  std::ifstream filestat("/proc/stat");
+  if (!filestat.is_open()) {
+    return {};
+  }
+
+  for (int i = 0; i < index; ++i) {
+    if (!filestat.ignore(std::numeric_limits<std::streamsize>::max(), '\n')) {
+      break;
+    }
+  }
+  std::string line;
+  std::getline(filestat, line);
+
+  std::istringstream iss(line);
+  std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
+
+  const int64_t jiffies_0 = std::stol(results[1]);
+  const int64_t jiffies_1 = std::stol(results[2]);
+  const int64_t jiffies_2 = std::stol(results[3]);
+  const int64_t jiffies_3 = std::stol(results[4]);
+  const int64_t jiffies_4 = std::stol(results[5]);
+  const int64_t jiffies_5 = std::stol(results[6]);
+  const int64_t jiffies_6 = std::stol(results[7]);
+  const int64_t jiffies_7 = std::stol(results[8]);
+  const int64_t jiffies_8 = std::stol(results[9]);
+  const int64_t jiffies_9 = std::stol(results[10]);
+
+  int64_t all = jiffies_0 + jiffies_1 + jiffies_2 + jiffies_3 + jiffies_4 + jiffies_5 + jiffies_6 + jiffies_7 +
+                jiffies_8 + jiffies_9;
+  int64_t working = jiffies_0 + jiffies_1 + jiffies_2;
+
+  return {all, working};
+}
+
+}  // namespace
 
 namespace hwinfo {
 
@@ -54,7 +110,7 @@ inline bool has_smt(const std::string& core_path) {
   std::string path = core_path + "/topology/thread_siblings_list";
   std::ifstream tsf(path);
   std::string siblings;
-  return (tsf >> siblings && siblings.find_first_of(",-") != std::string::npos);
+  return (tsf >> siblings && siblings.find_first_of('-') != std::string::npos);
 }
 
 namespace unix_os::cpu {
@@ -63,9 +119,6 @@ std::map<std::uint32_t, std::map<std::uint32_t, std::map<std::string, std::strin
     const std::string& data) {
   std::vector<std::map<std::string, std::string>> blocks;
   {
-    auto emplace_block = [&blocks](std::map<std::string, std::string>&& block) {
-      blocks.emplace_back(std::move(block));
-    };
     std::string fallback_vendor;
     std::string fallback_model;
     std::vector<std::string> sections = utils::split(data, "\n\n");
@@ -153,7 +206,7 @@ std::map<std::uint32_t, unix_os::cpu::CPU> parse_cpus(
       {  // core information
         unix_os::cpu::CPU::Core& core = cpu.cores[core_id];
         const std::string core_path = "/sys/devices/system/cpu/cpu" + std::to_string(processor_id);
-        core.id = core_id;
+        core.id = processor_id;
         core.smt = has_smt(core_path);
         core.cache_bytes[0] = read_cache_size(core_path + "/cache/index0/size");
         core.cache_bytes[1] = read_cache_size(core_path + "/cache/index1/size");
@@ -175,7 +228,7 @@ std::map<std::uint32_t, unix_os::cpu::CPU> parse_cpus(
   return cpus;
 }
 
-}  // namespace linux_os::cpu
+}  // namespace unix_os::cpu
 
 namespace monitor::cpu {
 
@@ -183,8 +236,8 @@ namespace monitor::cpu {
 std::vector<std::uint64_t> currentClockSpeed_Hz() {
   std::vector<std::uint64_t> res;
   for (int core_id = 0; /* breaks, if i is no valid cpu id */; ++core_id) {
-    std::uint64_t frequency_Hz = readSysfsUint("/sys/devices/system/cpu/cpu" + std::to_string(core_id) +
-                                                              "/cpufreq/scaling_cur_freq");
+    std::uint64_t frequency_Hz =
+        readSysfsUint("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/scaling_cur_freq");
     if (frequency_Hz == std::numeric_limits<std::uint64_t>::max()) {
       break;
     }
@@ -211,7 +264,7 @@ double utilization(std::chrono::milliseconds sleep) {
   //       I will not support it because I only have a 1 socket target device
   static Jiffies last = Jiffies();
 
-  Jiffies current = filesystem::get_jiffies(0);
+  Jiffies current = get_jiffies(0);
 
   auto total_over_period = static_cast<double>(current.all - last.all);
   auto work_over_period = static_cast<double>(current.working - last.working);
@@ -235,7 +288,7 @@ double coreUtilization(int thread_index) {
     last.resize(std::thread::hardware_concurrency());
   }
 
-  Jiffies current = filesystem::get_jiffies(thread_index + 1);  // thread_index works only with 1 socket right now
+  Jiffies current = get_jiffies(thread_index + 1);  // thread_index works only with 1 socket right now
 
   auto total_over_period = static_cast<double>(current.all - last[thread_index].all);
   auto work_over_period = static_cast<double>(current.working - last[thread_index].working);
@@ -325,10 +378,9 @@ std::vector<CPU> getAllCPUs() {
     cpu._id = socket_id;
     cpu._cores.reserve(parsed_cpus.size());
     for (const auto& [core_id, core] : parsed_cpu.cores) {
-      cpu._cores.emplace_back(CPU::Core{core_id,
-                                        CPU::Cache{core.cache_bytes[0], core.cache_bytes[1], core.cache_bytes[2], core.cache_bytes[3]},
-                                        core.regular_frequency_hz,
-                                        core.max_frequency_hz});
+      cpu._cores.emplace_back(CPU::Core{
+          core.id, CPU::Cache{core.cache_bytes[0], core.cache_bytes[1], core.cache_bytes[2], core.cache_bytes[3]},
+          core.regular_frequency_hz, core.max_frequency_hz, core.smt});
 
       cpu._numLogicalCores += core.smt ? 2 : 1;
       cpu._numPhysicalCores += 1;

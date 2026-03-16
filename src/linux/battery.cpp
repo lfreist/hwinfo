@@ -6,13 +6,13 @@
 #ifdef HWINFO_UNIX
 
 #include <fstream>
+#include <filesystem>
 
 #include "hwinfo/battery.h"
-#include "hwinfo/utils/filesystem.h"
 
 namespace hwinfo {
 
-static std::string base_path = "/sys/class/power_supply/";
+static std::filesystem::path base_path("/sys/class/power_supply/");
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
@@ -20,7 +20,7 @@ std::string Battery::getVendor() const {
   if (_id < 0) {
     return "<unknown>";
   }
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "manufacturer");
+  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(_id)) / "manufacturer");
   std::string vendor;
   if (vendor_file.is_open()) {
     getline(vendor_file, vendor);
@@ -34,7 +34,7 @@ std::string Battery::getModel() const {
   if (_id < 0) {
     return "<unknown>";
   }
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "model_name");
+  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(_id)) / "model_name");
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
@@ -48,7 +48,7 @@ std::string Battery::getSerialNumber() const {
   if (_id < 0) {
     return "<unknown>";
   }
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "serial_number");
+  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(_id)) / "serial_number");
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
@@ -62,7 +62,7 @@ std::string Battery::getTechnology() const {
   if (_id < 0) {
     return "<unknown>";
   }
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "technology");
+  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(_id)) / "technology");
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
@@ -76,7 +76,11 @@ uint32_t Battery::getEnergyFull() const {
   if (_id < 0) {
     return 0;
   }
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "energy_full");
+  auto path = std::filesystem::path(base_path / ("BAT" + std::to_string(_id)) / "energy_full");
+  if (!std::filesystem::exists(path)) {
+    path = std::filesystem::path(base_path / ("BAT" + std::to_string(_id)) / "charge_full");
+  }
+  std::ifstream vendor_file(path);
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
@@ -94,8 +98,11 @@ uint32_t Battery::energyNow() const {
   if (_id < 0) {
     return 0;
   }
-  // TODO: might be file charge_now/charge_full
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "energy_now");
+  auto path = std::filesystem::path(base_path / ("BAT" + std::to_string(_id)) / "energy_now");
+  if (!std::filesystem::exists(path)) {
+    path = std::filesystem::path(base_path / ("BAT" + std::to_string(_id)) / "charge_now");
+  }
+  std::ifstream vendor_file(path);
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
@@ -113,7 +120,7 @@ Battery::State Battery::state() const {
   if (_id < 0) {
     return State::UNKNOWN;
   }
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "status");
+  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(_id)) / "status");
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
@@ -127,7 +134,7 @@ Battery::State Battery::state() const {
 std::vector<Battery> getAllBatteries() {
   std::vector<Battery> batteries;
   int8_t id = 0;
-  while (filesystem::exists(base_path + "BAT" + std::to_string(id))) {
+  while (std::filesystem::exists(base_path / ("BAT" + std::to_string(id)))) {
     batteries.emplace_back(id++);
   }
   return batteries;

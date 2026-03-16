@@ -9,7 +9,6 @@
 
 #include <hwinfo/gpu.h>
 #include <hwinfo/utils/PCIMapper.h>
-#include <hwinfo/utils/filesystem.h>
 
 #ifdef USE_OCL
 #include <hwinfo/opencl/device.h>
@@ -18,6 +17,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 namespace hwinfo {
 
@@ -62,16 +62,16 @@ std::vector<GPU> getAllGPUs() {
   while (true) {
     GPU gpu;
     gpu._id = id;
-    std::string path("/sys/class/drm/card" + std::to_string(id) + '/');
-    if (!filesystem::exists(path)) {
+    std::filesystem::path path("/sys/class/drm/card" + std::to_string(id));
+    if (!std::filesystem::exists(path)) {
       if (id > 2) {
         break;
       }
       id++;
       continue;
     }
-    gpu._vendor_id = read_drm_by_path(path + "device/vendor");
-    gpu._device_id = read_drm_by_path(path + "device/device");
+    gpu._vendor_id = read_drm_by_path(path / "device/vendor");
+    gpu._device_id = read_drm_by_path(path / "device/device");
     if (gpu._vendor_id.empty() || gpu._device_id.empty()) {
       id++;
       continue;

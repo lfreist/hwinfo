@@ -6,7 +6,6 @@
 #ifdef HWINFO_UNIX
 
 #include <hwinfo/disk.h>
-#include <hwinfo/utils/filesystem.h>
 #include <hwinfo/utils/stringutils.h>
 #include <sys/statvfs.h>
 
