@@ -5,8 +5,6 @@
 
 #ifdef HWINFO_UNIX
 
-#include <unistd.h>
-
 #include <chrono>
 #include <cmath>
 #include <fstream>
@@ -16,68 +14,185 @@
 #include <vector>
 
 #include "hwinfo/cpu.h"
+#include "hwinfo/unix/cpu.h"
 #include "hwinfo/utils/filesystem.h"
 #include "hwinfo/utils/stringutils.h"
+#include "hwinfo/utils/unit.h"
 
 namespace hwinfo {
 
 inline uint64_t readSysfsUint(const std::string& path) {
   std::ifstream f(path);
   uint64_t val = 0;
-  if (f >> val) return val;
+  if (f >> val) {
+    return val;
+  }
+  return std::numeric_limits<uint64_t>::max();
+}
+
+inline std::uint64_t read_cache_size(const std::string& path) {
+  std::ifstream f(path);
+  if (!f.is_open()) {
+    return 0;
+  }
+  std::uint64_t value;
+  std::string unit;
+  if (f >> value >> unit) {
+    if (unit == "K") {
+      return value * static_cast<std::uint64_t>(unit::IECPrefix::KIBI);
+    } else if (unit == "M") {
+      return value * static_cast<std::uint64_t>(unit::IECPrefix::MEBI);
+    } else if (unit == "G") {
+      return value * static_cast<std::uint64_t>(unit::IECPrefix::GIBI);
+    }
+    return value;
+  }
   return 0;
 }
 
-// _____________________________________________________________________________________________________________________
-int64_t getMaxClockSpeed_MHz(const int& core_id) {
-  int64_t Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) +
-                                                  "/cpufreq/scaling_max_freq");
-  if (Hz > -1) {
-    return Hz / 1000;
-  }
-
-  return -1;
+inline bool has_smt(const std::string& core_path) {
+  std::string path = core_path + "/topology/thread_siblings_list";
+  std::ifstream tsf(path);
+  std::string siblings;
+  return (tsf >> siblings && siblings.find_first_of(",-") != std::string::npos);
 }
 
-// _____________________________________________________________________________________________________________________
-int64_t getRegularClockSpeed_MHz(const int& core_id) {
-  int64_t Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) +
-                                                  "/cpufreq/base_frequency");
-  if (Hz > -1) {
-    return Hz / 1000;
-  }
+namespace unix_os::cpu {
 
-  return -1;
+std::map<std::uint32_t, std::map<std::uint32_t, std::map<std::string, std::string>>> parse_cpuinfo_file(
+    const std::string& data) {
+  std::vector<std::map<std::string, std::string>> blocks;
+  {
+    auto emplace_block = [&blocks](std::map<std::string, std::string>&& block) {
+      blocks.emplace_back(std::move(block));
+    };
+    std::string fallback_vendor;
+    std::string fallback_model;
+    std::vector<std::string> sections = utils::split(data, "\n\n");
+    for (const auto& section : sections) {
+      std::map<std::string, std::string> current_block;
+      for (const auto& line : utils::split(section, "\n")) {
+        std::vector<std::string> pair = utils::split(line, ":");
+        if (pair.size() != 2) {
+          continue;
+        }
+        std::string key = std::move(pair[0]);
+        std::string value = std::move(pair[1]);
+        utils::strip(key);
+        utils::strip(value);
+        current_block[key] = value;
+      }
+      {
+        // On some ARM systems, Processor and Hardware are defined globally for all listed cores
+        if (current_block.count("Processor")) {
+          fallback_model = current_block["Processor"];
+        } else if (current_block.count("Hardware")) {
+          fallback_vendor = current_block["Hardware"];
+        } else if (current_block.count("Model")) {
+          fallback_model = current_block["Model"];
+        }
+      }
+      blocks.emplace_back(std::move(current_block));
+    }
+
+    std::map<std::uint32_t, std::map<std::uint32_t, std::map<std::string, std::string>>> cpus;
+    for (auto& block : blocks) {
+      if (block.count("processor") == 0) {
+        // skip as this block is not an entry for a core
+        continue;
+      }
+      std::uint32_t processor_id = std::stoi(block["processor"]);
+      std::uint32_t physical_id = 0;
+      if (block.count("physical id")) {
+        physical_id = std::stoi(block["physical id"]);
+      }
+      block["fallback_model"] = fallback_model;
+      block["fallback_vendor"] = fallback_vendor;
+      auto& socket = cpus[physical_id];
+      socket[processor_id].insert(std::move_iterator(block.begin()), std::move_iterator(block.end()));
+    }
+    return cpus;
+  }
 }
 
-// _____________________________________________________________________________________________________________________
-int64_t getMinClockSpeed_MHz(const int& core_id) {
-  int64_t Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) +
-                                                  "/cpufreq/scaling_min_freq");
-  if (Hz > -1) {
-    return Hz / 1000;
+std::map<std::uint32_t, unix_os::cpu::CPU> parse_cpus(
+    const std::map<std::uint32_t, std::map<std::uint32_t, std::map<std::string, std::string>>>& sockets) {
+  if (sockets.empty()) {
+    return {};
   }
-
-  return -1;
+  std::map<std::uint32_t, unix_os::cpu::CPU> cpus;
+  for (const auto& [socket_id, processors] : sockets) {
+    unix_os::cpu::CPU cpu;
+    cpu.socket_id = socket_id;
+    for (const auto& [processor_id, processor] : processors) {
+      std::uint32_t core_id;
+      if (processor.count("core id")) {
+        core_id = std::stoi(processor.at("core id"));
+      } else {
+        core_id = processor_id;
+      }
+      if (cpu.cores.count(core_id)) {
+        continue;
+      }
+      {  // CPU information
+        if (processor.count("vendor_id")) {
+          cpu.vendor = processor.at("vendor_id");
+        } else {
+          if (cpu.vendor.empty()) {
+            cpu.vendor = processor.at("fallback_vendor");
+          }
+        }
+        if (processor.count("model name")) {
+          cpu.model = processor.at("model name");
+        } else {
+          if (cpu.model.empty()) {
+            cpu.model = processor.at("fallback_model");
+          }
+        }
+      }
+      {  // core information
+        unix_os::cpu::CPU::Core& core = cpu.cores[core_id];
+        const std::string core_path = "/sys/devices/system/cpu/cpu" + std::to_string(processor_id);
+        core.id = core_id;
+        core.smt = has_smt(core_path);
+        core.cache_bytes[0] = read_cache_size(core_path + "/cache/index0/size");
+        core.cache_bytes[1] = read_cache_size(core_path + "/cache/index1/size");
+        core.cache_bytes[2] = read_cache_size(core_path + "/cache/index2/size");
+        core.cache_bytes[3] = read_cache_size(core_path + "/cache/index3/size");
+        if (processor.count("flags")) {
+          core.flags = utils::split(processor.at("flags"), " ");
+        } else if (processor.count("Features")) {
+          core.flags = utils::split(processor.at("Features"), " ");
+        } else if (processor.count("isa")) {
+          core.flags = utils::split(processor.at("isa"), " ");
+        }
+        core.max_frequency_hz = readSysfsUint(core_path + "/cpufreq/cpuinfo_max_freq");
+        core.regular_frequency_hz = readSysfsUint(core_path + "/cpufreq/base_frequency");
+      }
+    }
+    cpus[socket_id] = std::move(cpu);
+  }
+  return cpus;
 }
 
+}  // namespace linux_os::cpu
+
+namespace monitor::cpu {
+
 // _____________________________________________________________________________________________________________________
-std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
-  std::vector<int64_t> res;
-  res.reserve(numLogicalCores());
+std::vector<std::uint64_t> currentClockSpeed_Hz() {
+  std::vector<std::uint64_t> res;
   for (int core_id = 0; /* breaks, if i is no valid cpu id */; ++core_id) {
-    int64_t frequency_Hz = filesystem::get_specs_by_file_path("/sys/devices/system/cpu/cpu" + std::to_string(core_id) +
+    std::uint64_t frequency_Hz = readSysfsUint("/sys/devices/system/cpu/cpu" + std::to_string(core_id) +
                                                               "/cpufreq/scaling_cur_freq");
-    if (frequency_Hz == -1) {
+    if (frequency_Hz == std::numeric_limits<std::uint64_t>::max()) {
       break;
     }
-    res.push_back(frequency_Hz / 1000);
+    res.push_back(frequency_Hz);
   }
 
   return res;
 }
-
-namespace monitor::cpu {
 
 // _____________________________________________________________________________________________________________________
 void init_jiffies() {
@@ -196,153 +311,32 @@ std::vector<CPU> getAllCPUs() {
   std::ifstream file("/proc/cpuinfo");
   if (!file.is_open()) return {};
 
-  std::map<int, CPU> cpuMap;
-  std::string line;
+  std::string data(std::istreambuf_iterator<char>{file}, {});
 
-  // Temporary storage for the "current" logical processor block being parsed
-  std::string fallback_vendor;
-  std::string fallback_model;
-  auto flushBlock = [&]() {
-    if (currentBlock.empty()) return;
+  auto blocks = unix_os::cpu::parse_cpuinfo_file(data);
+  auto parsed_cpus = unix_os::cpu::parse_cpus(blocks);
 
-    // Determine Physical CPU ID (Default to 0 for single-socket ARM/RISC-V)
-    int physId = 0;
-    if (currentBlock.count("physical id")) {
-      physId = std::stoi(currentBlock["physical id"]);
-    }
-
-    if (cpuMap.find(physId) == cpuMap.end()) {
-      cpuMap.insert({physId, CPU()});
-    }
-    CPU& cpu = cpuMap.at(physId);
-    cpu._id = physId;
-
-    if (cpu._modelName.empty()) {
-      if (currentBlock.count("model name")) {
-        cpu._modelName = currentBlock["model name"];
-      }
-      else if (currentBlock.count("cpu")) {
-        cpu._modelName = currentBlock["cpu"];  // RISC-V
-      }
-      else if (currentBlock.count("Model")) {
-        cpu._modelName = currentBlock["Model"];  // ARM
-      } else {
-        cpu._modelName = fallback_model;  // some ARM only have the "Hardware" entry
-      }
-    }
-
-    if (cpu._vendor.empty()) {
-      if (currentBlock.count("vendor_id")) {
-        cpu._vendor = currentBlock["vendor_id"];
-      }
-      else if (currentBlock.count("CPU implementer")) {
-        cpu._vendor = currentBlock["CPU implementer"];
-      } else {
-        cpu._vendor = fallback_vendor;
-      }
-    }
-
-    // 2. Flags
-    if (cpu._flags.empty()) {
-      std::string fStr = currentBlock.count("flags") ? currentBlock["flags"]
-                                                     : (currentBlock.count("Features")
-                                                            ? currentBlock["Features"]
-                                                            : (currentBlock.count("isa") ? currentBlock["isa"] : ""));
-      std::stringstream ss(fStr);
-      std::string flag;
-      while (ss >> flag) cpu._flags.push_back(flag);
-    }
-
-    // 3. Core Logic
-    int coreId = currentBlock.count("core id")
-                     ? std::stoi(currentBlock["core id"])
-                     : (currentBlock.count("processor") ? std::stoi(currentBlock["processor"]) : 0);
-
-    // Check if we've already added this physical core (handle SMT)
-    auto it = std::find_if(cpu._cores.begin(), cpu._cores.end(),
-                           [coreId](const CPU::Core& c) { return c.id == (uint64_t)coreId; });
-
-    if (it == cpu._cores.end()) {
-      CPU::Core core;
-      core.id = coreId;
-      core.smt = false;  // Default
-
-      // Check SMT via sysfs (more reliable than cpuinfo)
-      std::string threadPath =
-          "/sys/devices/system/cpu/cpu" + currentBlock["processor"] + "/topology/thread_siblings_list";
-      std::ifstream tsf(threadPath);
-      std::string siblings;
-      if (tsf >> siblings && siblings.find_first_of(",-") != std::string::npos) {
-        core.smt = true;
-      }
-
-      // Frequency and Cache from sysfs (Architecture Independent)
-      std::string cpuPath = "/sys/devices/system/cpu/cpu" + currentBlock["processor"];
-      core.max_frequency_hz = readSysfsUint(cpuPath + "/cpufreq/cpuinfo_max_freq") * 1000;
-      core.regular_frequency_hz = readSysfsUint(cpuPath + "/cpufreq/base_frequency") * 1000;
-
-      for (int i = 0; i < 3; ++i) {
-        core.cache_bytes[i] =
-            readSysfsUint(cpuPath + "/cache/index" + std::to_string(i + 1) + "/size") * 1024;  // Simple KB to B
-      }
-
-      cpu._cores.push_back(core);
-    }
-
-    cpu._numLogicalCores++;
-    currentBlock.clear();
-  };
-
-
-  std::vector<std::map<std::string, std::string>> blocks;
-  {
-    auto emplace_block = [&blocks](std::map<std::string, std::string>&& block){
-      blocks.emplace_back(std::move(block));
-    };
-    std::map<std::string, std::string> currentBlock;
-    while (std::getline(file, line)) {
-      if (line.empty()) {
-        if (currentBlock.count("Processor")) {
-          fallback_model = currentBlock["Processor"];
-        } else if (currentBlock.count("Hardware")) {
-          fallback_vendor = currentBlock["Hardware"];
-        }
-        blocks.emplace_back(std::move(currentBlock));
-        currentBlock = {};
-        continue;
-      }
-      auto split = utils::split(line, ':');
-      if (split.size() == 2) {
-        std::string key(std::move(split[0]));
-        std::string val(std::move(split[1]));
-        utils::strip(key);
-        utils::strip(val);
-        currentBlock[key] = val;
-      }
-    }
-    if (not currentBlock.empty()) {
-      if (currentBlock.count("Processor")) {
-        fallback_model = currentBlock["Processor"];
-      } else if (currentBlock.count("Hardware")) {
-        fallback_vendor = currentBlock["Hardware"];
-      }
-      blocks.emplace_back(std::move(currentBlock));
-    }
-  }
-
-  // Finalize CPU-level stats
   std::vector<CPU> result;
-  for (auto& pair : cpuMap) {
-    pair.second._numPhysicalCores = pair.second._cores.size();
+  result.reserve(parsed_cpus.size());
+  for (const auto& [socket_id, parsed_cpu] : parsed_cpus) {
+    CPU cpu;
+    cpu._vendor = parsed_cpu.vendor;
+    cpu._modelName = parsed_cpu.model;
+    cpu._id = socket_id;
+    cpu._cores.reserve(parsed_cpus.size());
+    for (const auto& [core_id, core] : parsed_cpu.cores) {
+      cpu._cores.emplace_back(CPU::Core{core_id,
+                                        CPU::Cache{core.cache_bytes[0], core.cache_bytes[1], core.cache_bytes[2], core.cache_bytes[3]},
+                                        core.regular_frequency_hz,
+                                        core.max_frequency_hz});
 
-    // Calculate max clock from cores
-    for (const auto& c : pair.second._cores) {
-      pair.second._maxClockSpeed_MHz =
-          std::max(pair.second._maxClockSpeed_MHz, (int64_t)(c.max_frequency_hz / 1000000));
-      pair.second._regularClockSpeed_MHz =
-          std::max(pair.second._regularClockSpeed_MHz, (int64_t)(c.regular_frequency_hz / 1000000));
+      cpu._numLogicalCores += core.smt ? 2 : 1;
+      cpu._numPhysicalCores += 1;
     }
-    result.push_back(std::move(pair.second));
+    if (!parsed_cpu.cores.empty()) {
+      cpu._flags = parsed_cpu.cores.begin()->second.flags;
+    }
+    result.emplace_back(std::move(cpu));
   }
 
   return result;

@@ -1,178 +1,153 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include <fmt/format.h>
-#include <fmt/ranges.h>
 #include <hwinfo/hwinfo.h>
 #include <hwinfo/utils/unit.h>
+#include <hwinfo/utils/stringutils.h>
 
-#include <cassert>
+#include <iomanip>
+#include <iostream>
 #include <vector>
 
 using namespace hwinfo::unit;
 
 int main(int argc, char** argv) {
-  fmt::print(
-      "hwinfo is an open source, MIT licensed project that implements a platform independent "
-      "hardware and system information gathering API for C++.\n\n"
-      "If you face any issues, find bugs or if your platform is not supported yet, do not hesitate to create "
-      "a ticket at https://github.com/lfreist/hwinfo/issues.\n\n"
-      "Thanks for using hwinfo!\n\n");
+  std::cout << "hwinfo is an open source, MIT licensed project that implements a platform independent "
+               "hardware and system information gathering API for C++.\n\n"
+               "If you face any issues, find bugs or if your platform is not supported yet, do not hesitate to create "
+               "a ticket at https://github.com/lfreist/hwinfo/issues.\n"
+            << std::endl;
 
-  fmt::print(
-      "Hardware Report:\n"
-      "----------------------------------- CPU ------------------------------------\n");
+  std::cout << "Hardware Report:\n"
+            << "----------------------------------- CPU ------------------------------------\n";
   const auto cpus = hwinfo::getAllCPUs();
   for (const auto& cpu : cpus) {
-    fmt::print(
-        "Socket {}:\n"
-        "  {:<18} {}\n"
-        "  {:<18} {}\n"
-        "  {:<18} {}\n"
-        "  {:<18} {}\n"
-        "  {:<18} {}\n"
-        "  {:<18} {}\n",
-        cpu.id(), "vendor:", cpu.vendor(), "model:", cpu.modelName(), "physical cores:", cpu.numPhysicalCores(),
-        "logical cores:", cpu.numLogicalCores(), "max frequency:", cpu.maxClockSpeed_MHz(),
-        "regular frequency:", cpu.regularClockSpeed_MHz());
-
-    fmt::print("  {:<18}\n", "Cores:");
+    std::cout << "Socket " << cpu.id() << "\n"
+              << std::left << std::setw(20) << " vendor: " << cpu.vendor() << "\n"
+              << std::left << std::setw(20) << " model: " << cpu.modelName() << "\n"
+              << std::left << std::setw(20) << " physical cores: " << cpu.numPhysicalCores() << "\n"
+              << std::left << std::setw(20) << " logical cores: " << cpu.numLogicalCores() << "\n"
+              << std::left << std::setw(20) << " cores: " << cpu.numPhysicalCores() << " (" << cpu.numLogicalCores()
+              << ")\n";
     for (const auto& core : cpu.cores()) {
-      fmt::print("  {:<18}\n", fmt::format("  Core {:>2}", core.id));
-      fmt::print("    {:<16}: {}\n", "SMT", core.smt ? "yes" : "no");
-      fmt::print("    {:<16}: L1 {}, L2 {}, L3 {}\n", "Cache [KiB]", unit_prefix_to(core.cache_bytes[0], IECPrefix::KIBI), unit_prefix_to(core.cache_bytes[1], IECPrefix::KIBI), unit_prefix_to(core.cache_bytes[2], IECPrefix::KIBI));
-      fmt::print("    {:<16}: {}\n", "Regular Frequency [MHz]", unit_prefix_to(core.regular_frequency_hz, SiPrefix::MEGA));
-      fmt::print("    {:<16}: {}\n", "Max Frequency [MHz]", unit_prefix_to(core.max_frequency_hz, SiPrefix::MEGA));
+      std::cout << std::left << std::setw(20) << ("  core " + std::to_string(core.id) + ":") << "\n"
+                << std::left << std::setw(20) << "   SMT: " << (core.smt ? "yes" : "no") << "\n"
+                << std::left << std::setw(20) << "   cache:" << "\n"
+                << std::left << std::setw(20)
+                << "    L1 Data:" << unit_prefix_to(core.cache.l1_data, IECPrefix::KIBI) << " KiB\n"
+                << std::left << std::setw(20)
+                << "    L1 Inst.:" << unit_prefix_to(core.cache.l1_instruction, IECPrefix::KIBI) << " KiB\n"
+                << std::left << std::setw(20) << "    L2:" << unit_prefix_to(core.cache.l2, IECPrefix::KIBI)
+                << " KiB\n"
+                << std::left << std::setw(20) << "    L3:" << unit_prefix_to(core.cache.l3, IECPrefix::KIBI)
+                << " KiB\n"
+                << std::left << std::setw(20)
+                << "   regular freq.:" << unit_prefix_to(core.regular_frequency_hz, SiPrefix::MEGA) << " MHz\n"
+                << std::left << std::setw(20)
+                << "   max freq.:" << unit_prefix_to(core.max_frequency_hz, SiPrefix::MEGA) << " MHz\n";
     }
-    // fmt::print("{}\n", cpu.currentTemperature_Celsius());
   }
 
   hwinfo::OS os;
-  fmt::print(
-      "----------------------------------- OS ------------------------------------\n"
-      "{:<20} {}\n"
-      "{:<20} {}\n"
-      "{:<20} {}\n"
-      "{:<20} {}\n"
-      "{:<20} {}\n",
-      "Operating System:", os.name(), "version:", os.version(), "kernel:", os.kernel(),
-      "architecture:", os.is32bit() ? "32 bit" : "64 bit",
-      "endianess:", os.isLittleEndian() ? "little endian" : "big endian");
+  std::cout << "----------------------------------- OS ------------------------------------\n"
+            << std::left << std::setw(20) << "name: " << os.name() << "\n"
+            << std::left << std::setw(20) << "version: " << os.version() << "\n"
+            << std::left << std::setw(20) << "kernel: " << os.kernel() << "\n"
+            << std::left << std::setw(20) << "bitness: " << (os.is32bit() ? "32 bit" : "64 bit") << "\n"
+            << std::left << std::setw(20) << "endianess: " << (os.isLittleEndian() ? "little endian" : "big endian")
+            << "\n";
 
   auto gpus = hwinfo::getAllGPUs();
-  fmt::print("----------------------------------- GPU -----------------------------------\n");
+  std::cout << "----------------------------------- GPU -----------------------------------\n";
   for (const auto& gpu : gpus) {
-    fmt::print(
-        "GPU {}:\n"
-        "  {:<18} {}\n"
-        "  {:<18} {}\n"
-        "  {:<18} {}\n"
-        "  {:<18} {:.2f} | {:.2f}\n"
-        "  {:<18} {}\n"
-        "  {:<18} {}\n"
-        "  {:<18} {}\n"
-        "  {:<18} {}\n",
-        gpu.id(), "vendor:", gpu.vendor(), "model:", gpu.name(), "driverVersion:", gpu.driverVersion(),
-        "memory [GiB]:", unit_prefix_to(gpu.dedicated_memory_Bytes(), IECPrefix::GIBI), unit_prefix_to(gpu.shared_memory_Bytes(), IECPrefix::GIBI), "frequency:", gpu.frequency_MHz(),
-        "cores:", gpu.num_cores(), "vendor_id:", gpu.vendor_id(), "device_id:", gpu.device_id());
+    std::cout << "GPU " << gpu.id() << "\n"
+              << std::left << std::setw(20) << " vendor: " << gpu.vendor() << "\n"
+              << std::left << std::setw(20) << " model: " << gpu.name() << "\n"
+              << std::left << std::setw(20) << " driver version: " << gpu.driverVersion() << "\n"
+              << std::left << std::setw(20)
+              << " dedicated memory: " << unit_prefix_to(gpu.dedicated_memory_Bytes(), IECPrefix::GIBI) << " GiB\n"
+              << std::left << std::setw(20)
+              << " shared memory: " << unit_prefix_to(gpu.shared_memory_Bytes(), IECPrefix::GIBI) << " GiB\n"
+              << std::left << std::setw(20) << " frequency: " << unit_prefix_to(gpu.frequency_Hz(), SiPrefix::MEGA)
+              << " MHz\n"
+              << std::left << std::setw(20) << " cores: " << gpu.num_cores() << "\n"
+              << std::left << std::setw(20) << " vendor_id: " << gpu.vendor_id() << "\n"
+              << std::left << std::setw(20) << " device_id: " << gpu.device_id() << "\n";
   }
 
   hwinfo::Memory memory;
-  std::int64_t i = memory.total_Bytes();
-  fmt::print(
-      "----------------------------------- RAM -----------------------------------\n"
-      "{:<20} {:.2f}\n"
-      "{:<20} {:.2f}\n"
-      "{:<20} {:.2f}\n",
-      "size [GiB]:", unit_prefix_to(i, IECPrefix::GIBI),
-      "free [GiB]:", unit_prefix_to(memory.free_Bytes(), IECPrefix::GIBI),
-      "available [GiB]:", unit_prefix_to(memory.available_Bytes(), IECPrefix::GIBI));
-
+  std::cout << "----------------------------------- RAM -----------------------------------\n"
+            << std::left << std::setw(20) << "size: " << unit_prefix_to(memory.total_Bytes(), IECPrefix::GIBI) << "\n"
+            << std::left << std::setw(20) << "free: " << unit_prefix_to(memory.free_Bytes(), IECPrefix::GIBI) << "\n"
+            << std::left << std::setw(20)
+            << "available: " << unit_prefix_to(memory.available_Bytes(), IECPrefix::GIBI) << "\n";
   for (const auto& module : memory.modules()) {
-    fmt::print(
-        "RAM {}:\n"
-        "  {:<18} {}\n"
-        "  {:<18} {}\n"
-        "  {:<18} {}\n"
-        "  {:<18} {}\n"
-        "  {:<18} {:.2f}\n",
-        module.id, "vendor:", module.vendor, "model:", module.model, "name:", module.name,
-        "serial-number:", module.serial_number,
-        "Frequency [MHz]:", module.frequency_Hz == -1 ? -1. : unit_prefix_to(module.frequency_Hz, SiPrefix::MEGA));
+    std::cout << std::left << std::setw(20) << (" RAM " + std::to_string(module.id)) << "\n"
+              << std::left << std::setw(20) << "  vendor: " << module.vendor << "\n"
+              << std::left << std::setw(20) << "  model: " << module.model << "\n"
+              << std::left << std::setw(20) << "  name: " << module.name << "\n"
+              << std::left << std::setw(20) << "  serial number: " << module.serial_number << "\n"
+              << std::left << std::setw(20) << "  frequency: " << unit_prefix_to(module.frequency_hz, SiPrefix::MEGA)
+              << "\n";
   }
 
   hwinfo::MainBoard main_board;
-  fmt::print(
-      "------------------------------- Main Board --------------------------------\n"
-      "{:<20} {}\n"
-      "{:<20} {}\n"
-      "{:<20} {}\n"
-      "{:<20} {}\n",
-      "vendor:", main_board.vendor(), "name:", main_board.name(), "version:", main_board.version(),
-      "serial-number:", main_board.serialNumber());
+  std::cout << "------------------------------- Main Board --------------------------------\n"
+            << std::left << std::setw(20) << "vendor: " << main_board.vendor() << "\n"
+            << std::left << std::setw(20) << "name: " << main_board.name() << "\n"
+            << std::left << std::setw(20) << "version: " << main_board.version() << "\n"
+            << std::left << std::setw(20) << "serial number: " << main_board.serialNumber() << "\n";
 
   std::vector<hwinfo::Battery> batteries = hwinfo::getAllBatteries();
 
-  fmt::print("------------------------------- Batteries ---------------------------------\n");
+  std::cout << "------------------------------- Batteries ---------------------------------\n";
   if (!batteries.empty()) {
-    int battery_counter = 0;
     for (auto& battery : batteries) {
-      fmt::print(
-          "Battery {}:\n"
-          "  {:<18} {}\n"
-          "  {:<18} {}\n"
-          "  {:<18} {}\n"
-          "  {:<18} {}\n"
-          "  {:<18} {:.2f}\n",
-          battery_counter++, "vendor:", battery.vendor(), "model:", battery.model(),
-          "serial-number:", battery.serialNumber(), "charging:", battery.charging() ? "yes" : "no",
-          "capacity:", battery.capacity());
+      std::cout << std::left << std::setw(20) << ("Battery " + std::to_string(battery.id()) + ":") << "\n"
+                << std::left << std::setw(20) << " vendor: " << battery.vendor() << "\n"
+                << std::left << std::setw(20) << " model: " << battery.model() << "\n"
+                << std::left << std::setw(20) << " serial number: " << battery.serialNumber() << "\n"
+                << std::left << std::setw(20) << " state: " << battery.state() << "\n"
+                << std::left << std::setw(20) << " capacity: " << battery.capacity() << "\n";
     }
   } else {
-    fmt::print("No Batteries installed or detected\n");
+    std::cout << "No Batteries installed or detected\n";
   }
 
   std::vector<hwinfo::Disk> disks = hwinfo::getAllDisks();
-  fmt::print("--------------------------------- Disks -----------------------------------\n");
+  std::cout << "--------------------------------- Disks -----------------------------------\n";
   if (!disks.empty()) {
     int disk_counter = 0;
     for (const auto& disk : disks) {
-      fmt::print(
-          "Disk {}:\n"
-          "  {:<18} {}\n"
-          "  {:<18} {}\n"
-          "  {:<18} {}\n"
-          "  {:<18} {:.2f}\n"
-          "  {:<18} {:.2f}\n"
-          "  {:<18} {}\n",
-          disk_counter++, "vendor:", disk.vendor(), "model:", disk.model(), "serial-number:", disk.serialNumber(),
-          "size [GiB]:", unit_prefix_to(disk.size_Bytes(), IECPrefix::GIBI),
-          "free [GiB]:", unit_prefix_to(disk.free_size_Bytes(), IECPrefix::GIBI),
-          "volumes:", fmt::join(disk.volumes(), ", "));
+      std::cout << std::left << std::setw(20) << ("Disk " + std::to_string(disk.id()) + ":") << "\n"
+                << std::left << std::setw(20) << " vendor: " << disk.vendor() << "\n"
+                << std::left << std::setw(20) << " model: " << disk.model() << "\n"
+                << std::left << std::setw(20) << " serial number: " << disk.serialNumber() << "\n"
+                << std::left << std::setw(20) << " interface: " << disk.interface() << "\n"
+                << std::left << std::setw(20) << " size: " << unit_prefix_to(disk.size_bytes(), IECPrefix::GIBI) << "\n"
+                << std::left << std::setw(20) << " free: " << unit_prefix_to(disk.free_size_bytes(), IECPrefix::GIBI) << "\n"
+                << std::left << std::setw(20) << " mount points: " << hwinfo::utils::join(disk.mount_points(), ", ") << "\n";
     }
   } else {
-    fmt::print("No Disks installed or detected\n");
+    std::cout << "No Disks installed or detected\n";
   }
 
   std::vector<hwinfo::Network> networks = hwinfo::getAllNetworks();
-  fmt::print("--------------------------------- Networks -----------------------------------\n");
+  std::cout << "--------------------------------- Networks -----------------------------------\n";
   if (!networks.empty()) {
     int network_counter = 0;
     for (const auto& network : networks) {
       if (!network.ip4().empty() || !network.ip6().empty()) {
-        fmt::print(
-            "Network {}:\n"
-            "  {:<18} {}\n"
-            "  {:<18} {}\n"
-            "  {:<18} {}\n"
-            "  {:<18} {}\n"
-            "  {:<18} {}\n",
-            network_counter++, "description:", network.description(), "interface index:", network.interfaceIndex(),
-            "mac:", network.mac(), "ipv4:", network.ip4(), "ipv6:", network.ip6());
+        std::cout << std::left << std::setw(20) << ("Network " + std::to_string(network_counter++) + ":") << "\n"
+                  << std::left << std::setw(20) << " description: " << network.description() << "\n"
+                  << std::left << std::setw(20) << " interface index: " << network.interfaceIndex() << "\n"
+                  << std::left << std::setw(20) << " mac: " << network.mac() << "\n"
+                  << std::left << std::setw(20) << " ipv4 address: " << network.ip4() << "\n"
+                  << std::left << std::setw(20) << " ipv6 address: " << network.ip6() << "\n";
       }
     }
   } else {
-    fmt::print("No Networks installed or detected\n");
+    std::cout << "No Networks installed or detected\n";
   }
-  return EXIT_SUCCESS;
+  return 0;
 }

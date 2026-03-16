@@ -17,19 +17,19 @@ const std::string& GPU::name() const { return _name; }
 const std::string& GPU::driverVersion() const { return _driverVersion; }
 
 // _____________________________________________________________________________________________________________________
-int GPU::id() const { return _id; }
+uint32_t GPU::id() const { return _id; }
 
 // _____________________________________________________________________________________________________________________
-int64_t GPU::dedicated_memory_Bytes() const { return _dedicated_memory_Bytes; }
+uint64_t GPU::dedicated_memory_Bytes() const { return _dedicated_memory_Bytes; }
 
 // _____________________________________________________________________________________________________________________
-int64_t GPU::shared_memory_Bytes() const { return _shared_memory_Bytes; }
+uint64_t GPU::shared_memory_Bytes() const { return _shared_memory_Bytes; }
 
 // _____________________________________________________________________________________________________________________
-int64_t GPU::frequency_MHz() const { return _frequency_MHz; }
+uint64_t GPU::frequency_Hz() const { return _frequency_Hz; }
 
 // _____________________________________________________________________________________________________________________
-int GPU::num_cores() const { return _num_cores; }
+uint64_t GPU::num_cores() const { return _num_cores; }
 
 // _____________________________________________________________________________________________________________________
 const std::string& GPU::vendor_id() const { return _vendor_id; }

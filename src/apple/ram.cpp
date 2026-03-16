@@ -42,6 +42,15 @@ Memory::Memory() {
 }
 
 // _____________________________________________________________________________________________________________________
+uint64_t Memory::total_Bytes() const {
+  uint64_t sum = 0;
+  for (const auto& module : _modules) {
+    sum += module.total_Bytes;
+  }
+  return sum;
+}
+
+// _____________________________________________________________________________________________________________________
 int64_t Memory::free_Bytes() const {
   vm_statistics64_data_t vmStats;
   mach_msg_type_number_t infoCount = HOST_VM_INFO64_COUNT;

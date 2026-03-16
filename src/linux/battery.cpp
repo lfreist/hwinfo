@@ -94,6 +94,7 @@ uint32_t Battery::energyNow() const {
   if (_id < 0) {
     return 0;
   }
+  // TODO: might be file charge_now/charge_full
   std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "energy_now");
   std::string value;
   if (vendor_file.is_open()) {
@@ -108,21 +109,18 @@ uint32_t Battery::energyNow() const {
 }
 
 // _____________________________________________________________________________________________________________________
-bool Battery::charging() const {
+Battery::State Battery::state() const {
   if (_id < 0) {
-    return false;
+    return State::UNKNOWN;
   }
   std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "status");
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
-    return value == "Charging";
+    return value == "Charging" ? State::CHARGING : State::DISCHARGING;
   }
-  return false;
+  return State::UNKNOWN;
 }
-
-// _____________________________________________________________________________________________________________________
-bool Battery::discharging() const { return !charging(); }
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________

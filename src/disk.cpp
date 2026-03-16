@@ -15,15 +15,15 @@ const std::string& Disk::model() const { return _model; }
 const std::string& Disk::serialNumber() const { return _serialNumber; }
 
 // _____________________________________________________________________________________________________________________
-int64_t Disk::size_Bytes() const { return _size_Bytes; }
+uint64_t Disk::size_bytes() const { return _size_Bytes; }
 
 // _____________________________________________________________________________________________________________________
-int64_t Disk::free_size_Bytes() const { return _free_size_Bytes; }
+std::uint32_t Disk::id() const { return _id; }
 
 // _____________________________________________________________________________________________________________________
-int Disk::id() const { return _id; }
+const std::vector<std::string>& Disk::mount_points() const { return _mount_points; }
 
 // _____________________________________________________________________________________________________________________
-const std::vector<std::string>& Disk::volumes() const { return _volumes; }
+Disk::Interface Disk::interface() const { return _interface; }
 
 }  // namespace hwinfo

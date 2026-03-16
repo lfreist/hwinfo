@@ -10,9 +10,10 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <sstream>
 
-namespace hwinfo {
-namespace utils {
+
+namespace hwinfo::utils {
 
 /**
  * Replaces an occurence once in the entire string. Stops at first match
@@ -205,5 +206,20 @@ inline bool starts_with(const string_type& str, const prefix_type& prefix) {
 #endif
 }
 
-}  // namespace utils
-}  // namespace hwinfo
+inline std::string join(const std::vector<std::string>& values, const std::string& delim) {
+  if (values.empty()) {
+    return {};
+  }
+  if (values.size() == 1) {
+    return values[0];
+  }
+  std::stringstream ss;
+  for (std::size_t i = 0; i < values.size() - 1; ++i) {
+    ss << values[i] << delim;
+  }
+  ss << values.back();
+  return ss.str();
+}
+
+} // namespace hwinfo::utils
+

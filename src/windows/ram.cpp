@@ -66,6 +66,15 @@ Memory::Memory() {
 }
 
 // _____________________________________________________________________________________________________________________
+uint64_t Memory::total_Bytes() const {
+  uint64_t sum = 0;
+  for (const auto& module : _modules) {
+    sum += module.total_Bytes;
+  }
+  return sum;
+}
+
+// _____________________________________________________________________________________________________________________
 int64_t Memory::free_Bytes() const {
   auto res = utils::WMI::query<std::string>(L"Win32_OperatingSystem", L"FreePhysicalMemory");
   if (res.empty()) {

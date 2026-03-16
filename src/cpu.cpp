@@ -9,7 +9,7 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-int CPU::id() const { return _id; }
+std::uint32_t CPU::id() const { return _id; }
 
 // _____________________________________________________________________________________________________________________
 const std::string& CPU::modelName() const { return _modelName; }
@@ -18,16 +18,10 @@ const std::string& CPU::modelName() const { return _modelName; }
 const std::string& CPU::vendor() const { return _vendor; }
 
 // _____________________________________________________________________________________________________________________
-int CPU::numPhysicalCores() const { return _numPhysicalCores; }
+std::uint64_t CPU::numPhysicalCores() const { return _numPhysicalCores; }
 
 // _____________________________________________________________________________________________________________________
-int CPU::numLogicalCores() const { return _numLogicalCores; }
-
-// _____________________________________________________________________________________________________________________
-int64_t CPU::maxClockSpeed_MHz() const { return _maxClockSpeed_MHz; }
-
-// _____________________________________________________________________________________________________________________
-int64_t CPU::regularClockSpeed_MHz() const { return _regularClockSpeed_MHz; }
+std::uint64_t CPU::numLogicalCores() const { return _numLogicalCores; }
 
 // _____________________________________________________________________________________________________________________
 const std::vector<std::string>& CPU::flags() const { return _flags; }

@@ -50,9 +50,18 @@ class HWINFO_API CPU {
   friend std::vector<CPU> getAllCPUs();
 
  public:
+  static constexpr std::uint32_t invalid_id = std::numeric_limits<std::uint32_t>::max();
+
+ public:
+  struct Cache {
+    std::uint64_t l1_data;
+    std::uint64_t l1_instruction;
+    std::uint64_t l2;
+    std::uint64_t l3;
+  };
   struct Core {
     std::uint64_t id;
-    std::array<std::uint64_t, 3> cache_bytes;
+    Cache cache;
     std::uint64_t regular_frequency_hz;
     std::uint64_t max_frequency_hz;
     bool smt;
@@ -61,29 +70,24 @@ class HWINFO_API CPU {
  public:
   ~CPU() = default;
 
-  HWI_NODISCARD int id() const;
+  HWI_NODISCARD std::uint32_t id() const;
   HWI_NODISCARD const std::string& modelName() const;
   HWI_NODISCARD const std::string& vendor() const;
-  HWI_NODISCARD int numPhysicalCores() const;
-  HWI_NODISCARD int numLogicalCores() const;
-  HWI_NODISCARD int64_t maxClockSpeed_MHz() const;
-  HWI_NODISCARD int64_t regularClockSpeed_MHz() const;
-  HWI_NODISCARD std::vector<int64_t> currentClockSpeed_MHz() const;
+  HWI_NODISCARD std::uint64_t numPhysicalCores() const;
+  HWI_NODISCARD std::uint64_t numLogicalCores() const;
   HWI_NODISCARD const std::vector<std::string>& flags() const;
   HWI_NODISCARD const std::vector<Core>& cores() const;
 
  private:
   CPU() = default;
 
-  int _id{-1};
+  std::uint32_t _id = invalid_id;
   std::string _modelName;
   std::string _vendor;
-  int _numPhysicalCores{0};
-  int _numLogicalCores{0};
-  int64_t _maxClockSpeed_MHz{-1};
-  int64_t _regularClockSpeed_MHz{-1};
-  std::vector<std::string> _flags{};
-  std::vector<Core> _cores{};
+  std::uint64_t _numPhysicalCores = 0;
+  std::uint64_t _numLogicalCores = 0;
+  std::vector<std::string> _flags;
+  std::vector<Core> _cores;
 };
 
 std::vector<CPU> getAllCPUs();
