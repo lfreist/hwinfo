@@ -10,4 +10,4 @@ std::uint64_t get_free_size(const std::string& mount_point);
 
 std::uint64_t get_free_size(const Disk& disk);
 
-}
+}  // namespace hwinfo::monitoring::disk

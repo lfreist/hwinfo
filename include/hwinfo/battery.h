@@ -6,9 +6,9 @@
 #include <hwinfo/platform.h>
 
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
-#include <limits>
 
 namespace hwinfo {
 
@@ -20,11 +20,7 @@ class HWINFO_API Battery {
   static constexpr std::uint32_t invalid_id = std::numeric_limits<std::uint32_t>::max();
 
  public:
-  enum class State {
-    CHARGING,
-    DISCHARGING,
-    UNKNOWN
-  };
+  enum class State { CHARGING, DISCHARGING, UNKNOWN };
 
  public:
   explicit Battery(std::uint32_t = 0);

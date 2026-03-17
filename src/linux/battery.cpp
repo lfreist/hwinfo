@@ -5,8 +5,8 @@
 
 #ifdef HWINFO_UNIX
 
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 
 #include "hwinfo/battery.h"
 
@@ -60,7 +60,7 @@ std::string get_technology(std::uint32_t id) {
   return "<unknown>";
 }
 
-}
+}  // namespace
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________

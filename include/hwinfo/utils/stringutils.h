@@ -8,10 +8,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
-
 
 namespace hwinfo::utils {
 
@@ -221,5 +220,4 @@ inline std::string join(const std::vector<std::string>& values, const std::strin
   return ss.str();
 }
 
-} // namespace hwinfo::utils
-
+}  // namespace hwinfo::utils

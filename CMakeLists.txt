@@ -50,6 +50,7 @@ else(HWINFO_STATIC)
   set(HWINFO_BUILD STATIC)
 endif()
 
+add_subdirectory(data)
 set(HWINFO_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 add_subdirectory(src)
 

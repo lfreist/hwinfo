@@ -8,12 +8,12 @@
 #include <dxgi1_6.h>
 #include <windows.h>
 
-#include "hwinfo/gpu.h"
-#include "hwinfo/utils/stringutils.h"
-
 #include <algorithm>
 #include <string>
 #include <vector>
+
+#include "hwinfo/gpu.h"
+#include "hwinfo/utils/stringutils.h"
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "setupapi.lib")
 

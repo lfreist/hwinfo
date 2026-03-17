@@ -1,9 +1,9 @@
 #pragma once
 
-#include "hwinfo/utils/utils.h"
-
 #include <cstdint>
 #include <type_traits>
+
+#include "hwinfo/utils/utils.h"
 
 namespace hwinfo::unit {
 

@@ -6,9 +6,9 @@
 #include <hwinfo/platform.h>
 
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
-#include <limits>
 
 namespace hwinfo {
 

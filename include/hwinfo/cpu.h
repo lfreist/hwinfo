@@ -9,14 +9,13 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 using namespace std::chrono_literals;
 
 namespace hwinfo {
-
 
 namespace monitor::cpu {
 

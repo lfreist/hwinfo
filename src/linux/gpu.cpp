@@ -6,18 +6,18 @@
 
 #ifdef HWINFO_UNIX
 
-#include "hwinfo/utils/unit.h"
 #include "hwinfo/gpu.h"
 #include "hwinfo/utils/PCIMapper.h"
+#include "hwinfo/utils/unit.h"
 
 #ifdef USE_OCL
 #include <hwinfo/opencl/device.h>
 #endif
 
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include <vector>
-#include <filesystem>
 
 namespace hwinfo {
 
@@ -37,17 +37,20 @@ std::vector<std::uint64_t> get_frequencies(const std::string drm_path) {
   // {min, current, max}
   std::vector<std::uint64_t> freqs(3, 0);
   try {
-    freqs[0] = std::stoull(read_drm_by_path(drm_path + "gt_min_freq_mhz")) * static_cast<std::uint64_t>(unit::SiPrefix::MEGA);
+    freqs[0] =
+        std::stoull(read_drm_by_path(drm_path + "gt_min_freq_mhz")) * static_cast<std::uint64_t>(unit::SiPrefix::MEGA);
   } catch (const std::invalid_argument& e) {
     freqs[0] = 0;
   }
   try {
-    freqs[1] = std::stoull(read_drm_by_path(drm_path + "gt_cur_freq_mhz")) * static_cast<std::uint64_t>(unit::SiPrefix::MEGA);
+    freqs[1] =
+        std::stoull(read_drm_by_path(drm_path + "gt_cur_freq_mhz")) * static_cast<std::uint64_t>(unit::SiPrefix::MEGA);
   } catch (const std::invalid_argument& e) {
     freqs[0] = 0;
   }
   try {
-    freqs[2] = std::stoull(read_drm_by_path(drm_path + "gt_max_freq_mhz")) * static_cast<std::uint64_t>(unit::SiPrefix::MEGA);
+    freqs[2] =
+        std::stoull(read_drm_by_path(drm_path + "gt_max_freq_mhz")) * static_cast<std::uint64_t>(unit::SiPrefix::MEGA);
   } catch (const std::invalid_argument& e) {
     freqs[0] = 0;
   }

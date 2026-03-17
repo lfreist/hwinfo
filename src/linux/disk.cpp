@@ -7,12 +7,11 @@
 
 #include <hwinfo/disk.h>
 #include <hwinfo/utils/stringutils.h>
-#include <sys/statvfs.h>
 
+#include <filesystem>
 #include <fstream>
 #include <regex>
 #include <vector>
-#include <filesystem>
 
 namespace {
 
@@ -89,8 +88,8 @@ hwinfo::Disk::Interface getDiskUsbVersion(const std::filesystem::path& disk_sys_
           return hwinfo::Disk::Interface::USB3_20GBit;
         }
         if (speed >= 10000) return hwinfo::Disk::Interface::USB3_10GBit;
-        if (speed >= 5000)  return hwinfo::Disk::Interface::USB3_5GBit;
-        if (speed == 480)   return hwinfo::Disk::Interface::USB2;
+        if (speed >= 5000) return hwinfo::Disk::Interface::USB3_5GBit;
+        if (speed == 480) return hwinfo::Disk::Interface::USB2;
         if (speed < 480) return hwinfo::Disk::Interface::USB1;
       } catch (...) {
         return hwinfo::Disk::Interface::USB;

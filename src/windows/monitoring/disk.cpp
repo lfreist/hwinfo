@@ -2,9 +2,9 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include "hwinfo/monitoring/disk.h"
-
 #include <windows.h>
+
+#include "hwinfo/monitoring/disk.h"
 
 namespace hwinfo::monitoring::disk {
 
@@ -24,6 +24,6 @@ std::uint64_t get_free_size(const Disk& disk) {
   return size;
 }
 
-}
+}  // namespace hwinfo::monitoring::disk
 
 #endif

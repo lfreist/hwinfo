@@ -5,16 +5,15 @@
 
 #ifdef HWINFO_UNIX
 
+#include <dlfcn.h>
 #include <hwinfo/ram.h>
 #include <hwinfo/utils/stringutils.h>
 #include <hwinfo/utils/utils.h>
 #include <unistd.h>
-#include <dlfcn.h>
 
 #include <fstream>
 #include <string>
 #include <vector>
-
 
 namespace hwinfo {
 
@@ -75,9 +74,10 @@ MemInfo parse_meminfo() {
       auto val_split = utils::split(value, " ");
       std::uint64_t val = 0;
       if (!val_split.empty()) {
-          try {
-            val = std::stoull(val_split[0]) * 1024;
-          } catch (...) {}
+        try {
+          val = std::stoull(val_split[0]) * 1024;
+        } catch (...) {
+        }
       }
       if (key == "MemTotal") {
         mi.total = val;

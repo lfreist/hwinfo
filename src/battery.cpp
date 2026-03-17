@@ -12,34 +12,22 @@ namespace hwinfo {
 Battery::Battery(std::uint32_t id) { _id = id; }
 
 // _____________________________________________________________________________________________________________________
-std::uint32_t Battery::id() const {
-  return _id;
-}
+std::uint32_t Battery::id() const { return _id; }
 
 // _____________________________________________________________________________________________________________________
-const std::string& Battery::vendor() const {
-  return _vendor;
-}
+const std::string& Battery::vendor() const { return _vendor; }
 
 // _____________________________________________________________________________________________________________________
-const std::string& Battery::model() const {
-  return _model;
-}
+const std::string& Battery::model() const { return _model; }
 
 // _____________________________________________________________________________________________________________________
-const std::string& Battery::serialNumber() const {
-  return _serial_number;
-}
+const std::string& Battery::serialNumber() const { return _serial_number; }
 
 // _____________________________________________________________________________________________________________________
-const std::string& Battery::technology() const {
-  return _technology;
-}
+const std::string& Battery::technology() const { return _technology; }
 
 // _____________________________________________________________________________________________________________________
-uint32_t Battery::energyFull() const {
-  return _energyFull;
-}
+uint32_t Battery::energyFull() const { return _energyFull; }
 
 // _____________________________________________________________________________________________________________________
 bool Battery::charging() const { return state() == State::CHARGING; }
@@ -59,13 +47,9 @@ double Battery::capacity() const {
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
 std::ostream& operator<<(std::ostream& os, const Battery& battery) {
-  os << "Battery{.id=" << battery._id
-     << "', .vendor='" << battery._vendor
-     << "', .model='" << battery._model
-     << "', .serial_number='" << battery._serial_number
-     << "', technology='" << battery._technology
-     << "', .full_capacity=" << battery._energyFull
-     << ", .state='" << battery.state() << "'}";
+  os << "Battery{.id=" << battery._id << "', .vendor='" << battery._vendor << "', .model='" << battery._model
+     << "', .serial_number='" << battery._serial_number << "', technology='" << battery._technology
+     << "', .full_capacity=" << battery._energyFull << ", .state='" << battery.state() << "'}";
   return os;
 }
 

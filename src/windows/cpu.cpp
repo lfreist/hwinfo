@@ -6,9 +6,8 @@
 #ifdef HWINFO_WINDOWS
 
 #include <hwinfo/cpu.h>
-#include <hwinfo/utils/win_registry.h>
 #include <hwinfo/utils/unit.h>
-
+#include <hwinfo/utils/win_registry.h>
 #include <intrin.h>
 #include <powrprof.h>
 #include <winternl.h>
@@ -17,8 +16,8 @@
 #include <map>
 #include <numeric>
 #include <string>
-#include <vector>
 #include <thread>
+#include <vector>
 
 #pragma comment(lib, "PowrProf.lib")
 #pragma comment(lib, "ntdll.lib")
@@ -63,7 +62,8 @@ namespace monitor::cpu {
 
 double utilization(std::chrono::milliseconds sleep) {
   auto info = core_utilization(sleep);
-  return std::accumulate(info.begin(), info.end(), 0.0, [](const double& a, const double& b) -> double { return a + b; }) /
+  return std::accumulate(info.begin(), info.end(), 0.0,
+                         [](const double& a, const double& b) -> double { return a + b; }) /
          static_cast<double>(info.size());
 }
 
@@ -147,7 +147,8 @@ std::vector<CPU> getAllCPUs() {
     ptr += info->Size;
   }
 
-  auto regular_frequency = internal::utils::getRegistryValue<int64_t>(HKEY_LOCAL_MACHINE, reg_cpu_path, L"~MHz") * unit::SiPrefix::MEGA;
+  auto regular_frequency =
+      internal::utils::getRegistryValue<int64_t>(HKEY_LOCAL_MACHINE, reg_cpu_path, L"~MHz") * unit::SiPrefix::MEGA;
 
   for (size_t i = 0; i < coreEntries.size(); ++i) {
     auto cInfo = coreEntries[i];
