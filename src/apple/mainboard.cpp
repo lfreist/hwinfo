@@ -5,8 +5,8 @@
 
 #ifdef HWINFO_APPLE
 
-#include <IOKit/IOKitLib.h>
 #include <Availability.h>
+#include <IOKit/IOKitLib.h>
 
 #include "hwinfo/mainboard.h"
 

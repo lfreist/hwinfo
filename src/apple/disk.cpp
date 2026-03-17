@@ -20,9 +20,6 @@
 
 namespace hwinfo {
 
-// kIOMasterPortDefault/kIOMainPortDefault is 0
-static const mach_port_t hc_IOMasterPortDefault = 0;
-
 /**
   Converts a CFStringRef to a std::string
  */

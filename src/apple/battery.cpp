@@ -98,7 +98,7 @@ uint32_t getEnergyFull(std::uint32_t id) {
 }
 
 // _____________________________________________________________________________________________________________________
-uint32_t energyNow(std::uint32_t id) {
+std::uint32_t energyNow(std::uint32_t id) const {
   const CFDictionaryRef powerSource = getPowerSource(id);
   if (!powerSource) {
     return 0;
@@ -118,19 +118,16 @@ uint32_t energyNow(std::uint32_t id) {
 }
 
 // _____________________________________________________________________________________________________________________
-bool Battery::charging() const {
+Battery::State Battery::state() const {
   const CFDictionaryRef powerSource = getPowerSource(_id);
   if (!powerSource) {
-    return "<unknown>";
+    return State::UNKNOWN;
   }
 
   const auto isCharging = static_cast<CFBooleanRef>(CFDictionaryGetValue(powerSource, CFSTR(kIOPSIsChargingKey)));
 
-  return isCharging == kCFBooleanTrue;
+  return isCharging == kCFBooleanTrue ? State::CHARGING : State::DISCHARGING;
 }
-
-// _____________________________________________________________________________________________________________________
-bool Battery::discharging() const { return !charging(); }
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________

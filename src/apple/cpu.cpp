@@ -120,7 +120,7 @@ std::string getVendor() {
 }
 
 // _____________________________________________________________________________________________________________________
-[[maybe_unused]] double threadUtilisation(int thread_index) {
+[[maybe_unused]] double threadUtilisation(std::uint32_t thread_index) {
   // On macOS, getting per-thread utilization requires more complex code
   // This is a simplified implementation that returns the same value for all threads
   if (thread_index >= 0) {
