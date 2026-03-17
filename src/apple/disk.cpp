@@ -220,9 +220,9 @@ std::vector<Disk> getAllDisks() {
         disk._vendor = "<unknown>";
       }
 
-      disk._serialNumber = getIORegistryProperty<std::string, CFStringRef>(service, CFSTR(kIOMediaUUIDKey));
+      disk._serial_number = getIORegistryProperty<std::string, CFStringRef>(service, CFSTR(kIOMediaUUIDKey));
 
-      disk._size_Bytes = getIORegistryProperty<int64_t, CFNumberRef>(service, CFSTR(kIOMediaSizeKey));
+      disk._size_bytes = getIORegistryProperty<int64_t, CFNumberRef>(service, CFSTR(kIOMediaSizeKey));
 
       // If there's no BSD name, we can't look it up in the mount map
       if (!bsdName.empty()) {
@@ -230,9 +230,9 @@ std::vector<Disk> getAllDisks() {
         if (auto it = mountMap.find(bsdName); it != mountMap.end()) {
           // Get free space for the found mount point
           const std::string& mountPoint = it->second;
-          disk._free_size_Bytes = getFreeDiskSpace(mountPoint);
+          disk._size_bytes = getFreeDiskSpace(mountPoint);
 
-          disk._volumes.push_back(mountPoint);
+          disk._mount_points.push_back(mountPoint);
         }
       }
 

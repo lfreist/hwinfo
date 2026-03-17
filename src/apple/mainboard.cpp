@@ -60,7 +60,7 @@ MainBoard::MainBoard() {
   _vendor = get_mainboard_property(CFSTR("manufacturer"));
   _name = "<unknown>";
   _version = "<unknown>";
-  _serialNumber = get_mainboard_property(CFSTR(kIOPlatformSerialNumberKey));
+  _serial_number = get_mainboard_property(CFSTR(kIOPlatformSerialNumberKey));
 }
 
 }  // namespace hwinfo

@@ -30,20 +30,15 @@ class HWINFO_API Battery {
   explicit Battery(std::uint32_t = 0);
   ~Battery() = default;
 
-  std::string& vendor();
-  std::string& model();
-  std::string& serialNumber();
-  std::string& technology();
-  uint32_t energyFull();
+  HWI_NODISCARD const std::string& vendor() const;
+  HWI_NODISCARD const std::string& model() const;
+  HWI_NODISCARD const std::string& serialNumber() const;
+  HWI_NODISCARD const std::string& technology() const;
+  HWI_NODISCARD uint32_t energyFull() const;
 
-  double capacity();
+  double capacity() const;
 
   HWI_NODISCARD std::uint32_t id() const;
-  HWI_NODISCARD std::string getVendor() const;
-  HWI_NODISCARD std::string getModel() const;
-  HWI_NODISCARD std::string getSerialNumber() const;
-  HWI_NODISCARD std::string getTechnology() const;
-  HWI_NODISCARD uint32_t getEnergyFull() const;
 
   HWI_NODISCARD uint32_t energyNow() const;
   HWI_NODISCARD bool charging() const;
@@ -52,10 +47,10 @@ class HWINFO_API Battery {
 
  private:
   std::uint32_t _id = invalid_id;
-  std::string _vendor;
-  std::string _model;
-  std::string _serialNumber;
-  std::string _technology;
+  std::string _vendor = "<unknown>";
+  std::string _model = "<unknown>";
+  std::string _serial_number = "<unknown>";
+  std::string _technology = "<unknown>";
   uint32_t _energyFull = 0;
 };
 

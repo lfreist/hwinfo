@@ -23,7 +23,7 @@ class HWINFO_API Memory {
     std::string name;
     std::string model;
     std::string serial_number;
-    uint64_t total_Bytes = 0;
+    uint64_t _size_bytes = 0;
     uint64_t frequency_hz = 0;
   };
 
@@ -32,9 +32,9 @@ class HWINFO_API Memory {
   ~Memory() = default;
 
   HWI_NODISCARD const std::vector<Memory::Module>& modules() const;
-  HWI_NODISCARD uint64_t total_Bytes() const;
-  HWI_NODISCARD uint64_t free_Bytes() const;
-  HWI_NODISCARD uint64_t available_Bytes() const;
+  HWI_NODISCARD uint64_t size() const;
+  HWI_NODISCARD uint64_t free() const;
+  HWI_NODISCARD uint64_t available() const;
 
  private:
   std::vector<Memory::Module> _modules;

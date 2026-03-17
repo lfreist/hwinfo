@@ -6,8 +6,10 @@
 #ifdef HWINFO_WINDOWS
 
 #include <dxgi1_6.h>
-#include <hwinfo/gpu.h>
 #include <windows.h>
+
+#include "hwinfo/gpu.h"
+#include "hwinfo/utils/stringutils.h"
 
 #include <algorithm>
 #include <string>
@@ -42,7 +44,7 @@ std::vector<GPU> getAllGPUs() {
     gpu._id = static_cast<int>(i);
 
     std::wstring ws(desc.Description);
-    gpu._name = std::string(ws.begin(), ws.end());
+    gpu._name = utils::wstring_to_std_string(ws);
 
     gpu._dedicated_memory_Bytes = static_cast<int64_t>(desc.DedicatedVideoMemory);
     gpu._shared_memory_Bytes = static_cast<int64_t>(desc.SharedSystemMemory);

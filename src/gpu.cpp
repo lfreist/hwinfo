@@ -26,7 +26,7 @@ uint64_t GPU::dedicated_memory_Bytes() const { return _dedicated_memory_Bytes; }
 uint64_t GPU::shared_memory_Bytes() const { return _shared_memory_Bytes; }
 
 // _____________________________________________________________________________________________________________________
-uint64_t GPU::frequency_Hz() const { return _frequency_Hz; }
+uint64_t GPU::frequency_hz() const { return _frequency_hz; }
 
 // _____________________________________________________________________________________________________________________
 uint64_t GPU::num_cores() const { return _num_cores; }

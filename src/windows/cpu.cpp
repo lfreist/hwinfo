@@ -6,8 +6,9 @@
 #ifdef HWINFO_WINDOWS
 
 #include <hwinfo/cpu.h>
-#include <hwinfo/cpuid.h>
 #include <hwinfo/utils/win_registry.h>
+#include <hwinfo/utils/unit.h>
+
 #include <intrin.h>
 #include <powrprof.h>
 #include <winternl.h>
@@ -17,6 +18,8 @@
 #include <numeric>
 #include <string>
 #include <vector>
+#include <thread>
+
 #pragma comment(lib, "PowrProf.lib")
 #pragma comment(lib, "ntdll.lib")
 
@@ -60,7 +63,7 @@ namespace monitor::cpu {
 
 double utilization(std::chrono::milliseconds sleep) {
   auto info = core_utilization(sleep);
-  return std::accumulate(info.begin(), info.end(), 0.f, [](const auto& a, const auto& b) { return a + b; }) /
+  return std::accumulate(info.begin(), info.end(), 0.0, [](const double& a, const double& b) -> double { return a + b; }) /
          static_cast<double>(info.size());
 }
 
@@ -78,11 +81,11 @@ std::vector<double> core_utilization(std::chrono::milliseconds sleep) {
   };
 
   getPerf(infoA);
-  Sleep(sleep.count());
+  std::this_thread::sleep_for(sleep);
   getPerf(infoB);
 
   std::vector<double> results;
-  for (int i = 0; i < num_logicals; ++i) {
+  for (unsigned i = 0; i < num_logicals; ++i) {
     uint64_t idleDelta = infoB[i].IdleTime.QuadPart - infoA[i].IdleTime.QuadPart;
     uint64_t kernelDelta = infoB[i].KernelTime.QuadPart - infoA[i].KernelTime.QuadPart;
     uint64_t userDelta = infoB[i].UserTime.QuadPart - infoA[i].UserTime.QuadPart;
@@ -99,19 +102,17 @@ std::vector<double> core_utilization(std::chrono::milliseconds sleep) {
   return results;
 }
 
-}  // namespace monitor::cpu
-
-// =====================================================================================================================
 // _____________________________________________________________________________________________________________________
-std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
+std::vector<int64_t> current_frequency_hz() {
   std::vector<int64_t> result;
-  result.reserve(_numLogicalCores);
   for (const auto& info : getProcPowerInfo()) {
     result.emplace_back(info.currentMhz);
   }
 
   return result;
 }
+
+}  // namespace monitor::cpu
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
@@ -120,23 +121,12 @@ std::vector<CPU> getAllCPUs() {
   CPU local_cpu;
   local_cpu._id = 0;
 
-  // 1. Reset/Initialize local_cpu members
-  local_cpu._numPhysicalCores = 0;
-  local_cpu._numLogicalCores = 0;
-
-  // 2. Registry Info
   std::wstring reg_cpu_path = L"HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0";
   local_cpu._modelName =
       internal::utils::getRegistryValue<std::string>(HKEY_LOCAL_MACHINE, reg_cpu_path, L"ProcessorNameString");
   local_cpu._vendor =
       internal::utils::getRegistryValue<std::string>(HKEY_LOCAL_MACHINE, reg_cpu_path, L"VendorIdentifier");
-  local_cpu._regularClockSpeed_MHz =
-      internal::utils::getRegistryValue<int64_t>(HKEY_LOCAL_MACHINE, reg_cpu_path, L"~MHz");
 
-  // We'll use this for the Core objects
-  // uint64_t maxFreqHz = static_cast<uint64_t>(getMaxFrequency()) * 1000000;
-
-  // 3. Get Logical Processor Information
   DWORD bufferSize = 0;
   GetLogicalProcessorInformationEx(RelationAll, nullptr, &bufferSize);
   std::vector<BYTE> buffer(bufferSize);
@@ -146,7 +136,6 @@ std::vector<CPU> getAllCPUs() {
     return {};
   }
 
-  // We need two passes or a way to store cache relations to map them to cores
   std::vector<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX> coreEntries;
   std::vector<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX> cacheEntries;
 
@@ -158,13 +147,14 @@ std::vector<CPU> getAllCPUs() {
     ptr += info->Size;
   }
 
-  // 4. Process Cores
+  auto regular_frequency = internal::utils::getRegistryValue<int64_t>(HKEY_LOCAL_MACHINE, reg_cpu_path, L"~MHz") * unit::SiPrefix::MEGA;
+
   for (size_t i = 0; i < coreEntries.size(); ++i) {
     auto cInfo = coreEntries[i];
-    CPU::Core core;
+    CPU::Core core{};
     core.id = i;
-    core.regular_frequency_hz = local_cpu._regularClockSpeed_MHz * 1'000'000;
-    core.max_frequency_hz = local_cpu._regularClockSpeed_MHz * 1'000'000;
+    core.regular_frequency_hz = regular_frequency;
+    core.max_frequency_hz = regular_frequency;
 
     // SMT is true if logical threads > 1 for this physical core
     int threadsInThisCore = countSetBits(cInfo->Processor.GroupMask[0].Mask);
@@ -173,15 +163,27 @@ std::vector<CPU> getAllCPUs() {
     local_cpu._numPhysicalCores++;
     local_cpu._numLogicalCores += threadsInThisCore;
 
-    // Initialize cache vector [L1, L2, L3]
-    core.cache_bytes = {0, 0, 0};
+    // Initialize cache vector [L1 Data, L1 Instruction, L2, L3]
+    core.cache = {0, 0, 0, 0};
 
-    // 5. Map Caches to this Core
-    // A cache belongs to this core if the core's mask is a subset of the cache's mask
     for (auto cache : cacheEntries) {
       if ((cInfo->Processor.GroupMask[0].Mask & cache->Cache.GroupMask.Mask) != 0) {
-        if (cache->Cache.Level >= 1 && cache->Cache.Level <= 3) {
-          core.cache_bytes[cache->Cache.Level - 1] = cache->Cache.CacheSize;
+        uint8_t level = cache->Cache.Level;
+        auto type = cache->Cache.Type;
+
+        if (level == 1) {
+          if (type == CacheData) {
+            core.cache.l1_data = cache->Cache.CacheSize;
+          } else if (type == CacheInstruction) {
+            core.cache.l1_instruction = cache->Cache.CacheSize;
+          } else if (type == CacheUnified) {
+            // Some CPUs have unified L1 (rare but possible)
+            core.cache.l1_data = core.cache.l1_instruction = cache->Cache.CacheSize;
+          }
+        } else if (level == 2) {
+          core.cache.l2 = cache->Cache.CacheSize;
+        } else if (level == 3) {
+          core.cache.l3 = cache->Cache.CacheSize;
         }
       }
     }

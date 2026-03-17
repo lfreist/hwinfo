@@ -83,7 +83,7 @@ inline uint64_t readSysfsUint(const std::string& path) {
   if (f >> val) {
     return val;
   }
-  return std::numeric_limits<uint64_t>::max();
+  return 0;
 }
 
 inline std::uint64_t read_cache_size(const std::string& path) {
@@ -219,8 +219,11 @@ std::map<std::uint32_t, unix_os::cpu::CPU> parse_cpus(
         } else if (processor.count("isa")) {
           core.flags = utils::split(processor.at("isa"), " ");
         }
-        core.max_frequency_hz = readSysfsUint(core_path + "/cpufreq/cpuinfo_max_freq");
         core.regular_frequency_hz = readSysfsUint(core_path + "/cpufreq/base_frequency");
+        if (core.regular_frequency_hz == 0 && processor.count("cpu MHz")) {
+          core.regular_frequency_hz = std::stod(processor.at("cpu MHz")) * unit::SiPrefix::MEGA;
+        }
+        core.max_frequency_hz = readSysfsUint(core_path + "/cpufreq/cpuinfo_max_freq");
       }
     }
     cpus[socket_id] = std::move(cpu);
@@ -236,12 +239,12 @@ namespace monitor::cpu {
 std::vector<std::uint64_t> currentClockSpeed_Hz() {
   std::vector<std::uint64_t> res;
   for (int core_id = 0; /* breaks, if i is no valid cpu id */; ++core_id) {
-    std::uint64_t frequency_Hz =
+    std::uint64_t frequency_hz =
         readSysfsUint("/sys/devices/system/cpu/cpu" + std::to_string(core_id) + "/cpufreq/scaling_cur_freq");
-    if (frequency_Hz == std::numeric_limits<std::uint64_t>::max()) {
+    if (frequency_hz == std::numeric_limits<std::uint64_t>::max()) {
       break;
     }
-    res.push_back(frequency_Hz);
+    res.push_back(frequency_hz);
   }
 
   return res;
@@ -258,7 +261,7 @@ void init_jiffies() {
 }
 
 // _____________________________________________________________________________________________________________________
-double utilization(std::chrono::milliseconds sleep) {
+double utilization([[maybe_unused]] std::chrono::milliseconds sleep) {
   init_jiffies();
   // TODO: Leon Freist a socket max num and a socket id inside the CPU could make it work with all sockets
   //       I will not support it because I only have a 1 socket target device
@@ -305,7 +308,7 @@ double coreUtilization(int thread_index) {
 // _____________________________________________________________________________________________________________________
 std::vector<double> core_utilization() {
   std::vector<double> thread_utility(std::thread::hardware_concurrency());
-  for (int thread_idx = 0; thread_idx < thread_utility.size(); ++thread_idx) {
+  for (std::size_t thread_idx = 0; thread_idx < thread_utility.size(); ++thread_idx) {
     thread_utility[thread_idx] = coreUtilization(thread_idx);
   }
   return thread_utility;

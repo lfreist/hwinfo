@@ -35,7 +35,7 @@ MainBoard::MainBoard() {
   _vendor = get_dmi_by_name("board_vendor");
   _name = get_dmi_by_name("board_name");
   _version = get_dmi_by_name("board_version");
-  _serialNumber = get_dmi_by_name("board_serial");
+  _serial_number = get_dmi_by_name("board_serial");
 }
 
 }  // namespace hwinfo

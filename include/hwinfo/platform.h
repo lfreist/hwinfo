@@ -35,14 +35,11 @@
 #ifdef HWINFO_EXPORTS
 #define HWINFO_API __declspec(dllexport)
 #else
-#ifdef HWINFO_IMPORTS
 #define HWINFO_API __declspec(dllimport)
-#else
-#define HWINFO_API
 #endif
-#endif
+#pragma warning(disable: 4251)
 #else
-#define HWINFO_API
+#define HWINFO_API __attribute__((visibility("default")))
 #endif
 
 #if defined(__has_cpp_attribute)

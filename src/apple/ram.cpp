@@ -36,16 +36,16 @@ Memory::Memory() {
   module.serial_number = "<unknown>";
   module.model = "<unknown>";
   module.id = 0;
-  module.total_Bytes = getMemSize();
-  module.frequency_Hz = -1;
+  module._size_bytes = getMemSize();
+  module.frequency_hz = -1;
   _modules.push_back(module);
 }
 
 // _____________________________________________________________________________________________________________________
-uint64_t Memory::total_Bytes() const {
+uint64_t Memory::_size_bytes() const {
   uint64_t sum = 0;
   for (const auto& module : _modules) {
-    sum += module.total_Bytes;
+    sum += module._size_bytes;
   }
   return sum;
 }

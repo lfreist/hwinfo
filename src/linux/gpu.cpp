@@ -3,12 +3,12 @@
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
 #include <hwinfo/platform.h>
-#include "hwinfo/utils/unit.h"
 
 #ifdef HWINFO_UNIX
 
-#include <hwinfo/gpu.h>
-#include <hwinfo/utils/PCIMapper.h>
+#include "hwinfo/utils/unit.h"
+#include "hwinfo/gpu.h"
+#include "hwinfo/utils/PCIMapper.h"
 
 #ifdef USE_OCL
 #include <hwinfo/opencl/device.h>
@@ -81,7 +81,7 @@ std::vector<GPU> getAllGPUs() {
     gpu._vendor = vendor.vendor_name;
     gpu._name = vendor[gpu._device_id].device_name;
     auto frequencies = get_frequencies(path);
-    gpu._frequency_Hz = frequencies[2];
+    gpu._frequency_hz = frequencies[2];
     gpus.push_back(std::move(gpu));
     id++;
   }

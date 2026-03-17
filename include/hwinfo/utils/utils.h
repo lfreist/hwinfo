@@ -30,7 +30,8 @@ inline int64_t get_value<int64_t>(const std::vector<int64_t>& data, size_t index
   }
 }
 
-inline bool is_power_of_two(unsigned int x) { return x > 0 && (x & (x - 1)) == 0; }
+template <typename T>
+inline bool is_power_of_two(T x) { return x > 0 && (x & (x - 1)) == 0; }
 
 template <typename T>
 inline T round_to_next_power_of_2(T val) {

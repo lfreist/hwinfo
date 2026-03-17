@@ -17,42 +17,27 @@ std::uint32_t Battery::id() const {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string& Battery::vendor() {
-  if (_vendor.empty()) {
-    _vendor = getVendor();
-  }
+const std::string& Battery::vendor() const {
   return _vendor;
 }
 
 // _____________________________________________________________________________________________________________________
-std::string& Battery::model() {
-  if (_model.empty()) {
-    _model = getModel();
-  }
+const std::string& Battery::model() const {
   return _model;
 }
 
 // _____________________________________________________________________________________________________________________
-std::string& Battery::serialNumber() {
-  if (_serialNumber.empty()) {
-    _serialNumber = getSerialNumber();
-  }
-  return _serialNumber;
+const std::string& Battery::serialNumber() const {
+  return _serial_number;
 }
 
 // _____________________________________________________________________________________________________________________
-std::string& Battery::technology() {
-  if (_technology.empty()) {
-    _technology = getTechnology();
-  }
+const std::string& Battery::technology() const {
   return _technology;
 }
 
 // _____________________________________________________________________________________________________________________
-uint32_t Battery::energyFull() {
-  if (_energyFull == 0) {
-    _energyFull = getEnergyFull();
-  }
+uint32_t Battery::energyFull() const {
   return _energyFull;
 }
 
@@ -63,7 +48,13 @@ bool Battery::charging() const { return state() == State::CHARGING; }
 bool Battery::discharging() const { return state() == State::DISCHARGING; }
 
 // _____________________________________________________________________________________________________________________
-double Battery::capacity() { return static_cast<double>(energyNow()) / energyFull(); }
+double Battery::capacity() const {
+  std::uint32_t full = energyFull();
+  if (full == 0) {
+    return 0.f;
+  }
+  return static_cast<double>(energyNow()) / static_cast<double>(full);
+}
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
@@ -71,7 +62,7 @@ std::ostream& operator<<(std::ostream& os, const Battery& battery) {
   os << "Battery{.id=" << battery._id
      << "', .vendor='" << battery._vendor
      << "', .model='" << battery._model
-     << "', .serial_number='" << battery._serialNumber
+     << "', .serial_number='" << battery._serial_number
      << "', technology='" << battery._technology
      << "', .full_capacity=" << battery._energyFull
      << ", .state='" << battery.state() << "'}";

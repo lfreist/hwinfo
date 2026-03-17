@@ -22,6 +22,7 @@ namespace monitor::cpu {
 
 double utilization(std::chrono::milliseconds sleep = 200ms);
 std::vector<double> core_utilization(std::chrono::milliseconds sleep = 200ms);
+std::vector<int64_t> current_frequency_hz();
 
 }  // namespace monitor::cpu
 

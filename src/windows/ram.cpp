@@ -49,11 +49,11 @@ Memory::Memory() {
     }
     hr = obj->Get(L"Capacity", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-      module.total_Bytes = std::stoll(utils::wstring_to_std_string(vt_prop.bstrVal));
+      module._size_bytes = std::stoll(utils::wstring_to_std_string(vt_prop.bstrVal));
     }
     hr = obj->Get(L"ConfiguredClockSpeed", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_I4)) {
-      module.frequency_Hz = static_cast<int64_t>(vt_prop.intVal) * 1000 * 1000;
+      module.frequency_hz = static_cast<int64_t>(vt_prop.intVal) * 1000 * 1000;
     }
     hr = obj->Get(L"SerialNumber", 0, &vt_prop, nullptr, nullptr);
     if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
@@ -66,27 +66,27 @@ Memory::Memory() {
 }
 
 // _____________________________________________________________________________________________________________________
-uint64_t Memory::total_Bytes() const {
+uint64_t Memory::size() const {
   uint64_t sum = 0;
   for (const auto& module : _modules) {
-    sum += module.total_Bytes;
+    sum += module._size_bytes;
   }
   return sum;
 }
 
 // _____________________________________________________________________________________________________________________
-int64_t Memory::free_Bytes() const {
+uint64_t Memory::free() const {
   auto res = utils::WMI::query<std::string>(L"Win32_OperatingSystem", L"FreePhysicalMemory");
   if (res.empty()) {
-    return -1;
+    return 0;
   }
   return std::stoll(res.front()) * 1024;
 }
 
 // _____________________________________________________________________________________________________________________
-int64_t Memory::available_Bytes() const {
+uint64_t Memory::available() const {
   // TODO: Get actual available memory size...
-  return free_Bytes();
+  return free();
 }
 
 }  // namespace hwinfo

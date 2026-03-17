@@ -31,7 +31,7 @@ class HWINFO_API Disk {
   };
 
   friend std::vector<Disk> getAllDisks();
-  friend std::ostream& operator<<(std::ostream& os, const Disk::Interface& interface);
+  friend std::ostream& operator<<(std::ostream& os, const Disk::Interface& disk_interface);
   friend std::ostream& operator<<(std::ostream& os, const Disk& disk);
 
  public:
@@ -42,20 +42,19 @@ class HWINFO_API Disk {
 
   HWI_NODISCARD const std::string& vendor() const;
   HWI_NODISCARD const std::string& model() const;
-  HWI_NODISCARD const std::string& serialNumber() const;
-  HWI_NODISCARD std::uint64_t size_bytes() const;
-  HWI_NODISCARD std::uint64_t free_size_bytes() const;
+  HWI_NODISCARD const std::string& serial_number() const;
+  HWI_NODISCARD std::uint64_t size() const;
   HWI_NODISCARD const std::vector<std::string>& mount_points() const;
   HWI_NODISCARD std::uint32_t id() const;
-  HWI_NODISCARD Interface interface() const;
+  HWI_NODISCARD Interface disk_interface() const;
 
  private:
   Disk() = default;
 
-  std::string _vendor;
-  std::string _model;
-  std::string _serialNumber;
-  std::uint64_t _size_Bytes = 0;
+  std::string _vendor = "<unknown>";
+  std::string _model = "<unknown>";
+  std::string _serial_number = "<unknown>";
+  std::uint64_t _size_bytes = 0;
   std::vector<std::string> _mount_points;
   std::uint32_t _id = invalid_id;
   Interface _interface = Interface::UNKNOWN;
@@ -63,6 +62,6 @@ class HWINFO_API Disk {
 
 std::vector<Disk> getAllDisks();
 
-std::ostream& operator<<(std::ostream& os, const hwinfo::Disk::Interface& interface);
+std::ostream& operator<<(std::ostream& os, const hwinfo::Disk::Interface& disk_interface);
 
 }  // namespace hwinfo

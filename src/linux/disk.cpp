@@ -116,21 +116,9 @@ hwinfo::Disk::Interface getDiskInterface(const std::filesystem::path& path) {
   return hwinfo::Disk::Interface::UNKNOWN;
 }
 
-// _____________________________________________________________________________________________________________________
-int64_t getDiskFreeSize_Bytes(const std::string& path) {
-  struct statvfs stat {};
-  if (statvfs(path.c_str(), &stat) == 0)
-    return static_cast<int64_t>(stat.f_bsize) * static_cast<int64_t>(stat.f_bavail);
-
-  return -1;
-}
-
 }  // anonymous namespace
 
 namespace hwinfo {
-
-// =====================================================================================================================
-std::uint64_t Disk::free_size_bytes() const { return 0; }
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
@@ -148,8 +136,8 @@ std::vector<Disk> getAllDisks() {
     disk._id = id++;
     disk._model = getDiskModel(entry.path());
     disk._vendor = getDiskVendor(entry.path());
-    disk._serialNumber = getDiskSerialNumber(entry.path());
-    disk._size_Bytes = getDiskSize_Bytes(entry.path());
+    disk._serial_number = getDiskSerialNumber(entry.path());
+    disk._size_bytes = getDiskSize_Bytes(entry.path());
     disk._interface = getDiskInterface(entry.path());
     for (const auto& sub_entry : std::filesystem::directory_iterator(entry.path())) {
       if (std::filesystem::exists(sub_entry.path() / "partition")) {
@@ -161,50 +149,6 @@ std::vector<Disk> getAllDisks() {
   }
 
   return disks;
-}
-
-// =====================================================================================================================
-// _____________________________________________________________________________________________________________________
-std::ostream& operator<<(std::ostream& os, const Disk::Interface& interface) {
-  switch (interface) {
-    case Disk::Interface::NVME:
-      os << "Disk::Interface::NVME";
-      break;
-    case hwinfo::Disk::Interface::USB:
-      os << "Disk::Interface::USB";
-      break;
-    case Disk::Interface::USB1:
-      os << "Disk::Interface::USB1";
-      break;
-    case Disk::Interface::USB2:
-      os << "Disk::Interface::USB2";
-      break;
-    case Disk::Interface::USB3_5GBit:
-      os << "Disk::Interface::USB3_5GBit";
-      break;
-    case Disk::Interface::USB3_10GBit:
-      os << "Disk::Interface::USB3_10GBit";
-      break;
-    case Disk::Interface::USB3_20GBit:
-      os << "Disk::Interface::USB3_20GBit";
-      break;
-    case Disk::Interface::USB4_40GBit:
-      os << "Disk::Interface::USB4_40GBit";
-      break;
-    case Disk::Interface::USB4_80GBit:
-      os << "Disk::Interface::USB3_80GBit";
-      break;
-    case Disk::Interface::SATA:
-      os << "Disk::Interface::SATA";
-      break;
-    case Disk::Interface::SCSI:
-      os << "Disk::Interface::SCSI";
-      break;
-    case Disk::Interface::UNKNOWN:
-      os << "Disk::Interface::UNKNOWN";
-      break;
-  }
-  return os;
 }
 
 }  // namespace hwinfo

@@ -11,7 +11,7 @@
 
 using namespace hwinfo::unit;
 
-int main(int argc, char** argv) {
+int main(/*int argc, char** argv*/) {
   std::cout << "hwinfo is an open source, MIT licensed project that implements a platform independent "
                "hardware and system information gathering API for C++.\n\n"
                "If you face any issues, find bugs or if your platform is not supported yet, do not hesitate to create "
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
               << " dedicated memory: " << unit_prefix_to(gpu.dedicated_memory_Bytes(), IECPrefix::GIBI) << " GiB\n"
               << std::left << std::setw(20)
               << " shared memory: " << unit_prefix_to(gpu.shared_memory_Bytes(), IECPrefix::GIBI) << " GiB\n"
-              << std::left << std::setw(20) << " frequency: " << unit_prefix_to(gpu.frequency_Hz(), SiPrefix::MEGA)
+              << std::left << std::setw(20) << " frequency: " << unit_prefix_to(gpu.frequency_hz(), SiPrefix::MEGA)
               << " MHz\n"
               << std::left << std::setw(20) << " cores: " << gpu.num_cores() << "\n"
               << std::left << std::setw(20) << " vendor_id: " << gpu.vendor_id() << "\n"
@@ -77,10 +77,10 @@ int main(int argc, char** argv) {
 
   hwinfo::Memory memory;
   std::cout << "----------------------------------- RAM -----------------------------------\n"
-            << std::left << std::setw(20) << "size: " << unit_prefix_to(memory.total_Bytes(), IECPrefix::GIBI) << "\n"
-            << std::left << std::setw(20) << "free: " << unit_prefix_to(memory.free_Bytes(), IECPrefix::GIBI) << "\n"
+            << std::left << std::setw(20) << "size: " << unit_prefix_to(memory.size(), IECPrefix::GIBI) << "\n"
+            << std::left << std::setw(20) << "free: " << unit_prefix_to(memory.free(), IECPrefix::GIBI) << "\n"
             << std::left << std::setw(20)
-            << "available: " << unit_prefix_to(memory.available_Bytes(), IECPrefix::GIBI) << "\n";
+            << "available: " << unit_prefix_to(memory.available(), IECPrefix::GIBI) << "\n";
   for (const auto& module : memory.modules()) {
     std::cout << std::left << std::setw(20) << (" RAM " + std::to_string(module.id)) << "\n"
               << std::left << std::setw(20) << "  vendor: " << module.vendor << "\n"
@@ -117,15 +117,13 @@ int main(int argc, char** argv) {
   std::vector<hwinfo::Disk> disks = hwinfo::getAllDisks();
   std::cout << "--------------------------------- Disks -----------------------------------\n";
   if (!disks.empty()) {
-    int disk_counter = 0;
     for (const auto& disk : disks) {
       std::cout << std::left << std::setw(20) << ("Disk " + std::to_string(disk.id()) + ":") << "\n"
                 << std::left << std::setw(20) << " vendor: " << disk.vendor() << "\n"
                 << std::left << std::setw(20) << " model: " << disk.model() << "\n"
-                << std::left << std::setw(20) << " serial number: " << disk.serialNumber() << "\n"
-                << std::left << std::setw(20) << " interface: " << disk.interface() << "\n"
-                << std::left << std::setw(20) << " size: " << unit_prefix_to(disk.size_bytes(), IECPrefix::GIBI) << "\n"
-                << std::left << std::setw(20) << " free: " << unit_prefix_to(disk.free_size_bytes(), IECPrefix::GIBI) << "\n"
+                << std::left << std::setw(20) << " serial number: " << disk.serial_number() << "\n"
+                << std::left << std::setw(20) << " interface: " << disk.disk_interface() << "\n"
+                << std::left << std::setw(20) << " size: " << unit_prefix_to(disk.size(), IECPrefix::GIBI) << " GiB\n"
                 << std::left << std::setw(20) << " mount points: " << hwinfo::utils::join(disk.mount_points(), ", ") << "\n";
     }
   } else {

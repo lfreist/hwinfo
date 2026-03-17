@@ -59,7 +59,7 @@ MemInfo parse_meminfo() {
     while (mi.total == 0 || mi.available == 0 || mi.free == 0) {
       std::string line;
       if (!std::getline(f_meminfo, line)) {
-        if (mi.total == -1 || mi.available == -1) {
+        if (mi.total == 0 || mi.available == 0) {
           get_from_sysconf(mi);
         }
         return mi;
@@ -94,23 +94,22 @@ MemInfo parse_meminfo() {
 // _____________________________________________________________________________________________________________________
 Memory::Memory() {
   // TODO: get information for actual memory modules (DIMM)
-  std::uint32_t id = 0;
 }
 
 // _____________________________________________________________________________________________________________________
-uint64_t Memory::total_Bytes() const {
+uint64_t Memory::size() const {
   auto meminfo = parse_meminfo();
   return utils::round_to_next_power_of_2(meminfo.total);
 }
 
 // _____________________________________________________________________________________________________________________
-uint64_t Memory::free_Bytes() const {
+uint64_t Memory::free() const {
   auto meminfo = parse_meminfo();
   return meminfo.free;
 }
 
 // _____________________________________________________________________________________________________________________
-uint64_t Memory::available_Bytes() const {
+uint64_t Memory::available() const {
   auto meminfo = parse_meminfo();
   return meminfo.available;
 }
