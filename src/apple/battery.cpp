@@ -98,8 +98,8 @@ uint32_t getEnergyFull(std::uint32_t id) {
 }
 
 // _____________________________________________________________________________________________________________________
-std::uint32_t energyNow(std::uint32_t id) const {
-  const CFDictionaryRef powerSource = getPowerSource(id);
+std::uint32_t Battery::energyNow() const {
+  const CFDictionaryRef powerSource = getPowerSource(_id);
   if (!powerSource) {
     return 0;
   }

@@ -27,7 +27,7 @@ bool isAppleSilicon() {
 }
 
 // Get the number of physical CPU cores
-int getPhysicalCoreCount() { return utils::getSysctlValue<int>("hw.physicalcpu", 0); }
+[[maybe_unused]] int getPhysicalCoreCount() { return utils::getSysctlValue<int>("hw.physicalcpu", 0); }
 
 // Calculate CPU frequency for Apple Silicon - simplified version
 uint64_t getCpuFrequency(bool isMax = true) {
