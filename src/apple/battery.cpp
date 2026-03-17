@@ -46,14 +46,14 @@ CFDictionaryRef getPowerSource(const int id) {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getVendor() const { return "<unknown>"; }
+std::string getVendor() { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getModel() const { return "<unknown>"; }
+std::string getModel() { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getSerialNumber() const {
-  const CFDictionaryRef powerSource = getPowerSource(_id);
+std::string getSerialNumber(std::uint32_t id) {
+  const CFDictionaryRef powerSource = getPowerSource(id);
   if (!powerSource) {
     return "<unknown>";
   }
@@ -76,11 +76,11 @@ std::string Battery::getSerialNumber() const {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getTechnology() const { return "<unknown>"; }
+std::string getTechnology() { return "<unknown>"; }
 
 // _____________________________________________________________________________________________________________________
-uint32_t Battery::getEnergyFull() const {
-  const CFDictionaryRef powerSource = getPowerSource(_id);
+uint32_t getEnergyFull(std::uint32_t id) {
+  const CFDictionaryRef powerSource = getPowerSource(id);
   if (!powerSource) {
     return 0;
   }
@@ -98,8 +98,8 @@ uint32_t Battery::getEnergyFull() const {
 }
 
 // _____________________________________________________________________________________________________________________
-uint32_t Battery::energyNow() const {
-  const CFDictionaryRef powerSource = getPowerSource(_id);
+uint32_t energyNow(std::uint32_t id) {
+  const CFDictionaryRef powerSource = getPowerSource(id);
   if (!powerSource) {
     return 0;
   }
@@ -148,13 +148,19 @@ std::vector<Battery> getAllBatteries() {
     return batteries;
   }
 
-  const int numSources = static_cast<int>(CFArrayGetCount(powerSources));
+  const auto numSources = static_cast<std::uint32_t>(CFArrayGetCount(powerSources));
 
   CFRelease(powerSources);
   CFRelease(powerInfo);
 
-  for (int i = 0; i < numSources; ++i) {
+  for (std::uint32_t i = 0; i < numSources; ++i) {
     batteries.emplace_back(i);
+    auto& battery = batteries.back();
+    battery._vendor = getVendor();
+    battery._model = getModel();
+    battery._energyFull = getEnergyFull(i);
+    battery._technology = getTechnology();
+    battery._serial_number = getSerialNumber(i);
   }
 
   return batteries;

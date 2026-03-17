@@ -30,32 +30,26 @@ bool isAppleSilicon() {
 int getPhysicalCoreCount() { return utils::getSysctlValue<int>("hw.physicalcpu", 0); }
 
 // Calculate CPU frequency for Apple Silicon - simplified version
-int64_t getCpuFrequency(bool isMax = true) {
+uint64_t getCpuFrequency(bool isMax = true) {
   // Try to get CPU frequency directly
-  uint64_t directFreq = utils::getSysctlValue<uint64_t>(isMax ? "hw.cpufrequency_max" : "hw.cpufrequency", 0);
-  if (directFreq > 0) {
-    return static_cast<int64_t>(directFreq / 1000000);
-  }
-
-  // If we can't get a direct measurement, return -1
-  return -1;
+  return utils::getSysctlValue<uint64_t>(isMax ? "hw.cpufrequency_max" : "hw.cpufrequency", 0);
 }
 
 }  // anonymous namespace
 
 // _____________________________________________________________________________________________________________________
-int64_t getMaxClockSpeed_MHz(const int& core_id) { return getCpuFrequency(true); }
+[[maybe_unused]] uint64_t getMaxClockSpeed_MHz() { return getCpuFrequency(true); }
 
 // _____________________________________________________________________________________________________________________
-int64_t getRegularClockSpeed_MHz(const int& core_id) { return getCpuFrequency(false); }
+[[maybe_unused]] uint64_t getRegularClockSpeed_MHz() { return getCpuFrequency(false); }
 
 // _____________________________________________________________________________________________________________________
-int64_t getMinClockSpeed_MHz(const int& core_id) {
+[[maybe_unused]] uint64_t getMinClockSpeed_MHz() {
   return utils::getSysctlValue<uint64_t>("hw.cpufrequency_min", 0) / 1000000;
 }
 
 // _____________________________________________________________________________________________________________________
-std::vector<int64_t> currentClockSpeed_MHz() {
+[[maybe_unused]] std::vector<int64_t> currentClockSpeed_MHz() {
   std::vector<int64_t> clockSpeeds;
 
   processor_info_array_t cpuInfo;
@@ -96,7 +90,7 @@ std::string getVendor() {
 }
 
 // _____________________________________________________________________________________________________________________
-double currentUtilisation() {
+[[maybe_unused]] double currentUtilisation() {
   host_cpu_load_info_data_t cpuinfo;
   mach_msg_type_number_t count = HOST_CPU_LOAD_INFO_COUNT;
 
@@ -126,7 +120,7 @@ double currentUtilisation() {
 }
 
 // _____________________________________________________________________________________________________________________
-double threadUtilisation(int thread_index) {
+[[maybe_unused]] double threadUtilisation(int thread_index) {
   // On macOS, getting per-thread utilization requires more complex code
   // This is a simplified implementation that returns the same value for all threads
   if (thread_index >= 0) {
@@ -178,7 +172,7 @@ double threadUtilisation(int thread_index) {
 }
 
 // _____________________________________________________________________________________________________________________
-std::vector<double> threadsUtilisation() {
+[[maybe_unused]] std::vector<double> threadsUtilisation() {
   std::vector<double> thread_utility;
   processor_cpu_load_info_t cpuLoad;
   mach_msg_type_number_t processorMsgCount;
@@ -239,11 +233,11 @@ int getNumPhysicalCores() { return utils::getSysctlValue<int>("hw.physicalcpu", 
 // _____________________________________________________________________________________________________________________
 int getNumLogicalCores() { return utils::getSysctlValue<int>("hw.logicalcpu", 0); }
 
-int64_t getL1CacheSize_Bytes() { return utils::getSysctlValue<int64_t>("hw.l1dcachesize", -1); }
+[[maybe_unused]] int64_t getL1CacheSize_Bytes() { return utils::getSysctlValue<int64_t>("hw.l1dcachesize", -1); }
 
-int64_t getL2CacheSize_Bytes() { return utils::getSysctlValue<int64_t>("hw.l2cachesize", -1); }
+[[maybe_unused]] int64_t getL2CacheSize_Bytes() { return utils::getSysctlValue<int64_t>("hw.l2cachesize", -1); }
 
-int64_t getL3CacheSize_Bytes() { return utils::getSysctlValue<int64_t>("hw.l3cachesize", -1); }
+[[maybe_unused]] int64_t getL3CacheSize_Bytes() { return utils::getSysctlValue<int64_t>("hw.l3cachesize", -1); }
 
 // _____________________________________________________________________________________________________________________
 std::vector<CPU> getAllCPUs() {
