@@ -30,15 +30,6 @@ uint64_t getMemSize() {
 // _____________________________________________________________________________________________________________________
 Memory::Memory() {
   // TODO: get information for actual memory modules (DIMM)
-  Module module;
-  module.vendor = "<unknown>";
-  module.name = "<unknown>";
-  module.serial_number = "<unknown>";
-  module.model = "<unknown>";
-  module.id = 0;
-  module._size_bytes = getMemSize();
-  module.frequency_hz = -1;
-  _modules.push_back(module);
 }
 
 // _____________________________________________________________________________________________________________________
