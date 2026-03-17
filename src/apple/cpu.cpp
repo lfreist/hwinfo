@@ -15,10 +15,6 @@
 #include "hwinfo/cpu.h"
 #include "hwinfo/utils/sysctl.h"
 
-#if defined(HWINFO_X86)
-#include "hwinfo/cpuid.h"
-#endif
-
 namespace hwinfo {
 
 // Helper functions to reduce code duplication
@@ -59,12 +55,13 @@ int64_t getMinClockSpeed_MHz(const int& core_id) {
 }
 
 // _____________________________________________________________________________________________________________________
-std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
+std::vector<int64_t> currentClockSpeed_MHz() {
   std::vector<int64_t> clockSpeeds;
 
   processor_info_array_t cpuInfo;
   mach_msg_type_number_t numCpuInfo;
   natural_t numCPUs = 0;
+  int num_cores = utils::getSysctlValue<int>("hw.logicalcpu", 0);
 
   kern_return_t err = host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &numCPUs, &cpuInfo, &numCpuInfo);
 
@@ -73,13 +70,13 @@ std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
     int64_t freq_mhz = utils::getSysctlValue<uint64_t>("hw.cpufrequency", 0) / 1000000;
 
     // Fill the vector with the frequency for each logical CPU
-    clockSpeeds.resize(_numLogicalCores, freq_mhz > 0 ? freq_mhz : -1);
+    clockSpeeds.resize(num_cores, freq_mhz > 0 ? freq_mhz : -1);
 
     // Free the processor info when done
     vm_deallocate(mach_task_self(), (vm_address_t)cpuInfo, numCpuInfo * sizeof(natural_t));
   } else {
     // If we can't get processor info, still resize the vector to match the number of cores
-    clockSpeeds.resize(_numLogicalCores, -1);
+    clockSpeeds.resize(num_cores, -1);
   }
 
   return clockSpeeds;
@@ -87,15 +84,6 @@ std::vector<int64_t> CPU::currentClockSpeed_MHz() const {
 
 // _____________________________________________________________________________________________________________________
 std::string getVendor() {
-#if defined(HWINFO_X86)
-  std::string vendor;
-  uint32_t regs[4]{0};
-  cpuid::cpuid(0, 0, regs);
-  vendor += std::string((const char*)&regs[1], 4);
-  vendor += std::string((const char*)&regs[3], 4);
-  vendor += std::string((const char*)&regs[2], 4);
-  return vendor;
-#else
   // Try to get vendor from sysctl
   auto vendor = utils::getSysctlString("machdep.cpu.vendor", "<unknown>");
 
@@ -105,11 +93,10 @@ std::string getVendor() {
   }
 
   return vendor;
-#endif
 }
 
 // _____________________________________________________________________________________________________________________
-double CPU::currentUtilisation() const {
+double currentUtilisation() {
   host_cpu_load_info_data_t cpuinfo;
   mach_msg_type_number_t count = HOST_CPU_LOAD_INFO_COUNT;
 
@@ -139,10 +126,10 @@ double CPU::currentUtilisation() const {
 }
 
 // _____________________________________________________________________________________________________________________
-double CPU::threadUtilisation(int thread_index) const {
+double threadUtilisation(int thread_index) {
   // On macOS, getting per-thread utilization requires more complex code
   // This is a simplified implementation that returns the same value for all threads
-  if (thread_index >= 0 && thread_index < _numLogicalCores) {
+  if (thread_index >= 0) {
     processor_cpu_load_info_t cpuLoad;
     mach_msg_type_number_t processorMsgCount;
     natural_t processorCount;
@@ -191,7 +178,7 @@ double CPU::threadUtilisation(int thread_index) const {
 }
 
 // _____________________________________________________________________________________________________________________
-std::vector<double> CPU::threadsUtilisation() const {
+std::vector<double> threadsUtilisation() {
   std::vector<double> thread_utility;
   processor_cpu_load_info_t cpuLoad;
   mach_msg_type_number_t processorMsgCount;
@@ -239,122 +226,18 @@ std::vector<double> CPU::threadsUtilisation() const {
 
 // _____________________________________________________________________________________________________________________
 std::string getModelName() {
-#if defined(HWINFO_X86)
-  std::string model;
-  uint32_t regs[4]{};
-  for (unsigned i = 0x80000002; i < 0x80000005; ++i) {
-    cpuid::cpuid(i, 0, regs);
-    for (auto c : std::string((const char*)&regs[0], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
-    }
-    for (auto c : std::string((const char*)&regs[1], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
-    }
-    for (auto c : std::string((const char*)&regs[2], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
-    }
-    for (auto c : std::string((const char*)&regs[3], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
-    }
-  }
-  return model;
-#else
   std::string name = utils::getSysctlString("machdep.cpu.brand_string", "<unknown> ");
   name.pop_back();
   return name;
-#endif
 }
 
 int getNumLogicalCores();
 
 // _____________________________________________________________________________________________________________________
-int getNumPhysicalCores() {
-#if defined(HWINFO_X86)
-  uint32_t regs[4]{};
-  std::string vendorId = getVendor();
-  std::for_each(vendorId.begin(), vendorId.end(), [](char& in) { in = ::toupper(in); });
-  cpuid::cpuid(0, 0, regs);
-  uint32_t HFS = regs[0];
-  if (vendorId.find("INTEL") != std::string::npos) {
-    if (HFS >= 11) {
-      for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-        uint32_t regs_2[4]{};
-        cpuid::cpuid(0x0b, lvl, regs_2);
-        uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
-        if (currLevel == 0x01) {
-          int numCores = getNumLogicalCores() / static_cast<int>(LVL_CORES & regs_2[1]);
-          if (numCores > 0) {
-            return numCores;
-          }
-        }
-      }
-    } else {
-      if (HFS >= 4) {
-        uint32_t regs_3[4]{};
-        cpuid::cpuid(4, 0, regs_3);
-        int numCores = getNumLogicalCores() / static_cast<int>(1 + ((regs_3[0] >> 26) & 0x3f));
-        if (numCores > 0) {
-          return numCores;
-        }
-      }
-    }
-  } else if (vendorId.find("AMD") != std::string::npos) {
-    if (HFS > 0) {
-      uint32_t regs_4[4]{};
-      cpuid::cpuid(0x80000000, 0, regs_4);
-      if (regs_4[0] >= 8) {
-        int numCores = 1 + (regs_4[2] & 0xff);
-        if (numCores > 0) {
-          return numCores;
-        }
-      }
-    }
-  }
-  return -1;
-#else
-  return utils::getSysctlValue<int>("hw.physicalcpu", 0);
-#endif
-}
+int getNumPhysicalCores() { return utils::getSysctlValue<int>("hw.physicalcpu", 0); }
 
 // _____________________________________________________________________________________________________________________
-int getNumLogicalCores() {
-#if defined(HWINFO_X86)
-  std::string vendorId = getVendor();
-  std::for_each(vendorId.begin(), vendorId.end(), [](char& in) { in = ::toupper(in); });
-  uint32_t regs[4]{};
-  cpuid::cpuid(0, 0, regs);
-  uint32_t HFS = regs[0];
-  if (vendorId.find("INTEL") != std::string::npos) {
-    if (HFS >= 0xb) {
-      for (int lvl = 0; lvl < MAX_INTEL_TOP_LVL; ++lvl) {
-        uint32_t regs_2[4]{};
-        cpuid::cpuid(0x0b, lvl, regs_2);
-        uint32_t currLevel = (LVL_TYPE & regs_2[2]) >> 8;
-        if (currLevel == 0x02) {
-          return static_cast<int>(LVL_CORES & regs_2[1]);
-        }
-      }
-    }
-  } else if (vendorId.find("AMD") != std::string::npos) {
-    if (HFS > 0) {
-      cpuid::cpuid(1, 0, regs);
-      return static_cast<int>(regs[1] >> 16) & 0xff;
-    }
-    return 1;
-  }
-  return -1;
-#else
-  return utils::getSysctlValue<int>("hw.logicalcpu", 0);
-#endif
-}
+int getNumLogicalCores() { return utils::getSysctlValue<int>("hw.logicalcpu", 0); }
 
 int64_t getL1CacheSize_Bytes() { return utils::getSysctlValue<int64_t>("hw.l1dcachesize", -1); }
 
@@ -371,11 +254,6 @@ std::vector<CPU> getAllCPUs() {
   cpu._modelName = getModelName();
   cpu._numPhysicalCores = getNumPhysicalCores();
   cpu._numLogicalCores = getNumLogicalCores();
-  cpu._maxClockSpeed_MHz = getMaxClockSpeed_MHz(0);
-  cpu._regularClockSpeed_MHz = getRegularClockSpeed_MHz(0);
-  cpu._L1CacheSize_Bytes = getL1CacheSize_Bytes();
-  cpu._L2CacheSize_Bytes = getL2CacheSize_Bytes();
-  cpu._L3CacheSize_Bytes = getL3CacheSize_Bytes();
 
   cpus.push_back(cpu);
 
