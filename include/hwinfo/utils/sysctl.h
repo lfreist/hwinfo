@@ -8,8 +8,7 @@
 
 #include <string>
 
-namespace hwinfo {
-namespace utils {
+namespace hwinfo::utils {
 
 // Get a string value from sysctl
 inline std::string getSysctlString(const char* name, std::string defaultValue = "", size_t initialSize = 256) {
@@ -33,7 +32,6 @@ T getSysctlValue(const char* name, T defaultValue = T()) {
   return defaultValue;
 }
 
-}  // namespace utils
-}  // namespace hwinfo
+}  // namespace hwinfo::utils
 
 #endif  // HWINFO_APPLE

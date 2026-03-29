@@ -6,127 +6,145 @@
 #ifdef HWINFO_UNIX
 
 #include <hwinfo/disk.h>
-#include <hwinfo/utils/filesystem.h>
 #include <hwinfo/utils/stringutils.h>
-#include <sys/statvfs.h>
 
+#include <filesystem>
 #include <fstream>
 #include <regex>
 #include <vector>
 
 namespace {
 
-// _____________________________________________________________________________________________________________________
-bool isPartition(const std::string& path) {
-  static const std::regex partitionRegex(R"((sd[a-z]|nvme\d+n\d+)p?\d+$)");
-  return std::regex_search(path, partitionRegex);
-}
+// Linux always considers sectors to be 512 bytes long independently of the devices real block size.
+inline constexpr std::size_t block_size = 512;
 
 // _____________________________________________________________________________________________________________________
-bool readFile(const std::string& path, std::string& outContent) {
-  // Reads the file content and stores it in `outContent`. Returns true if successful, false otherwise.
+std::string read_file(const std::string& path) {
   std::ifstream file(path);
-  if (!file) return false;
+  if (!file) return {};
 
-  std::getline(file, outContent);
-  hwinfo::utils::strip(outContent);
-  return !outContent.empty();
+  std::string content;
+  std::getline(file, content);
+  hwinfo::utils::strip(content);
+  return content;
 }
 
 // _____________________________________________________________________________________________________________________
-std::string getMountPoint(const std::string& device) {
-  std::ifstream mounts("/proc/mounts");
-  std::string line, dev, mount_point;
-  while (std::getline(mounts, line)) {
-    std::istringstream iss(line);
-    if (iss >> dev >> mount_point && dev == device) {
-      return mount_point;
-    }
+std::string getDiskVendor(const std::filesystem::path& path) {
+  std::string result = read_file(path / "device/vendor");
+  if (result.empty()) {
+    return "<unknown>";
   }
-  return "/";
+  return result;
+}
+
+// _____________________________________________________________________________________________________________________
+std::string getDiskModel(const std::filesystem::path& path) {
+  std::string result = read_file(path / "device/model");
+  if (result.empty()) {
+    return "<unknown>";
+  }
+  return result;
+}
+
+// _____________________________________________________________________________________________________________________
+std::string getDiskSerialNumber(const std::filesystem::path& path) {
+  std::string result = read_file(path / "device/serial");
+  if (result.empty()) {
+    return "<unknown>";
+  }
+  return result;
+}
+
+// _____________________________________________________________________________________________________________________
+uint64_t getDiskSize_Bytes(const std::filesystem::path& path) {
+  std::ifstream f(path / "size");
+  uint64_t size = 0;
+  if (f && f >> size) {
+    return size * block_size;
+  }
+  return 0;
+}
+
+hwinfo::Disk::Interface getDiskUsbVersion(const std::filesystem::path& disk_sys_path) {
+  std::filesystem::path current = std::filesystem::canonical(disk_sys_path);
+
+  while (current != "/" && current.has_parent_path()) {
+    if (std::filesystem::exists(current / "speed")) {
+      std::string speed_str = read_file(current / "speed");
+      if (speed_str.empty()) {
+        return hwinfo::Disk::Interface::USB;
+      }
+
+      try {
+        int speed = std::stoi(speed_str);
+        if (speed >= 80000) return hwinfo::Disk::Interface::USB4_80GBit;
+        if (speed >= 40000) return hwinfo::Disk::Interface::USB4_40GBit;
+        if (speed >= 20000) {
+          std::string ver = read_file(current / "version");
+          if (ver.find("4.") != std::string::npos) {
+            return hwinfo::Disk::Interface::USB4_20GBit;
+          }
+          return hwinfo::Disk::Interface::USB3_20GBit;
+        }
+        if (speed >= 10000) return hwinfo::Disk::Interface::USB3_10GBit;
+        if (speed >= 5000) return hwinfo::Disk::Interface::USB3_5GBit;
+        if (speed == 480) return hwinfo::Disk::Interface::USB2;
+        if (speed < 480) return hwinfo::Disk::Interface::USB1;
+      } catch (...) {
+        return hwinfo::Disk::Interface::USB;
+      }
+    }
+    current = current.parent_path();
+  }
+  return hwinfo::Disk::Interface::USB;
+}
+
+// _____________________________________________________________________________________________________________________
+hwinfo::Disk::Interface getDiskInterface(const std::filesystem::path& path) {
+  std::string subsystem = std::filesystem::canonical(path / "device").string();
+  if (subsystem.find("nvme") != std::string::npos) {
+    return hwinfo::Disk::Interface::NVME;
+  } else if (subsystem.find("usb") != std::string::npos) {
+    return getDiskUsbVersion(path);
+  } else if (subsystem.find("ata") != std::string::npos) {
+    return hwinfo::Disk::Interface::SATA;
+  } else if (subsystem.find("scsi") != std::string::npos) {
+    return hwinfo::Disk::Interface::SCSI;
+  }
+  return hwinfo::Disk::Interface::UNKNOWN;
 }
 
 }  // anonymous namespace
 
 namespace hwinfo {
 
-// _____________________________________________________________________________________________________________________
-std::string getDiskVendor(const std::string& path) {
-  // nvme devices are in /sys/class/nvme/ and /sys/class/block/nvme*
-  // but the vendor file is only in /sys/class/nvme/
-  // so we need to check if the device is in /sys/class/block/nvme* and if so, we need to change the path
-  // TODO: use utils::get_specs_by_file
-  std::string vendor_path = path;
-  std::string::size_type nvme_pos = path.find("nvme");
-  if (nvme_pos != std::string::npos) {
-    std::string nvme_name = path.substr(nvme_pos, 5);  // e.g., "nvme0"
-    vendor_path = path.substr(0, nvme_pos - 6) + "nvme/" + nvme_name;
-  }
-
-  std::string vendor;
-  return readFile(vendor_path + "/device/vendor", vendor) ? vendor : "<unknown>";
-}
-
-// _____________________________________________________________________________________________________________________
-std::string getDiskModel(const std::string& path) {
-  std::string model;
-  return readFile(path + "/device/model", model) ? model : "<unknown>";
-}
-
-// _____________________________________________________________________________________________________________________
-std::string getDiskSerialNumber(const std::string& path) {
-  std::string serial;
-  return readFile(path + "/device/serial", serial) ? serial : "<unknown>";
-}
-
-// _____________________________________________________________________________________________________________________
-int64_t getDiskSize_Bytes(const std::string& path) {
-  std::ifstream f(path + "/size");
-  if (f) {
-    int64_t size;
-    f >> size;
-    f.close();
-    return size * block_size;
-  }
-  return -1;
-}
-
-// _____________________________________________________________________________________________________________________
-int64_t getDiskFreeSize_Bytes(const std::string& path) {
-  struct statvfs stat {};
-  if (statvfs(path.c_str(), &stat) == 0)
-    return static_cast<int64_t>(stat.f_bsize) * static_cast<int64_t>(stat.f_bavail);
-
-  return -1;
-}
-
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
 std::vector<Disk> getAllDisks() {
   std::vector<Disk> disks;
-  const std::string base_path = "/sys/class/block/";
 
-  for (const auto& entry : filesystem::getDirectoryEntries(base_path)) {
-    std::string path = base_path + entry;
-    if (!filesystem::exists(path) || isPartition(path)) continue;
-
-    Disk disk;
-    disk._vendor = getDiskVendor(path);
-    disk._model = getDiskModel(path);
-    disk._serialNumber = getDiskSerialNumber(path);
-
-    // Check before get size because size is always define in /sys/class/block/...
-    if (disk._vendor == "<unknown>" && disk._model == "<unknown>" && disk._serialNumber == "<unknown>") {
+  std::uint32_t id = 0;
+  for (const auto& entry : std::filesystem::directory_iterator("/sys/class/block")) {
+    std::string name = entry.path().filename().string();
+    if (std::filesystem::exists(entry.path() / "partition") || name.find("loop") == 0 || name.find("ram") == 0) {
+      // skip partitions, loop devices and virtual devices
       continue;
     }
+    Disk disk;
+    disk._id = id++;
+    disk._model = getDiskModel(entry.path());
+    disk._vendor = getDiskVendor(entry.path());
+    disk._serial_number = getDiskSerialNumber(entry.path());
+    disk._size_bytes = getDiskSize_Bytes(entry.path());
+    disk._interface = getDiskInterface(entry.path());
+    for (const auto& sub_entry : std::filesystem::directory_iterator(entry.path())) {
+      if (std::filesystem::exists(sub_entry.path() / "partition")) {
+        disk._mount_points.emplace_back("/dev/" + sub_entry.path().filename().string());
+      }
+    }
 
-    disk._size_Bytes = getDiskSize_Bytes(path);
-
-    auto mount_point = getMountPoint("/dev/" + entry);
-    disk._free_size_Bytes = getDiskFreeSize_Bytes(mount_point);
-    disk._volumes.push_back(std::move(mount_point));
-
-    disks.push_back(std::move(disk));
+    disks.emplace_back(std::move(disk));
   }
 
   return disks;

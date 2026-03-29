@@ -5,22 +5,20 @@
 
 #ifdef HWINFO_UNIX
 
+#include <filesystem>
 #include <fstream>
 
 #include "hwinfo/battery.h"
-#include "hwinfo/utils/filesystem.h"
 
 namespace hwinfo {
 
-static std::string base_path = "/sys/class/power_supply/";
+static std::filesystem::path base_path("/sys/class/power_supply/");
 
-// =====================================================================================================================
+namespace {
+
 // _____________________________________________________________________________________________________________________
-std::string Battery::getVendor() const {
-  if (_id < 0) {
-    return "<unknown>";
-  }
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "manufacturer");
+std::string get_vendor(std::uint32_t id) {
+  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(id)) / "manufacturer");
   std::string vendor;
   if (vendor_file.is_open()) {
     getline(vendor_file, vendor);
@@ -30,11 +28,8 @@ std::string Battery::getVendor() const {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getModel() const {
-  if (_id < 0) {
-    return "<unknown>";
-  }
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "model_name");
+std::string get_model(std::uint32_t id) {
+  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(id)) / "model_name");
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
@@ -44,11 +39,8 @@ std::string Battery::getModel() const {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getSerialNumber() const {
-  if (_id < 0) {
-    return "<unknown>";
-  }
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "serial_number");
+std::string get_serial_number(std::uint32_t id) {
+  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(id)) / "serial_number");
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
@@ -58,11 +50,8 @@ std::string Battery::getSerialNumber() const {
 }
 
 // _____________________________________________________________________________________________________________________
-std::string Battery::getTechnology() const {
-  if (_id < 0) {
-    return "<unknown>";
-  }
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "technology");
+std::string get_technology(std::uint32_t id) {
+  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(id)) / "technology");
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
@@ -71,12 +60,16 @@ std::string Battery::getTechnology() const {
   return "<unknown>";
 }
 
+}  // namespace
+
+// =====================================================================================================================
 // _____________________________________________________________________________________________________________________
-uint32_t Battery::getEnergyFull() const {
-  if (_id < 0) {
-    return 0;
+uint32_t get_energy_full(std::uint32_t id) {
+  auto path = std::filesystem::path(base_path / ("BAT" + std::to_string(id)) / "energy_full");
+  if (!std::filesystem::exists(path)) {
+    path = std::filesystem::path(base_path / ("BAT" + std::to_string(id)) / "charge_full");
   }
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "energy_full");
+  std::ifstream vendor_file(path);
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
@@ -91,10 +84,11 @@ uint32_t Battery::getEnergyFull() const {
 
 // _____________________________________________________________________________________________________________________
 uint32_t Battery::energyNow() const {
-  if (_id < 0) {
-    return 0;
+  auto path = std::filesystem::path(base_path / ("BAT" + std::to_string(_id)) / "energy_now");
+  if (!std::filesystem::exists(path)) {
+    path = std::filesystem::path(base_path / ("BAT" + std::to_string(_id)) / "charge_now");
   }
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "energy_now");
+  std::ifstream vendor_file(path);
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
@@ -108,29 +102,29 @@ uint32_t Battery::energyNow() const {
 }
 
 // _____________________________________________________________________________________________________________________
-bool Battery::charging() const {
-  if (_id < 0) {
-    return false;
-  }
-  std::ifstream vendor_file(base_path + "BAT" + std::to_string(_id) + "/" + "status");
+Battery::State Battery::state() const {
+  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(_id)) / "status");
   std::string value;
   if (vendor_file.is_open()) {
     getline(vendor_file, value);
-    return value == "Charging";
+    return value == "Charging" ? State::CHARGING : State::DISCHARGING;
   }
-  return false;
+  return State::UNKNOWN;
 }
-
-// _____________________________________________________________________________________________________________________
-bool Battery::discharging() const { return !charging(); }
 
 // =====================================================================================================================
 // _____________________________________________________________________________________________________________________
 std::vector<Battery> getAllBatteries() {
   std::vector<Battery> batteries;
-  int8_t id = 0;
-  while (filesystem::exists(base_path + "BAT" + std::to_string(id))) {
+  std::uint32_t id = 0;
+  while (std::filesystem::exists(base_path / ("BAT" + std::to_string(id)))) {
     batteries.emplace_back(id++);
+    auto& battery = batteries.back();
+    battery._vendor = get_vendor(id);
+    battery._model = get_model(id);
+    battery._energyFull = get_energy_full(id);
+    battery._serial_number = get_serial_number(id);
+    battery._technology = get_technology(id);
   }
   return batteries;
 }
