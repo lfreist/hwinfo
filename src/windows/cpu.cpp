@@ -12,8 +12,6 @@
 #include <powrprof.h>
 #include <winternl.h>
 
-#include <algorithm>
-#include <map>
 #include <numeric>
 #include <string>
 #include <thread>

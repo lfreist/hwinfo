@@ -34,7 +34,8 @@ hwinfo::Disk::Interface mapBusType(STORAGE_BUS_TYPE busType) {
 
 std::map<uint32_t, std::vector<std::string>> getDiskToVolumeMap() {
   std::map<uint32_t, std::vector<std::string>> mapping;
-  char logicalDrives[MAX_PATH];
+  char logicalDrives[MAX_PATH] = {};
+  GetLogicalDriveStringsA(sizeof(logicalDrives), logicalDrives);
 
   char* currentDrive = logicalDrives;
   while (*currentDrive) {

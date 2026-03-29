@@ -94,7 +94,6 @@ int main() {
     }
   }
 
-  // Print static header
   std::cout << "=== hwinfo live monitor  (Ctrl+C to quit) ===\n\n";
   for (const auto& cpu : cpus) {
     std::cout << "CPU : " << cpu.vendor() << " " << cpu.modelName() << "  ("
@@ -133,8 +132,7 @@ int main() {
       out << "  T" << std::setw(2) << std::setfill('0') << i << std::setfill(' ') << " : "
           << bar(u, 14) << ' ' << std::setw(5) << std::setprecision(1) << u * 100.0 << '%';
       if (i < s.cpu.thread_frequency_hz.size() && s.cpu.thread_frequency_hz[i] > 0) {
-        out << "  " << std::setw(7) << std::setprecision(0)
-            << static_cast<double>(s.cpu.thread_frequency_hz[i]) / 1e6 << " MHz";
+        out << "  " << std::setw(7) << std::setprecision(0) << unit_prefix_to(s.cpu.thread_frequency_hz[i], SiPrefix::MEGA) << " MHz";
       }
       out << '\n';
       ++lines;
