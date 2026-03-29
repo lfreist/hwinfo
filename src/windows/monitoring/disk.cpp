@@ -24,6 +24,10 @@ std::uint64_t get_free_size(const Disk& disk) {
   return size;
 }
 
+Data fetch(const std::string& mount_point) {
+  return Data{mount_point, get_free_size(mount_point)};
+}
+
 }  // namespace hwinfo::monitoring::disk
 
-#endif
+#endif  // HWINFO_WINDOWS

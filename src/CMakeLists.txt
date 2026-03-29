@@ -47,6 +47,10 @@ if (HWINFO_CPU)
             windows/cpu.cpp
 
             windows/utils/wmi_wrapper.cpp
+
+            apple/monitoring/cpu.cpp
+            linux/monitoring/cpu.cpp
+            windows/monitoring/cpu.cpp
     )
 
     add_library(hwinfo_cpu ${HWINFO_BUILD} ${CPU_SRC_FILES})
@@ -65,6 +69,9 @@ if (HWINFO_CPU)
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/cpu.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
+    install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/monitoring/monitor.h
+                  ${HWINFO_INCLUDE_DIR}/hwinfo/monitoring/cpu.h
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo/monitoring)
 endif()
 # ______________________________________________________________________________________________________________________
 
@@ -77,6 +84,10 @@ if (HWINFO_DISK)
             windows/disk.cpp
 
             windows/utils/wmi_wrapper.cpp
+
+            apple/monitoring/disk.cpp
+            linux/monitoring/disk.cpp
+            windows/monitoring/disk.cpp
     )
 
     add_library(hwinfo_disk ${HWINFO_BUILD} ${DISK_SRC_FILES})
@@ -99,6 +110,8 @@ if (HWINFO_DISK)
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/disk.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
+    install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/monitoring/disk.h
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo/monitoring)
 endif ()
 # ______________________________________________________________________________________________________________________
 
@@ -220,6 +233,10 @@ if (HWINFO_RAM)
             windows/ram.cpp
 
             windows/utils/wmi_wrapper.cpp
+
+            apple/monitoring/ram.cpp
+            linux/monitoring/ram.cpp
+            windows/monitoring/ram.cpp
     )
 
     add_library(hwinfo_ram ${HWINFO_BUILD} ${RAM_SRC_FILES})
@@ -239,6 +256,8 @@ if (HWINFO_RAM)
             RUNTIME DESTINATION bin)
 
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/ram.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
+    install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/monitoring/ram.h
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo/monitoring)
 endif ()
 # ______________________________________________________________________________________________________________________
 
