@@ -16,33 +16,33 @@
 namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
-int64_t getMemSize() {
-  int64_t memSize;
+uint64_t getMemSize() {
+  uint64_t memSize;
   size_t size = sizeof(memSize);
 
   if (sysctlbyname("hw.memsize", &memSize, &size, nullptr, 0) == 0) {
     return memSize;
   }
 
-  return -1;
+  return 0;
 }
 
 // _____________________________________________________________________________________________________________________
 Memory::Memory() {
   // TODO: get information for actual memory modules (DIMM)
-  Module module;
-  module.vendor = "<unknown>";
-  module.name = "<unknown>";
-  module.serial_number = "<unknown>";
-  module.model = "<unknown>";
-  module.id = 0;
-  module.total_Bytes = getMemSize();
-  module.frequency_Hz = -1;
-  _modules.push_back(module);
 }
 
 // _____________________________________________________________________________________________________________________
-int64_t Memory::free_Bytes() const {
+uint64_t Memory::size() const {
+  uint64_t sum = 0;
+  for (const auto& module : _modules) {
+    sum += module._size_bytes;
+  }
+  return sum;
+}
+
+// _____________________________________________________________________________________________________________________
+uint64_t Memory::free() const {
   vm_statistics64_data_t vmStats;
   mach_msg_type_number_t infoCount = HOST_VM_INFO64_COUNT;
   kern_return_t kernReturn =
@@ -65,11 +65,11 @@ int64_t Memory::free_Bytes() const {
     return totalMemory - usedMemory;
   }
 
-  return -1;
+  return 0;
 }
 
 // _____________________________________________________________________________________________________________________
-int64_t Memory::available_Bytes() const {
+uint64_t Memory::available() const {
   int64_t usableMemSize;
   size_t size = sizeof(usableMemSize);
 
@@ -77,7 +77,7 @@ int64_t Memory::available_Bytes() const {
     return usableMemSize;
   }
 
-  return -1;
+  return 0;
 }
 
 }  // namespace hwinfo

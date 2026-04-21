@@ -6,72 +6,67 @@
 #include <hwinfo/platform.h>
 #include <hwinfo/utils/wmi_wrapper.h>
 
+#include <array>
+#include <chrono>
 #include <cstdint>
+#include <map>
 #include <string>
 #include <vector>
 
+using namespace std::chrono_literals;
+
 namespace hwinfo {
 
-#ifdef HWINFO_UNIX
-struct Jiffies {
-  Jiffies() {
-    working = -1;
-    all = -1;
-  }
+namespace monitor::cpu {
 
-  Jiffies(int64_t _all, int64_t _working) {
-    all = _all;
-    working = _working;
-  }
+double utilization(std::chrono::milliseconds sleep = 200ms);
+std::vector<double> core_utilization(std::chrono::milliseconds sleep = 200ms);
+std::vector<int64_t> current_frequency_hz();
 
-  int64_t working;
-  int64_t all;
-};
-#endif
+}  // namespace monitor::cpu
 
 class HWINFO_API CPU {
   friend HWINFO_API std::vector<CPU> getAllCPUs();
 
  public:
+  static constexpr std::uint32_t invalid_id = std::numeric_limits<std::uint32_t>::max();
+
+ public:
+  struct Cache {
+    std::uint64_t l1_data;
+    std::uint64_t l1_instruction;
+    std::uint64_t l2;
+    std::uint64_t l3;
+  };
+  struct Core {
+    std::uint64_t id;
+    Cache cache;
+    std::uint64_t regular_frequency_hz;
+    std::uint64_t max_frequency_hz;
+    bool smt;
+  };
+
+ public:
   ~CPU() = default;
 
-  int id() const;
-  const std::string& modelName() const;
-  const std::string& vendor() const;
-  int64_t L1CacheSize_Bytes() const;
-  int64_t L2CacheSize_Bytes() const;
-  int64_t L3CacheSize_Bytes() const;
-  int numPhysicalCores() const;
-  int numLogicalCores() const;
-  int64_t maxClockSpeed_MHz() const;
-  int64_t regularClockSpeed_MHz() const;
-  int64_t currentClockSpeed_MHz(int thread_id) const;
-  std::vector<int64_t> currentClockSpeed_MHz() const;
-  double currentUtilisation() const;
-  double threadUtilisation(int thread_index) const;
-  std::vector<double> threadsUtilisation() const;
-  // double currentTemperature_Celsius() const;
-  const std::vector<std::string>& flags() const;
+  HWI_NODISCARD std::uint32_t id() const;
+  HWI_NODISCARD const std::string& modelName() const;
+  HWI_NODISCARD const std::string& vendor() const;
+  HWI_NODISCARD std::uint64_t numPhysicalCores() const;
+  HWI_NODISCARD std::uint64_t numLogicalCores() const;
+  HWI_NODISCARD const std::vector<std::string>& flags() const;
+  HWI_NODISCARD const std::vector<Core>& cores() const;
 
  private:
-#ifndef HWINFO_WINDOWS
-  void init_jiffies() const;
-#endif
   CPU() = default;
 
-  int _id{-1};
+  std::uint32_t _id = invalid_id;
   std::string _modelName;
   std::string _vendor;
-  int _numPhysicalCores{-1};
-  int _numLogicalCores{-1};
-  int64_t _maxClockSpeed_MHz{-1};
-  int64_t _regularClockSpeed_MHz{-1};
-  int64_t _L1CacheSize_Bytes{-1};
-  int64_t _L2CacheSize_Bytes{-1};
-  int64_t _L3CacheSize_Bytes{-1};
-  std::vector<std::string> _flags{};
-
-  mutable bool _jiffies_initialized = false;
+  std::uint64_t _numPhysicalCores = 0;
+  std::uint64_t _numLogicalCores = 0;
+  std::vector<std::string> _flags;
+  std::vector<Core> _cores;
 };
 
 HWINFO_API std::vector<CPU> getAllCPUs();

@@ -9,6 +9,12 @@ if (WIN32)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
+if(MSVC)
+    add_compile_options(/W4 /WX)
+else()
+    add_compile_options(-Wall -Wextra -Werror -Wpedantic)
+endif()
+
 if(NOT HWINFO_CMAKE_BINARY_DIR)
     set(HWINFO_CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR})
 endif()
@@ -44,6 +50,7 @@ else(HWINFO_STATIC)
   set(HWINFO_BUILD STATIC)
 endif()
 
+add_subdirectory(data)
 set(HWINFO_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 add_subdirectory(src)
 

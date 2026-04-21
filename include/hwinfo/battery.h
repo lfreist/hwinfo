@@ -6,6 +6,7 @@
 #include <hwinfo/platform.h>
 
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -13,38 +14,45 @@ namespace hwinfo {
 
 class HWINFO_API Battery {
   friend HWINFO_API std::vector<Battery> getAllBatteries();
+  friend HWINFO_API std::ostream& operator<<(std::ostream& os, const Battery& battery);
 
  public:
-  explicit Battery(int8_t id = 0);
+  static constexpr std::uint32_t invalid_id = std::numeric_limits<std::uint32_t>::max();
+
+ public:
+  enum class State { CHARGING, DISCHARGING, UNKNOWN };
+
+ public:
+  explicit Battery(std::uint32_t = 0);
   ~Battery() = default;
 
-  std::string& vendor();
-  std::string& model();
-  std::string& serialNumber();
-  std::string& technology();
-  uint32_t energyFull();
+  HWI_NODISCARD const std::string& vendor() const;
+  HWI_NODISCARD const std::string& model() const;
+  HWI_NODISCARD const std::string& serialNumber() const;
+  HWI_NODISCARD const std::string& technology() const;
+  HWI_NODISCARD uint32_t energyFull() const;
 
-  double capacity();
+  double capacity() const;
 
-  [[nodiscard]] std::string getVendor() const;
-  [[nodiscard]] std::string getModel() const;
-  [[nodiscard]] std::string getSerialNumber() const;
-  [[nodiscard]] std::string getTechnology() const;
-  [[nodiscard]] uint32_t getEnergyFull() const;
+  HWI_NODISCARD std::uint32_t id() const;
 
-  [[nodiscard]] uint32_t energyNow() const;
-  [[nodiscard]] bool charging() const;
-  [[nodiscard]] bool discharging() const;
+  HWI_NODISCARD uint32_t energyNow() const;
+  HWI_NODISCARD bool charging() const;
+  HWI_NODISCARD bool discharging() const;
+  HWI_NODISCARD State state() const;
 
  private:
-  int _id = -1;
-  std::string _vendor;
-  std::string _model;
-  std::string _serialNumber;
-  std::string _technology;
+  std::uint32_t _id = invalid_id;
+  std::string _vendor = "<unknown>";
+  std::string _model = "<unknown>";
+  std::string _serial_number = "<unknown>";
+  std::string _technology = "<unknown>";
   uint32_t _energyFull = 0;
 };
 
 HWINFO_API std::vector<Battery> getAllBatteries();
+
+HWINFO_API std::ostream& operator<<(std::ostream& os, const Battery::State& state);
+HWINFO_API std::ostream& operator<<(std::ostream& os, const Battery& battery);
 
 }  // namespace hwinfo

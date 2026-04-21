@@ -5,18 +5,21 @@
 
 #ifdef HWINFO_APPLE
 
+#include <Availability.h>
 #include <IOKit/IOKitLib.h>
 
 #include "hwinfo/mainboard.h"
 
-#ifndef kIOMainPortDefault
-#define kIOMainPortDefault kIOMasterPortDefault
+#if defined(__MAC_12_0) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_12_0
+#define SAFE_IO_MAIN_PORT kIOMainPortDefault
+#else
+#define SAFE_IO_MAIN_PORT kIOMasterPortDefault
 #endif
 
 namespace hwinfo {
 
 std::string get_mainboard_property(CFStringRef property_name) {
-  auto platformExpert = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOPlatformExpertDevice"));
+  auto platformExpert = IOServiceGetMatchingService(SAFE_IO_MAIN_PORT, IOServiceMatching("IOPlatformExpertDevice"));
   if (!platformExpert) {
     return "<unknown>";
   }
@@ -60,7 +63,7 @@ MainBoard::MainBoard() {
   _vendor = get_mainboard_property(CFSTR("manufacturer"));
   _name = "<unknown>";
   _version = "<unknown>";
-  _serialNumber = get_mainboard_property(CFSTR(kIOPlatformSerialNumberKey));
+  _serial_number = get_mainboard_property(CFSTR(kIOPlatformSerialNumberKey));
 }
 
 }  // namespace hwinfo
