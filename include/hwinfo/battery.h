@@ -12,7 +12,7 @@
 namespace hwinfo {
 
 class HWINFO_API Battery {
-  friend std::vector<Battery> getAllBatteries();
+  friend HWINFO_API std::vector<Battery> getAllBatteries();
 
  public:
   explicit Battery(int8_t id = 0);
@@ -45,6 +45,6 @@ class HWINFO_API Battery {
   uint32_t _energyFull = 0;
 };
 
-std::vector<Battery> getAllBatteries();
+HWINFO_API std::vector<Battery> getAllBatteries();
 
 }  // namespace hwinfo

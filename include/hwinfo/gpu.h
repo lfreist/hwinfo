@@ -12,7 +12,7 @@
 namespace hwinfo {
 
 class HWINFO_API GPU {
-  friend std::vector<GPU> getAllGPUs();
+  friend HWINFO_API std::vector<GPU> getAllGPUs();
 
  public:
   ~GPU() = default;
@@ -41,5 +41,5 @@ class HWINFO_API GPU {
   std::string _device_id{};
 };
 
-std::vector<GPU> getAllGPUs();
+HWINFO_API std::vector<GPU> getAllGPUs();
 }  // namespace hwinfo

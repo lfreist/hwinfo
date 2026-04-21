@@ -15,7 +15,7 @@ namespace hwinfo {
 const unsigned short block_size = 512;
 
 class HWINFO_API Disk {
-  friend std::vector<Disk> getAllDisks();
+  friend HWINFO_API std::vector<Disk> getAllDisks();
 
  public:
   ~Disk() = default;
@@ -40,6 +40,6 @@ class HWINFO_API Disk {
   int _id{-1};
 };
 
-std::vector<Disk> getAllDisks();
+HWINFO_API std::vector<Disk> getAllDisks();
 
 }  // namespace hwinfo

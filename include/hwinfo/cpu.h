@@ -30,7 +30,7 @@ struct Jiffies {
 #endif
 
 class HWINFO_API CPU {
-  friend std::vector<CPU> getAllCPUs();
+  friend HWINFO_API std::vector<CPU> getAllCPUs();
 
  public:
   ~CPU() = default;
@@ -74,6 +74,6 @@ class HWINFO_API CPU {
   mutable bool _jiffies_initialized = false;
 };
 
-std::vector<CPU> getAllCPUs();
+HWINFO_API std::vector<CPU> getAllCPUs();
 
 }  // namespace hwinfo
