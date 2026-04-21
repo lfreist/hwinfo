@@ -154,40 +154,84 @@ inline std::string wstring_to_string() { return ""; }
  * @return
  */
 inline std::string wstring_to_std_string(const std::wstring& ws) {
+  if (ws.empty()) return std::string();
+
+#ifdef _WIN32
+  // --------------------------------------------------------------------
+  // Windows / MinGW: wchar_t is 16-bit UTF-16 (with surrogate pairs)
+  // Manually convert UTF-16 to UTF-8.
+  // --------------------------------------------------------------------
+  std::string utf8;
+  utf8.reserve(ws.size() * 3);  // Worst case: 3 bytes per code unit
+
+  for (size_t i = 0; i < ws.size(); ++i) {
+    uint32_t code_point = static_cast<uint32_t>(ws[i]);
+
+    // Check for high surrogate (0xD800 - 0xDBFF)
+    if (code_point >= 0xD800 && code_point <= 0xDBFF) {
+      // High surrogate: expect a low surrogate next
+      if (i + 1 < ws.size()) {
+        uint32_t low = static_cast<uint32_t>(ws[i + 1]);
+        if (low >= 0xDC00 && low <= 0xDFFF) {
+          // Valid surrogate pair
+          code_point = 0x10000 + ((code_point - 0xD800) << 10) + (low - 0xDC00);
+          ++i;  // Skip low surrogate
+        } else {
+          // Invalid sequence: treat high surrogate as isolated (fallback to replacement)
+          code_point = 0xFFFD;
+        }
+      } else {
+        // Truncated high surrogate at end of string
+        code_point = 0xFFFD;
+      }
+    } else if (code_point >= 0xDC00 && code_point <= 0xDFFF) {
+      // Isolated low surrogate: invalid, replace
+      code_point = 0xFFFD;
+    }
+
+    // Encode code_point into UTF-8
+    if (code_point <= 0x7F) {
+      utf8.push_back(static_cast<char>(code_point));
+    } else if (code_point <= 0x7FF) {
+      utf8.push_back(static_cast<char>(0xC0 | (code_point >> 6)));
+      utf8.push_back(static_cast<char>(0x80 | (code_point & 0x3F)));
+    } else if (code_point <= 0xFFFF) {
+      utf8.push_back(static_cast<char>(0xE0 | (code_point >> 12)));
+      utf8.push_back(static_cast<char>(0x80 | ((code_point >> 6) & 0x3F)));
+      utf8.push_back(static_cast<char>(0x80 | (code_point & 0x3F)));
+    } else if (code_point <= 0x10FFFF) {
+      utf8.push_back(static_cast<char>(0xF0 | (code_point >> 18)));
+      utf8.push_back(static_cast<char>(0x80 | ((code_point >> 12) & 0x3F)));
+      utf8.push_back(static_cast<char>(0x80 | ((code_point >> 6) & 0x3F)));
+      utf8.push_back(static_cast<char>(0x80 | (code_point & 0x3F)));
+    } else {
+      // Invalid code point (beyond Unicode range)
+      // Replace with U+FFFD
+      utf8.push_back(0xEF);
+      utf8.push_back(0xBF);
+      utf8.push_back(0xBD);
+    }
+  }
+  utf8.reserve(utf8.size());
+  return utf8;
+
+#else
   std::string str_locale = std::setlocale(LC_ALL, NULL);
 
-#if _MSC_VER
-  std::setlocale(LC_ALL, ".65001");
-#else
   std::setlocale(LC_ALL, ".UTF-8");
-#endif
+
   const wchar_t* wch_src = ws.c_str();
 
-#ifdef _MSC_VER
-  size_t n_dest_size;
-  wcstombs_s(&n_dest_size, nullptr, 0, wch_src, 0);
-  n_dest_size++;  // Increase by one for null terminator
-
-  char* ch_dest = new char[n_dest_size];
-  memset(ch_dest, 0, n_dest_size);
-
-  size_t n_convert_size;
-  wcstombs_s(&n_convert_size, ch_dest, n_dest_size, wch_src,
-             n_dest_size - 1);  // subtract one to ignore null terminator
-
-  std::string result_text = ch_dest;
-  delete[] ch_dest;
-#else
   size_t n_dest_size = std::wcstombs(NULL, wch_src, 0) + 1;
   char* ch_dest = new char[n_dest_size];
   std::memset(ch_dest, 0, n_dest_size);
   std::wcstombs(ch_dest, wch_src, n_dest_size);
   std::string result_text = ch_dest;
   delete[] ch_dest;
-#endif
 
   std::setlocale(LC_ALL, str_locale.c_str());
   return result_text;
+#endif
 }
 
 /**

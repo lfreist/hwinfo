@@ -26,7 +26,7 @@ std::vector<int64_t> current_frequency_hz();
 }  // namespace monitor::cpu
 
 class HWINFO_API CPU {
-  friend std::vector<CPU> getAllCPUs();
+  friend HWINFO_API std::vector<CPU> getAllCPUs();
 
  public:
   static constexpr std::uint32_t invalid_id = std::numeric_limits<std::uint32_t>::max();
@@ -69,6 +69,6 @@ class HWINFO_API CPU {
   std::vector<Core> _cores;
 };
 
-std::vector<CPU> getAllCPUs();
+HWINFO_API std::vector<CPU> getAllCPUs();
 
 }  // namespace hwinfo

@@ -13,7 +13,7 @@
 namespace hwinfo {
 
 class HWINFO_API GPU {
-  friend std::vector<GPU> getAllGPUs();
+  friend HWINFO_API std::vector<GPU> getAllGPUs();
 
  public:
   static constexpr std::uint32_t invalid_id = std::numeric_limits<std::uint32_t>::max();
@@ -48,6 +48,5 @@ class HWINFO_API GPU {
   std::string _device_id;
 };
 
-std::vector<GPU> getAllGPUs();
-
+HWINFO_API std::vector<GPU> getAllGPUs();
 }  // namespace hwinfo

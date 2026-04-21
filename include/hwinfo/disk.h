@@ -30,9 +30,9 @@ class HWINFO_API Disk {
     UNKNOWN
   };
 
-  friend std::vector<Disk> getAllDisks();
-  friend std::ostream& operator<<(std::ostream& os, const Disk::Interface& disk_interface);
-  friend std::ostream& operator<<(std::ostream& os, const Disk& disk);
+  friend HWINFO_API std::vector<Disk> getAllDisks();
+  friend HWINFO_API std::ostream& operator<<(std::ostream& os, const Disk::Interface& disk_interface);
+  friend HWINFO_API std::ostream& operator<<(std::ostream& os, const Disk& disk);
 
  public:
   static constexpr std::uint32_t invalid_id = std::numeric_limits<std::uint32_t>::max();
@@ -60,8 +60,8 @@ class HWINFO_API Disk {
   Interface _interface = Interface::UNKNOWN;
 };
 
-std::vector<Disk> getAllDisks();
+HWINFO_API std::vector<Disk> getAllDisks();
 
-std::ostream& operator<<(std::ostream& os, const hwinfo::Disk::Interface& disk_interface);
+HWINFO_API std::ostream& operator<<(std::ostream& os, const hwinfo::Disk::Interface& disk_interface);
 
 }  // namespace hwinfo
