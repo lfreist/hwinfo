@@ -50,9 +50,9 @@ class HWINFO_API Battery {
   uint32_t _energyFull = 0;
 };
 
-std::vector<Battery> getAllBatteries();
+std::vector<Battery> HWINFO_API getAllBatteries();
 
-std::ostream& operator<<(std::ostream& os, const Battery::State& state);
-std::ostream& operator<<(std::ostream& os, const Battery& battery);
+HWINFO_API std::ostream& operator<<(std::ostream& os, const Battery::State& state);
+HWINFO_API std::ostream& operator<<(std::ostream& os, const Battery& battery);
 
 }  // namespace hwinfo

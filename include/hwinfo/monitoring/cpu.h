@@ -10,7 +10,7 @@ using namespace std::chrono_literals;
 
 namespace hwinfo::monitoring::cpu {
 
-struct Data {
+struct HWINFO_API Data {
   double utilization;                       // average across all threads [0, 1]
   std::vector<double> thread_utilization;   // per-thread utilization [0, 1]
   std::vector<int64_t> thread_frequency_hz; // per-thread current clock rate in Hz
@@ -28,7 +28,7 @@ std::vector<double> thread_utilization(std::chrono::milliseconds sleep = 200ms);
 std::vector<int64_t> thread_frequency_hz();
 
 // Fetches a complete Data snapshot. Blocks for `sleep` milliseconds.
-Data fetch(std::chrono::milliseconds sleep = 200ms);
+Data HWINFO_API fetch(std::chrono::milliseconds sleep = 200ms);
 
 using Monitor = hwinfo::monitoring::Monitor<Data>;
 

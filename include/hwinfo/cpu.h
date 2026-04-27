@@ -69,6 +69,6 @@ class HWINFO_API CPU {
   std::vector<Core> _cores;
 };
 
-std::vector<CPU> getAllCPUs();
+std::vector<CPU> HWINFO_API getAllCPUs();
 
 }  // namespace hwinfo

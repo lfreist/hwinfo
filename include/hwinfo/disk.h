@@ -60,8 +60,8 @@ class HWINFO_API Disk {
   Interface _interface = Interface::UNKNOWN;
 };
 
-std::vector<Disk> getAllDisks();
+std::vector<Disk> HWINFO_API getAllDisks();
 
-std::ostream& operator<<(std::ostream& os, const hwinfo::Disk::Interface& disk_interface);
+HWINFO_API std::ostream& operator<<(std::ostream& os, const hwinfo::Disk::Interface& disk_interface);
 
 }  // namespace hwinfo

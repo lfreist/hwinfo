@@ -6,7 +6,7 @@
 
 namespace hwinfo::monitoring::ram {
 
-struct Data {
+struct HWINFO_API Data {
   uint64_t free_bytes;      // memory not in use at all
   uint64_t available_bytes; // memory available for new allocations (includes reclaimable)
 };
@@ -18,7 +18,7 @@ uint64_t free_bytes();
 uint64_t available_bytes();
 
 // Fetches a complete Data snapshot.
-Data fetch();
+Data HWINFO_API fetch();
 
 using Monitor = hwinfo::monitoring::Monitor<Data>;
 

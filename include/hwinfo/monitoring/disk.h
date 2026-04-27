@@ -8,7 +8,7 @@
 
 namespace hwinfo::monitoring::disk {
 
-struct Data {
+struct HWINFO_API Data {
   std::string mount_point;
   uint64_t free_bytes;
 };
@@ -20,7 +20,7 @@ std::uint64_t get_free_size(const std::string& mount_point);
 std::uint64_t get_free_size(const Disk& disk);
 
 // Fetches a Data snapshot for a single mount point.
-Data fetch(const std::string& mount_point);
+Data HWINFO_API fetch(const std::string& mount_point);
 
 using Monitor = hwinfo::monitoring::Monitor<Data>;
 

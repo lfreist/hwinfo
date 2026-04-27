@@ -48,6 +48,6 @@ class HWINFO_API GPU {
   std::string _device_id;
 };
 
-std::vector<GPU> getAllGPUs();
+std::vector<GPU> HWINFO_API getAllGPUs();
 
 }  // namespace hwinfo

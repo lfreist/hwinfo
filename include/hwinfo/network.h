@@ -29,6 +29,6 @@ class HWINFO_API Network {
   std::string _ip6;
 };
 
-std::vector<Network> getAllNetworks();
+std::vector<Network> HWINFO_API getAllNetworks();
 
 }  // namespace hwinfo
