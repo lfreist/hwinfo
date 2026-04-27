@@ -1,4 +1,4 @@
-﻿#include "hwinfo/platform.h"
+#include "hwinfo/platform.h"
 
 #ifdef HWINFO_WINDOWS
 
@@ -23,7 +23,7 @@ std::vector<Network> getAllNetworks() {
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
   while (wmi.enumerator) {
-    wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+    wmi.enumerator->Next((long)WBEM_INFINITE, 1, &obj, &u_return);
     if (!u_return) {
       break;
     }

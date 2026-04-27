@@ -28,7 +28,7 @@ Memory::Memory() {
   std::vector<Memory> rams;
   int id = 0;
   while (wmi.enumerator) {
-    wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+    wmi.enumerator->Next((long)WBEM_INFINITE, 1, &obj, &u_return);
     if (!u_return) {
       break;
     }
