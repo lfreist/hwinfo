@@ -83,7 +83,7 @@ std::vector<Disk> getAllDisks() {
     Disk disk;
     disk._id = i;
 
-    STORAGE_PROPERTY_QUERY query = {StorageDeviceProperty, PropertyStandardQuery};
+    STORAGE_PROPERTY_QUERY query = {StorageDeviceProperty, PropertyStandardQuery, 0};
     char buffer[1024];
     DWORD bytesReturned;
     if (DeviceIoControl(hDevice, IOCTL_STORAGE_QUERY_PROPERTY, &query, sizeof(query), &buffer, sizeof(buffer),
