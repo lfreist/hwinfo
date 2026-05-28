@@ -30,8 +30,8 @@ class HWINFO_API Disk {
     UNKNOWN
   };
 
-  friend std::vector<Disk> getAllDisks();
-  friend std::ostream& operator<<(std::ostream& os, const Disk::Interface& disk_interface);
+  friend std::vector<Disk> HWINFO_API getAllDisks();
+  friend HWINFO_API std::ostream& operator<<(std::ostream& os, const Disk::Interface& disk_interface);
   friend std::ostream& operator<<(std::ostream& os, const Disk& disk);
 
  public:

@@ -13,8 +13,8 @@
 namespace hwinfo {
 
 class HWINFO_API Battery {
-  friend std::vector<Battery> getAllBatteries();
-  friend std::ostream& operator<<(std::ostream& os, const Battery& battery);
+  friend std::vector<Battery> HWINFO_API getAllBatteries();
+  friend HWINFO_API std::ostream& operator<<(std::ostream& os, const Battery& battery);
 
  public:
   static constexpr std::uint32_t invalid_id = std::numeric_limits<std::uint32_t>::max();

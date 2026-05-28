@@ -8,7 +8,7 @@
 namespace hwinfo {
 
 class HWINFO_API Network {
-  friend std::vector<Network> getAllNetworks();
+  friend std::vector<Network> HWINFO_API getAllNetworks();
 
  public:
   ~Network() = default;
