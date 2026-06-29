@@ -18,17 +18,17 @@ struct HWINFO_API Data {
 
 // Returns average CPU utilization across all logical threads [0, 1].
 // Blocks for `sleep` milliseconds to measure the delta.
-double utilization(std::chrono::milliseconds sleep = 200ms);
+HWINFO_API double utilization(std::chrono::milliseconds sleep = 200ms);
 
 // Returns per-thread utilization [0, 1].
 // Blocks for `sleep` milliseconds to measure the delta.
-std::vector<double> thread_utilization(std::chrono::milliseconds sleep = 200ms);
+HWINFO_API std::vector<double> thread_utilization(std::chrono::milliseconds sleep = 200ms);
 
 // Returns the current clock rate for each logical thread in Hz.
-std::vector<int64_t> thread_frequency_hz();
+HWINFO_API std::vector<int64_t> thread_frequency_hz();
 
 // Fetches a complete Data snapshot. Blocks for `sleep` milliseconds.
-Data HWINFO_API fetch(std::chrono::milliseconds sleep = 200ms);
+HWINFO_API Data fetch(std::chrono::milliseconds sleep = 200ms);
 
 using Monitor = hwinfo::monitoring::Monitor<Data>;
 

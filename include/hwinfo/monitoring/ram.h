@@ -18,7 +18,7 @@ uint64_t free_bytes();
 uint64_t available_bytes();
 
 // Fetches a complete Data snapshot.
-Data HWINFO_API fetch();
+HWINFO_API Data fetch();
 
 using Monitor = hwinfo::monitoring::Monitor<Data>;
 

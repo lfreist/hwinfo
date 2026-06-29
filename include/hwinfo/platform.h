@@ -32,7 +32,9 @@
 
 // dll exports/imports for windows shared libraries
 #ifdef _WIN32
-#ifdef HWINFO_EXPORTS
+#ifdef HWINFO_STATIC
+#define HWINFO_API
+#elif defined(HWINFO_EXPORTS)
 #define HWINFO_API __declspec(dllexport)
 #else
 #define HWINFO_API __declspec(dllimport)

@@ -7,10 +7,12 @@
 #define CL_HPP_TARGET_OPENCL_VERSION 200
 #endif
 #define CL_HPP_ENABLE_EXCEPTIONS
+#include <hwinfo/platform.h>
+
+#include <CL/opencl.hpp>
 #include <cstdint>
 #include <iostream>
-
-#include "../../../cmake-build-release/_deps/opencl-src/external/OpenCL-CLHPP/include/CL/opencl.hpp"
+#include <vector>
 
 namespace opencl_ {
 
@@ -18,11 +20,11 @@ namespace opencl_ {
  * @brief Device represents a single OpenCL Device.
  *        It provides instant methods for retrieving common data.
  */
-class Device {
+class HWINFO_API Device {
   template <unsigned dimension, typename T>
   friend class Memory;
   friend class DeviceManager;
-  friend std::ostream& operator<<(std::ostream& os, const Device& device);
+  friend HWINFO_API std::ostream& operator<<(std::ostream& os, const Device& device);
 
  public:
   /**
@@ -218,9 +220,9 @@ class Device {
  *
  * format: "[GPU|CPU]: <name> (<id>, <vendor>)"
  */
-std::ostream& operator<<(std::ostream& os, const Device& device);
+HWINFO_API std::ostream& operator<<(std::ostream& os, const Device& device);
 
-std::ostream& operator<<(std::ostream& os, const Device::Type& type);
+HWINFO_API std::ostream& operator<<(std::ostream& os, const Device::Type& type);
 
 // ===== DeviceManager =================================================================================================
 /**

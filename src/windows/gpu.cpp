@@ -77,7 +77,7 @@ std::vector<GPU> getAllGPUs() {
     for (auto* cl_gpu : cl_gpus) {
       if (cl_gpu->name() == gpu.name()) {
         gpu._driverVersion = cl_gpu->driver_version();
-        gpu._frequency_MHz = static_cast<int64_t>(cl_gpu->clock_frequency_MHz());
+        gpu._frequency_hz = static_cast<int64_t>(cl_gpu->clock_frequency_MHz()) * 1'000'000;
         gpu._num_cores = static_cast<int>(cl_gpu->cores());
         gpu._dedicated_memory_Bytes = cl_gpu->memory_Bytes();
         break;

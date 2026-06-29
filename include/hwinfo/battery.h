@@ -13,7 +13,7 @@
 namespace hwinfo {
 
 class HWINFO_API Battery {
-  friend std::vector<Battery> HWINFO_API getAllBatteries();
+  friend HWINFO_API std::vector<Battery> getAllBatteries();
   friend HWINFO_API std::ostream& operator<<(std::ostream& os, const Battery& battery);
 
  public:
@@ -50,7 +50,7 @@ class HWINFO_API Battery {
   uint32_t _energyFull = 0;
 };
 
-std::vector<Battery> HWINFO_API getAllBatteries();
+HWINFO_API std::vector<Battery> getAllBatteries();
 
 HWINFO_API std::ostream& operator<<(std::ostream& os, const Battery::State& state);
 HWINFO_API std::ostream& operator<<(std::ostream& os, const Battery& battery);

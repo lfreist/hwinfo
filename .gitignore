@@ -3,3 +3,6 @@
 /.vs
 /CMakeSettings.json
 /.cache/
+
+/compile_commands.json
+/CMakeUserPresets.json
