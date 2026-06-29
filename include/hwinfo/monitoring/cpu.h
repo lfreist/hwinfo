@@ -11,9 +11,9 @@ using namespace std::chrono_literals;
 namespace hwinfo::monitoring::cpu {
 
 struct HWINFO_API Data {
-  double utilization;                       // average across all threads [0, 1]
-  std::vector<double> thread_utilization;   // per-thread utilization [0, 1]
-  std::vector<int64_t> thread_frequency_hz; // per-thread current clock rate in Hz
+  double utilization;                        // average across all threads [0, 1]
+  std::vector<double> thread_utilization;    // per-thread utilization [0, 1]
+  std::vector<int64_t> thread_frequency_hz;  // per-thread current clock rate in Hz
 };
 
 // Returns average CPU utilization across all logical threads [0, 1].

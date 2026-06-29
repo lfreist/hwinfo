@@ -2,8 +2,8 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <windows.h>
 #include <powrprof.h>
+#include <windows.h>
 #include <winternl.h>
 
 #include <numeric>
@@ -58,8 +58,7 @@ std::vector<double> thread_utilization(std::chrono::milliseconds sleep) {
     if (total == 0) {
       results.push_back(0.0);
     } else {
-      results.push_back(
-          std::max(0.0, std::min(1.0, 1.0 - static_cast<double>(idle) / static_cast<double>(total))));
+      results.push_back(std::max(0.0, std::min(1.0, 1.0 - static_cast<double>(idle) / static_cast<double>(total))));
     }
   }
   return results;
@@ -92,8 +91,7 @@ std::vector<int64_t> thread_frequency_hz() {
 Data fetch(std::chrono::milliseconds sleep) {
   auto tu = thread_utilization(sleep);
   auto tf = thread_frequency_hz();
-  const double avg =
-      tu.empty() ? 0.0 : std::accumulate(tu.begin(), tu.end(), 0.0) / static_cast<double>(tu.size());
+  const double avg = tu.empty() ? 0.0 : std::accumulate(tu.begin(), tu.end(), 0.0) / static_cast<double>(tu.size());
   return Data{avg, std::move(tu), std::move(tf)};
 }
 

@@ -9,7 +9,7 @@
 namespace hwinfo::monitoring::disk {
 
 std::uint64_t get_free_size(const std::string& mount_point) {
-  struct statvfs stat {};
+  struct statvfs stat{};
   if (statvfs(mount_point.c_str(), &stat) == 0) {
     return static_cast<uint64_t>(stat.f_bavail) * static_cast<uint64_t>(stat.f_frsize);
   }
@@ -24,9 +24,7 @@ std::uint64_t get_free_size(const Disk& disk) {
   return total;
 }
 
-Data fetch(const std::string& mount_point) {
-  return Data{mount_point, get_free_size(mount_point)};
-}
+Data fetch(const std::string& mount_point) { return Data{mount_point, get_free_size(mount_point)}; }
 
 }  // namespace hwinfo::monitoring::disk
 
