@@ -59,6 +59,9 @@ if (HWINFO_CPU)
     endif()
     target_include_directories(hwinfo_cpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
+    if(MINGW)
+        target_link_libraries(hwinfo_cpu PUBLIC PowrProf ntdll)
+    endif()
     target_link_libraries(hwinfo INTERFACE hwinfo_cpu)
 
     set_target_properties(hwinfo_cpu PROPERTIES OUTPUT_NAME "hwinfo_cpu")
@@ -143,6 +146,9 @@ if (HWINFO_GPU)
     target_include_directories(hwinfo_gpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<BUILD_INTERFACE:${HWINFO_CMAKE_BINARY_DIR}/generated> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
     add_dependencies(hwinfo_gpu generate_pci_ids_header)
 
+    if(MINGW)
+        target_link_libraries(hwinfo_gpu PUBLIC dxgi setupapi)
+    endif()
     target_link_libraries(hwinfo INTERFACE hwinfo_gpu)
 
     set_target_properties(hwinfo_gpu PROPERTIES OUTPUT_NAME "hwinfo_gpu")
@@ -179,6 +185,9 @@ if (HWINFO_MAINBOARD)
         target_link_libraries(hwinfo_mainboard PRIVATE "-framework IOKit" "-framework CoreFoundation")
     endif()
 
+    if(MINGW)
+        target_link_libraries(hwinfo_mainboard PUBLIC wbemuuid)
+    endif()
     target_link_libraries(hwinfo INTERFACE hwinfo_mainboard)
 
     set_target_properties(hwinfo_mainboard PROPERTIES OUTPUT_NAME "hwinfo_mainboard")

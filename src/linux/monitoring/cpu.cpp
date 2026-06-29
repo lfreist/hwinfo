@@ -32,8 +32,7 @@ Jiffies get_jiffies(int index) {
   if (!std::getline(f, line)) return {};
 
   std::istringstream iss(line);
-  std::vector<std::string> parts(std::istream_iterator<std::string>{iss},
-                                  std::istream_iterator<std::string>{});
+  std::vector<std::string> parts(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{});
   if (parts.size() < 11) return {};
 
   int64_t v[10]{};
@@ -93,8 +92,7 @@ std::vector<int64_t> thread_frequency_hz() {
 Data fetch(std::chrono::milliseconds sleep) {
   auto tu = thread_utilization(sleep);
   auto tf = thread_frequency_hz();
-  const double avg =
-      tu.empty() ? 0.0 : std::accumulate(tu.begin(), tu.end(), 0.0) / static_cast<double>(tu.size());
+  const double avg = tu.empty() ? 0.0 : std::accumulate(tu.begin(), tu.end(), 0.0) / static_cast<double>(tu.size());
   return Data{avg, std::move(tu), std::move(tf)};
 }
 
