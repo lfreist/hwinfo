@@ -2,9 +2,12 @@
 
 #ifdef HWINFO_WINDOWS
 
+// clang-format off
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <powrprof.h>
 #include <winternl.h>
+// clang-format on
 
 #include <numeric>
 #include <thread>
