@@ -14,8 +14,10 @@
 
 #include "hwinfo/gpu.h"
 #include "hwinfo/utils/stringutils.h"
+#ifndef __MINGW32__
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "setupapi.lib")
+#endif
 
 #ifdef USE_OCL
 #include <hwinfo/opencl/device.h>

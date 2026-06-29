@@ -8,7 +8,7 @@
 
 namespace hwinfo::monitoring::disk {
 
-struct Data {
+struct HWINFO_API Data {
   std::string mount_point;
   uint64_t free_bytes;
 };

@@ -11,9 +11,10 @@
 #include <vector>
 
 #include "hwinfo/monitoring/cpu.h"
-
+#ifndef __MINGW32__
 #pragma comment(lib, "PowrProf.lib")
 #pragma comment(lib, "ntdll.lib")
+#endif
 
 namespace {
 

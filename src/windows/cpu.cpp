@@ -17,8 +17,10 @@
 #include <thread>
 #include <vector>
 
+#ifndef __MINGW32__
 #pragma comment(lib, "PowrProf.lib")
 #pragma comment(lib, "ntdll.lib")
+#endif
 
 inline int countSetBits(unsigned __int64 mask) {
 #if defined(_M_X64) || defined(__x86_64__)

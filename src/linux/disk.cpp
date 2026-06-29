@@ -127,24 +127,28 @@ std::vector<Disk> getAllDisks() {
   std::uint32_t id = 0;
   for (const auto& entry : std::filesystem::directory_iterator("/sys/class/block")) {
     std::string name = entry.path().filename().string();
-    if (std::filesystem::exists(entry.path() / "partition") || name.find("loop") == 0 || name.find("ram") == 0) {
+    if (std::filesystem::exists(entry.path() / "partition") || name.find("loop") == 0 || name.find("ram") == 0 ||
+        name.find("zram") == 0) {
       // skip partitions, loop devices and virtual devices
       continue;
     }
-    Disk disk;
-    disk._id = id++;
-    disk._model = getDiskModel(entry.path());
-    disk._vendor = getDiskVendor(entry.path());
-    disk._serial_number = getDiskSerialNumber(entry.path());
-    disk._size_bytes = getDiskSize_Bytes(entry.path());
-    disk._interface = getDiskInterface(entry.path());
-    for (const auto& sub_entry : std::filesystem::directory_iterator(entry.path())) {
-      if (std::filesystem::exists(sub_entry.path() / "partition")) {
-        disk._mount_points.emplace_back("/dev/" + sub_entry.path().filename().string());
+    try {
+      Disk disk;
+      disk._id = id++;
+      disk._model = getDiskModel(entry.path());
+      disk._vendor = getDiskVendor(entry.path());
+      disk._serial_number = getDiskSerialNumber(entry.path());
+      disk._size_bytes = getDiskSize_Bytes(entry.path());
+      disk._interface = getDiskInterface(entry.path());
+      for (const auto& sub_entry : std::filesystem::directory_iterator(entry.path())) {
+        if (std::filesystem::exists(sub_entry.path() / "partition")) {
+          disk._mount_points.emplace_back("/dev/" + sub_entry.path().filename().string());
+        }
       }
+      disks.emplace_back(std::move(disk));
+    } catch (const std::filesystem::filesystem_error& ex) {
+      // silently continue for filesystem errors.
     }
-
-    disks.emplace_back(std::move(disk));
   }
 
   return disks;

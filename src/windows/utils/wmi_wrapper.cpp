@@ -55,7 +55,7 @@ std::vector<long> query(const std::wstring& wmi_class, const std::wstring& field
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
   while (wmi.enumerator) {
-    wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+    wmi.enumerator->Next((long)WBEM_INFINITE, 1, &obj, &u_return);
     if (!u_return) {
       break;
     }
@@ -96,7 +96,7 @@ std::vector<bool> query(const std::wstring& wmi_class, const std::wstring& field
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
   while (wmi.enumerator) {
-    wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+    wmi.enumerator->Next((long)WBEM_INFINITE, 1, &obj, &u_return);
     if (!u_return) {
       break;
     }
@@ -128,7 +128,7 @@ std::vector<unsigned> query(const std::wstring& wmi_class, const std::wstring& f
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
   while (wmi.enumerator) {
-    wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+    wmi.enumerator->Next((long)WBEM_INFINITE, 1, &obj, &u_return);
     if (!u_return) {
       break;
     }
@@ -161,7 +161,7 @@ std::vector<unsigned short> query(const std::wstring& wmi_class, const std::wstr
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
   while (wmi.enumerator) {
-    wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+    wmi.enumerator->Next((long)WBEM_INFINITE, 1, &obj, &u_return);
     if (!u_return) {
       break;
     }
@@ -193,7 +193,7 @@ std::vector<long long> query(const std::wstring& wmi_class, const std::wstring& 
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
   while (wmi.enumerator) {
-    wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+    wmi.enumerator->Next((long)WBEM_INFINITE, 1, &obj, &u_return);
     if (!u_return) {
       break;
     }
@@ -226,7 +226,7 @@ std::vector<unsigned long long> query(const std::wstring& wmi_class, const std::
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
   while (wmi.enumerator) {
-    wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+    wmi.enumerator->Next((long)WBEM_INFINITE, 1, &obj, &u_return);
     if (!u_return) {
       break;
     }
@@ -258,7 +258,7 @@ std::vector<std::string> query(const std::wstring& wmi_class, const std::wstring
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
   while (wmi.enumerator) {
-    wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+    wmi.enumerator->Next((long)WBEM_INFINITE, 1, &obj, &u_return);
     if (!u_return) {
       break;
     }

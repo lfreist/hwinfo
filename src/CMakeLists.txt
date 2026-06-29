@@ -68,6 +68,9 @@ if (HWINFO_CPU)
         target_link_libraries(hwinfo_cpu PRIVATE ntdll powrprof)
     endif()
 
+    if(MINGW)
+        target_link_libraries(hwinfo_cpu PUBLIC PowrProf ntdll)
+    endif()
     target_link_libraries(hwinfo INTERFACE hwinfo_cpu)
 
     set_target_properties(hwinfo_cpu PROPERTIES OUTPUT_NAME "hwinfo_cpu")
@@ -151,6 +154,9 @@ if (HWINFO_GPU)
         target_link_libraries(hwinfo_gpu PRIVATE dxgi setupapi)
     endif()
 
+    if(MINGW)
+        target_link_libraries(hwinfo_gpu PUBLIC dxgi setupapi)
+    endif()
     target_link_libraries(hwinfo INTERFACE hwinfo_gpu)
 
     set_target_properties(hwinfo_gpu PROPERTIES OUTPUT_NAME "hwinfo_gpu")
@@ -185,6 +191,9 @@ if (HWINFO_MAINBOARD)
         target_link_libraries(hwinfo_mainboard PRIVATE "-framework IOKit" "-framework CoreFoundation")
     endif()
 
+    if(MINGW)
+        target_link_libraries(hwinfo_mainboard PUBLIC wbemuuid)
+    endif()
     target_link_libraries(hwinfo INTERFACE hwinfo_mainboard)
 
     set_target_properties(hwinfo_mainboard PROPERTIES OUTPUT_NAME "hwinfo_mainboard")
