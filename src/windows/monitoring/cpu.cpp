@@ -2,8 +2,8 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <powrprof.h>
 #include <windows.h>
+#include <powrprof.h>
 #include <winternl.h>
 
 #include <numeric>
