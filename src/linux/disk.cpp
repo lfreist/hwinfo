@@ -127,7 +127,8 @@ std::vector<Disk> getAllDisks() {
   std::uint32_t id = 0;
   for (const auto& entry : std::filesystem::directory_iterator("/sys/class/block")) {
     std::string name = entry.path().filename().string();
-    if (std::filesystem::exists(entry.path() / "partition") || name.find("loop") == 0 || name.find("ram") == 0 || name.find("zram") == 0) {
+    if (std::filesystem::exists(entry.path() / "partition") || name.find("loop") == 0 || name.find("ram") == 0 ||
+        name.find("zram") == 0) {
       // skip partitions, loop devices and virtual devices
       continue;
     }
@@ -144,12 +145,10 @@ std::vector<Disk> getAllDisks() {
           disk._mount_points.emplace_back("/dev/" + sub_entry.path().filename().string());
         }
       }
+      disks.emplace_back(std::move(disk));
     } catch (const std::filesystem::filesystem_error& ex) {
       // silently continue for filesystem errors.
-      continue;
     }
-
-    disks.emplace_back(std::move(disk));
   }
 
   return disks;
