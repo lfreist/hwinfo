@@ -40,7 +40,7 @@ option(HWINFO_CPU "Enable CPU information" ON)
 option(HWINFO_DISK "Enable disk information" ON)
 option(HWINFO_RAM "Enable RAM information" ON)
 option(HWINFO_GPU "Enable GPU information" ON)
-option(HWINFO_GPU_OPENCL "Enable OpenCL for more GPU information" ON)
+option(HWINFO_GPU_OPENCL "Enable OpenCL for more GPU information" OFF)
 option(HWINFO_BATTERY "Enable battery information" ON)
 option(HWINFO_NETWORK "Enable network information" ON)
 
