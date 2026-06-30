@@ -42,7 +42,7 @@ class PCIMapper {
   explicit PCIMapper();
   ~PCIMapper() = default;
 
-  const PCIVendor& vendor_from_id(const std::string& vendor_id) const;
+  [[nodiscard]] const PCIVendor& vendor_from_id(const std::string& vendor_id) const;
 
   const PCIVendor& operator[](const std::string& vendor_id) const;
 
