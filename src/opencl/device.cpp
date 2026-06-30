@@ -14,12 +14,12 @@ Device::Device(uint32_t id, cl::Device cl_device) : _cl_device(std::move(cl_devi
 Device::~Device() = default;
 
 Device::Device(Device&& device) noexcept
-    : _instructions_per_cycle(device._instructions_per_cycle),
-      _cores(device._cores),
+    : _cl_device(std::move(device._cl_device)),
       _id(device._id),
-      _intel_gt_4gb_buffer_required(device._intel_gt_4gb_buffer_required),
+      _instructions_per_cycle(device._instructions_per_cycle),
+      _cores(device._cores),
       _memory_used_Bytes(device._memory_used_Bytes),
-      _cl_device(std::move(device._cl_device)) {}
+      _intel_gt_4gb_buffer_required(device._intel_gt_4gb_buffer_required) {}
 
 Device& Device::operator=(opencl_::Device&& device) noexcept {
   _cl_device = std::move(device._cl_device);
@@ -33,6 +33,8 @@ Device& Device::operator=(opencl_::Device&& device) noexcept {
 
 uint32_t Device::get_id() const { return _id; }
 
+uint32_t Device::vendor_id() const { return _cl_device.getInfo<CL_DEVICE_VENDOR_ID>(); }
+
 const cl::Device& Device::get_cl_device() const { return _cl_device; }
 
 cl::Device& Device::get_cl_device() { return _cl_device; }
@@ -40,6 +42,12 @@ cl::Device& Device::get_cl_device() { return _cl_device; }
 std::string Device::name() const { return _cl_device.getInfo<CL_DEVICE_NAME>(); }
 
 std::string Device::vendor() const { return _cl_device.getInfo<CL_DEVICE_VENDOR>(); }
+
+bool Device::unified_memory() const {
+  cl_bool unified = CL_FALSE;
+  (void)_cl_device.getInfo(CL_DEVICE_HOST_UNIFIED_MEMORY, &unified);
+  return unified;
+}
 
 std::string Device::driver_version() const { return _cl_device.getInfo<CL_DRIVER_VERSION>(); }
 
