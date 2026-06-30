@@ -32,7 +32,7 @@ OS::OS() {
   }
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
-  wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+  wmi.enumerator->Next((long)WBEM_INFINITE, 1, &obj, &u_return);
   if (!u_return) {
     return;
   }

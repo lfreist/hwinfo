@@ -8,6 +8,7 @@
 #endif
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #define HWINFO_WINDOWS
+#define NOMINMAX
 #endif
 
 #if defined(__x86_64__) || defined(__x86_64) || defined(__amd64__) || defined(_M_X64)
@@ -19,24 +20,38 @@
 #define HWINFO_X86
 #endif
 
-// dll exports/imports for windows shared libraries
-#ifdef _WIN32
-#ifdef HWINFO_EXPORTS
-#define HWINFO_API __declspec(dllexport)
-#else
-#ifdef HWINFO_IMPORTS
-#define HWINFO_API __declspec(dllimport)
-#else
-#define HWINFO_API
-#endif
-#endif
-#else
-#define HWINFO_API
+#if defined(__arm__) || defined(_M_ARM)
+#define HWINFO_ARM32
+#elif defined(__aarch64__) || defined(_M_ARM64)
+#define HWINFO_AARCH64
 #endif
 
-// macro definitions for C++ > 11 features if compiled with C++ > 11
-#if __cplusplus >= 201703L
-#define HWI_NODISCARD [[nodiscard]]
+#if defined(HWINFO_ARM32) || defined(HWINFO_AARCH64)
+#define HWINFO_ARM
+#endif
+
+// dll exports/imports for windows shared libraries
+#ifdef _WIN32
+#ifdef HWINFO_STATIC
+#define HWINFO_API
+#elif defined(HWINFO_EXPORTS)
+#define HWINFO_API __declspec(dllexport)
 #else
+#define HWINFO_API __declspec(dllimport)
+#endif
+#ifndef __MINGW32__
+#pragma warning(disable : 4251)
+#endif
+#else
+#define HWINFO_API __attribute__((visibility("default")))
+#endif
+
+#if defined(__has_cpp_attribute)
+#if __has_cpp_attribute(nodiscard)
+#define HWI_NODISCARD [[nodiscard]]
+#endif
+#endif
+
+#ifndef HWI_NODISCARD
 #define HWI_NODISCARD
 #endif

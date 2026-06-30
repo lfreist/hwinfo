@@ -9,10 +9,11 @@
 
 #ifdef HWINFO_UNIX
 
-#include <hwinfo/utils/pci.ids.h>
 #include <hwinfo/utils/stringutils.h>
 
 #include <sstream>
+
+#include "pci.ids.h"
 
 namespace hwinfo {
 
@@ -36,7 +37,8 @@ const PCIDevice& PCIVendor::operator[](const std::string& device_id) const {
 
 // _____________________________________________________________________________________________________________________
 PCIMapper::PCIMapper() {
-  std::stringstream s_pciid(get_pci_ids());
+  static const std::string data(reinterpret_cast<const char*>(pci_ids), pci_ids_size);
+  std::stringstream s_pciid(data);
   PCIVendor* current_vendor = nullptr;
   PCIDevice* current_device = nullptr;
   while (true) {

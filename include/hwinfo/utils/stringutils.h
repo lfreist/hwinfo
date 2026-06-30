@@ -8,11 +8,11 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
 #include <string>
 #include <vector>
 
-namespace hwinfo {
-namespace utils {
+namespace hwinfo::utils {
 
 /**
  * Replaces an occurence once in the entire string. Stops at first match
@@ -48,39 +48,13 @@ inline void replaceAll(std::string& input, const char from, const char to) {
  * @param input
  */
 inline void strip(std::string& input) {
-  if (input.empty()) {
-    return;
+  auto start = input.find_first_not_of(" \t\r\n");
+  auto end = input.find_last_not_of(" \t\r\n");
+  if (start == std::string::npos) {
+    input.clear();
+  } else {
+    input = input.substr(start, end - start + 1);
   }
-  // optimization for input size == 1
-  if (input.size() == 1) {
-    if (input[0] == ' ' || input[0] == '\t' || input[0] == '\n') {
-      input = "";
-      return;
-    } else {
-      return;
-    }
-  }
-  size_t start_index = 0;
-  while (true) {
-    char c = input[start_index];
-    if (c != ' ' && c != '\t' && c != '\n') {
-      break;
-    }
-    start_index++;
-  }
-  size_t end_index = input.size() - 1;
-  while (true) {
-    char c = input[end_index];
-    if (c != ' ' && c != '\t' && c != '\n') {
-      break;
-    }
-    end_index--;
-  }
-  if (end_index < start_index) {
-    input.assign("");
-    return;
-  }
-  input.assign(input.begin() + start_index, input.begin() + end_index + 1);
 }
 
 /**
@@ -231,5 +205,19 @@ inline bool starts_with(const string_type& str, const prefix_type& prefix) {
 #endif
 }
 
-}  // namespace utils
-}  // namespace hwinfo
+inline std::string join(const std::vector<std::string>& values, const std::string& delim) {
+  if (values.empty()) {
+    return {};
+  }
+  if (values.size() == 1) {
+    return values[0];
+  }
+  std::stringstream ss;
+  for (std::size_t i = 0; i < values.size() - 1; ++i) {
+    ss << values[i] << delim;
+  }
+  ss << values.back();
+  return ss.str();
+}
+
+}  // namespace hwinfo::utils

@@ -4,6 +4,16 @@ target_include_directories(hwinfo INTERFACE $<BUILD_INTERFACE:${HWINFO_INCLUDE_D
 add_library(lfreist-hwinfo::hwinfo ALIAS hwinfo)
 set_target_properties(hwinfo PROPERTIES OUTPUT_NAME "hwinfo")
 
+function(hwinfo_configure_api target_name)
+    if(WIN32)
+        if(HWINFO_SHARED)
+            target_compile_definitions(${target_name} PRIVATE HWINFO_EXPORTS)
+        else()
+            target_compile_definitions(${target_name} PUBLIC HWINFO_STATIC)
+        endif()
+    endif()
+endfunction()
+
 # === Components =======================================================================================================
 # ----- BATTERY --------------------------------------------------------------------------------------------------------
 if (HWINFO_BATTERY)
@@ -16,10 +26,8 @@ if (HWINFO_BATTERY)
             windows/utils/wmi_wrapper.cpp
     )
 
-    add_library(hwinfo_battery ${HWINFO_BUILD} ${BATTERY_SRC_FILES})
-    if(${HWINFO_SHARED})
-        target_compile_definitions(hwinfo_battery PUBLIC -DHWINFO_EXPORTS)
-    endif()
+    add_library(hwinfo_battery ${BATTERY_SRC_FILES})
+    hwinfo_configure_api(hwinfo_battery)
     target_include_directories(hwinfo_battery PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
     if(APPLE)
         target_link_libraries(hwinfo_battery PRIVATE "-framework IOKit" "-framework CoreFoundation")
@@ -31,7 +39,7 @@ if (HWINFO_BATTERY)
 
     install(TARGETS hwinfo_battery
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/battery.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
@@ -47,26 +55,35 @@ if (HWINFO_CPU)
             windows/cpu.cpp
 
             windows/utils/wmi_wrapper.cpp
-            apple/utils/filesystem.cpp
-            linux/utils/filesystem.cpp
+
+            apple/monitoring/cpu.cpp
+            linux/monitoring/cpu.cpp
+            windows/monitoring/cpu.cpp
     )
 
     add_library(hwinfo_cpu ${HWINFO_BUILD} ${CPU_SRC_FILES})
-    if(${HWINFO_SHARED})
-        target_compile_definitions(hwinfo_cpu PUBLIC -DHWINFO_EXPORTS)
-    endif()
+    hwinfo_configure_api(hwinfo_cpu)
     target_include_directories(hwinfo_cpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    if(WIN32)
+        target_link_libraries(hwinfo_cpu PRIVATE ntdll powrprof)
+    endif()
 
+    if(MINGW)
+        target_link_libraries(hwinfo_cpu PUBLIC PowrProf ntdll)
+    endif()
     target_link_libraries(hwinfo INTERFACE hwinfo_cpu)
 
     set_target_properties(hwinfo_cpu PROPERTIES OUTPUT_NAME "hwinfo_cpu")
 
     install(TARGETS hwinfo_cpu
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/cpu.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
+    install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/monitoring/monitor.h
+                  ${HWINFO_INCLUDE_DIR}/hwinfo/monitoring/cpu.h
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo/monitoring)
 endif()
 # ______________________________________________________________________________________________________________________
 
@@ -79,13 +96,14 @@ if (HWINFO_DISK)
             windows/disk.cpp
 
             windows/utils/wmi_wrapper.cpp
-            linux/utils/filesystem.cpp
+
+            apple/monitoring/disk.cpp
+            linux/monitoring/disk.cpp
+            windows/monitoring/disk.cpp
     )
 
     add_library(hwinfo_disk ${HWINFO_BUILD} ${DISK_SRC_FILES})
-    if(${HWINFO_SHARED})
-        target_compile_definitions(hwinfo_disk PUBLIC -DHWINFO_EXPORTS)
-    endif()
+    hwinfo_configure_api(hwinfo_disk)
     target_include_directories(hwinfo_disk PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
     if(APPLE)
         target_link_libraries(hwinfo_disk PRIVATE "-framework IOKit" "-framework CoreFoundation")
@@ -98,10 +116,12 @@ if (HWINFO_DISK)
 
     install(TARGETS hwinfo_disk
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/disk.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
+    install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/monitoring/disk.h
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo/monitoring)
 endif ()
 # ______________________________________________________________________________________________________________________
 
@@ -114,8 +134,6 @@ if (HWINFO_GPU)
             windows/gpu.cpp
 
             windows/utils/wmi_wrapper.cpp
-            apple/utils/filesystem.cpp
-            linux/utils/filesystem.cpp
 
             PCIMapper.cpp
     )
@@ -125,23 +143,27 @@ if (HWINFO_GPU)
     endif ()
 
     add_library(hwinfo_gpu ${HWINFO_BUILD} ${GPU_SRC_FILES})
-    if(${HWINFO_SHARED})
-        target_compile_definitions(hwinfo_gpu PUBLIC -DHWINFO_EXPORTS)
-    endif()
+    hwinfo_configure_api(hwinfo_gpu)
     if(HWINFO_GPU_OPENCL)
         target_compile_definitions(hwinfo_gpu PUBLIC USE_OCL)
         target_link_libraries(hwinfo_gpu PRIVATE opencl_device)
     endif ()
-    target_include_directories(hwinfo_gpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    target_include_directories(hwinfo_gpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<BUILD_INTERFACE:${HWINFO_CMAKE_BINARY_DIR}/generated> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    add_dependencies(hwinfo_gpu generate_pci_ids_header)
+    if(WIN32)
+        target_link_libraries(hwinfo_gpu PRIVATE dxgi setupapi)
+    endif()
 
-
+    if(MINGW)
+        target_link_libraries(hwinfo_gpu PUBLIC dxgi setupapi)
+    endif()
     target_link_libraries(hwinfo INTERFACE hwinfo_gpu)
 
     set_target_properties(hwinfo_gpu PROPERTIES OUTPUT_NAME "hwinfo_gpu")
 
     install(TARGETS hwinfo_gpu
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/gpu.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
@@ -160,26 +182,25 @@ if (HWINFO_MAINBOARD)
             windows/mainboard.cpp
 
             windows/utils/wmi_wrapper.cpp
-            apple/utils/filesystem.cpp
-            linux/utils/filesystem.cpp
     )
 
     add_library(hwinfo_mainboard ${HWINFO_BUILD} ${MAINBOARD_SRC_FILES})
-    if(${HWINFO_SHARED})
-        target_compile_definitions(hwinfo_mainboard PUBLIC -DHWINFO_EXPORTS)
-    endif()
+    hwinfo_configure_api(hwinfo_mainboard)
     target_include_directories(hwinfo_mainboard PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
     if(APPLE)
         target_link_libraries(hwinfo_mainboard PRIVATE "-framework IOKit" "-framework CoreFoundation")
     endif()
 
+    if(MINGW)
+        target_link_libraries(hwinfo_mainboard PUBLIC wbemuuid)
+    endif()
     target_link_libraries(hwinfo INTERFACE hwinfo_mainboard)
 
     set_target_properties(hwinfo_mainboard PROPERTIES OUTPUT_NAME "hwinfo_mainboard")
 
     install(TARGETS hwinfo_mainboard
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/mainboard.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
@@ -195,14 +216,10 @@ if (HWINFO_OS)
             windows/os.cpp
 
             windows/utils/wmi_wrapper.cpp
-            apple/utils/filesystem.cpp
-            linux/utils/filesystem.cpp
     )
 
     add_library(hwinfo_os ${HWINFO_BUILD} ${OS_SRC_FILES})
-    if(${HWINFO_SHARED})
-        target_compile_definitions(hwinfo_os PUBLIC -DHWINFO_EXPORTS)
-    endif()
+    hwinfo_configure_api(hwinfo_os)
     target_include_directories(hwinfo_os PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 
@@ -213,7 +230,7 @@ if (HWINFO_OS)
 
     install(TARGETS hwinfo_os
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/os.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
@@ -229,14 +246,14 @@ if (HWINFO_RAM)
             windows/ram.cpp
 
             windows/utils/wmi_wrapper.cpp
-            apple/utils/filesystem.cpp
-            linux/utils/filesystem.cpp
+
+            apple/monitoring/ram.cpp
+            linux/monitoring/ram.cpp
+            windows/monitoring/ram.cpp
     )
 
     add_library(hwinfo_ram ${HWINFO_BUILD} ${RAM_SRC_FILES})
-    if(${HWINFO_SHARED})
-        target_compile_definitions(hwinfo_ram PUBLIC -DHWINFO_EXPORTS)
-    endif()
+    hwinfo_configure_api(hwinfo_ram)
     target_include_directories(hwinfo_ram PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
     target_link_libraries(hwinfo INTERFACE hwinfo_ram)
@@ -245,11 +262,13 @@ if (HWINFO_RAM)
 
     install(TARGETS hwinfo_ram
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
 
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/ram.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
+    install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/monitoring/ram.h
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo/monitoring)
 endif ()
 # ______________________________________________________________________________________________________________________
 
@@ -262,14 +281,10 @@ if (HWINFO_NETWORK)
             windows/network.cpp
 
             windows/utils/wmi_wrapper.cpp
-            apple/utils/filesystem.cpp
-            linux/utils/filesystem.cpp
     )
 
     add_library(hwinfo_network ${HWINFO_BUILD} ${NETWORK_SRC_FILES})
-    if(${HWINFO_SHARED})
-        target_compile_definitions(hwinfo_network PUBLIC -DHWINFO_EXPORTS)
-    endif()
+    hwinfo_configure_api(hwinfo_network)
     target_include_directories(hwinfo_network PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 
@@ -280,7 +295,7 @@ if (HWINFO_NETWORK)
 
     install(TARGETS hwinfo_network
             EXPORT lfreist-hwinfoTargets
-            LIBRARY DESTINATION lib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin)
     install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/network.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
@@ -291,7 +306,7 @@ install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/platform.h ${HWINFO_INCLUDE_DIR}/hwin
 install(DIRECTORY ${HWINFO_INCLUDE_DIR}/hwinfo/utils DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 install(TARGETS hwinfo
         EXPORT lfreist-hwinfoTargets
-        LIBRARY DESTINATION lib
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
 )

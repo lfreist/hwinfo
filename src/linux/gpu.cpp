@@ -6,14 +6,15 @@
 
 #ifdef HWINFO_UNIX
 
-#include <hwinfo/gpu.h>
-#include <hwinfo/utils/PCIMapper.h>
-#include <hwinfo/utils/filesystem.h>
+#include "hwinfo/gpu.h"
+#include "hwinfo/utils/PCIMapper.h"
+#include "hwinfo/utils/unit.h"
 
 #ifdef USE_OCL
 #include <hwinfo/opencl/device.h>
 #endif
 
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -32,23 +33,26 @@ std::string read_drm_by_path(const std::string& path) {
 }
 
 // _____________________________________________________________________________________________________________________
-std::vector<int> get_frequencies(const std::string drm_path) {
+std::vector<std::uint64_t> get_frequencies(const std::string drm_path) {
   // {min, current, max}
-  std::vector<int> freqs(3);
+  std::vector<std::uint64_t> freqs(3, 0);
   try {
-    freqs[0] = std::stoi(read_drm_by_path(drm_path + "gt_min_freq_mhz"));
+    freqs[0] =
+        std::stoull(read_drm_by_path(drm_path + "gt_min_freq_mhz")) * static_cast<std::uint64_t>(unit::SiPrefix::MEGA);
   } catch (const std::invalid_argument& e) {
-    freqs[0] = -1;
+    freqs[0] = 0;
   }
   try {
-    freqs[1] = std::stoi(read_drm_by_path(drm_path + "gt_cur_freq_mhz"));
+    freqs[1] =
+        std::stoull(read_drm_by_path(drm_path + "gt_cur_freq_mhz")) * static_cast<std::uint64_t>(unit::SiPrefix::MEGA);
   } catch (const std::invalid_argument& e) {
-    freqs[0] = -1;
+    freqs[0] = 0;
   }
   try {
-    freqs[2] = std::stoi(read_drm_by_path(drm_path + "gt_max_freq_mhz"));
+    freqs[2] =
+        std::stoull(read_drm_by_path(drm_path + "gt_max_freq_mhz")) * static_cast<std::uint64_t>(unit::SiPrefix::MEGA);
   } catch (const std::invalid_argument& e) {
-    freqs[0] = -1;
+    freqs[0] = 0;
   }
   return freqs;
 }
@@ -61,16 +65,16 @@ std::vector<GPU> getAllGPUs() {
   while (true) {
     GPU gpu;
     gpu._id = id;
-    std::string path("/sys/class/drm/card" + std::to_string(id) + '/');
-    if (!filesystem::exists(path)) {
+    std::filesystem::path path("/sys/class/drm/card" + std::to_string(id));
+    if (!std::filesystem::exists(path)) {
       if (id > 2) {
         break;
       }
       id++;
       continue;
     }
-    gpu._vendor_id = read_drm_by_path(path + "device/vendor");
-    gpu._device_id = read_drm_by_path(path + "device/device");
+    gpu._vendor_id = read_drm_by_path(path / "device/vendor");
+    gpu._device_id = read_drm_by_path(path / "device/device");
     if (gpu._vendor_id.empty() || gpu._device_id.empty()) {
       id++;
       continue;
@@ -80,7 +84,7 @@ std::vector<GPU> getAllGPUs() {
     gpu._vendor = vendor.vendor_name;
     gpu._name = vendor[gpu._device_id].device_name;
     auto frequencies = get_frequencies(path);
-    gpu._frequency_MHz = frequencies[2];
+    gpu._frequency_hz = frequencies[2];
     gpus.push_back(std::move(gpu));
     id++;
   }

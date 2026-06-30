@@ -23,7 +23,7 @@ MainBoard::MainBoard() {
   }
   ULONG u_return = 0;
   IWbemClassObject* obj = nullptr;
-  wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
+  wmi.enumerator->Next((long)WBEM_INFINITE, 1, &obj, &u_return);
   if (!u_return) {
     return;
   }
@@ -43,7 +43,7 @@ MainBoard::MainBoard() {
   }
   hr = obj->Get(L"SerialNumber", 0, &vt_prop, nullptr, nullptr);
   if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-    _serialNumber = utils::wstring_to_std_string(vt_prop.bstrVal);
+    _serial_number = utils::wstring_to_std_string(vt_prop.bstrVal);
   }
   VariantClear(&vt_prop);
   obj->Release();

@@ -5,14 +5,19 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <hwinfo/gpu.h>
-#include <hwinfo/utils/stringutils.h>
-#include <hwinfo/utils/wmi_wrapper.h>
+#include <dxgi1_6.h>
+#include <windows.h>
 
 #include <algorithm>
 #include <string>
 #include <vector>
-#pragma comment(lib, "wbemuuid.lib")
+
+#include "hwinfo/gpu.h"
+#include "hwinfo/utils/stringutils.h"
+#ifndef __MINGW32__
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "setupapi.lib")
+#endif
 
 #ifdef USE_OCL
 #include <hwinfo/opencl/device.h>
@@ -22,72 +27,59 @@ namespace hwinfo {
 
 // _____________________________________________________________________________________________________________________
 std::vector<GPU> getAllGPUs() {
-  utils::WMI::_WMI wmi;
-  const std::wstring query_string(
-      L"SELECT Name, AdapterCompatibility, DriverVersion, AdapterRam, PNPDeviceID "
-      L"FROM WIN32_VideoController");
-  bool success = wmi.execute_query(query_string);
-  if (!success) {
-    return {};
-  }
   std::vector<GPU> gpus;
 
-  ULONG u_return = 0;
-  IWbemClassObject* obj = nullptr;
-  int gpu_id = 0;
-  while (wmi.enumerator) {
-    wmi.enumerator->Next(WBEM_INFINITE, 1, &obj, &u_return);
-    if (!u_return) {
-      break;
+  IDXGIFactory1* pFactory;
+  if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&pFactory))) return {};
+
+  IDXGIAdapter1* pAdapter;
+  for (UINT i = 0; pFactory->EnumAdapters1(i, &pAdapter) != DXGI_ERROR_NOT_FOUND; ++i) {
+    DXGI_ADAPTER_DESC1 desc;
+    pAdapter->GetDesc1(&desc);
+
+    if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) {
+      pAdapter->Release();
+      continue;
     }
+
     GPU gpu;
-    gpu._id = gpu_id++;
-    VARIANT vt_prop;
-    HRESULT hr;
-    hr = obj->Get(L"Name", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-      gpu._name = utils::wstring_to_std_string(vt_prop.bstrVal);
+    gpu._id = static_cast<int>(i);
+
+    std::wstring ws(desc.Description);
+    gpu._name = utils::wstring_to_std_string(ws);
+
+    gpu._dedicated_memory_Bytes = static_cast<int64_t>(desc.DedicatedVideoMemory);
+    gpu._shared_memory_Bytes = static_cast<int64_t>(desc.SharedSystemMemory);
+
+    char buffer[10];
+    sprintf_s(buffer, "0x%04X", desc.VendorId);
+    gpu._vendor_id = buffer;
+    sprintf_s(buffer, "0x%04X", desc.DeviceId);
+    gpu._device_id = buffer;
+
+    if (desc.VendorId == 0x10DE) {
+      gpu._vendor = "NVIDIA";
+    } else if (desc.VendorId == 0x1002 || desc.VendorId == 0x1022) {
+      gpu._vendor = "AMD";
+    } else if (desc.VendorId == 0x8086) {
+      gpu._vendor = "Intel";
+    } else {
+      gpu._vendor = "Unknown";
     }
-    hr = obj->Get(L"AdapterCompatibility", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-      gpu._vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
-    }
-    hr = obj->Get(L"DriverVersion", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-      gpu._driverVersion = utils::wstring_to_std_string(vt_prop.bstrVal);
-    }
-    hr = obj->Get(L"AdapterRam", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_I4)) {
-      gpu._memory_Bytes = vt_prop.uintVal;
-    }
-    hr = obj->Get(L"PNPDeviceID", 0, &vt_prop, nullptr, nullptr);
-    if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-      std::string ret = utils::wstring_to_std_string(vt_prop.bstrVal);
-      if (utils::starts_with(ret, "PCI\\")) {
-        utils::replaceOnce(ret, "PCI\\", "");
-        std::vector<std::string> ids = utils::split(ret, "&");
-        gpu._vendor_id = ids[0];
-        utils::replaceOnce(gpu._vendor_id, "VEN_", "");
-        gpu._device_id = ids[1];
-        utils::replaceOnce(gpu._device_id, "DEV_", "");
-      } else {
-        gpu._vendor_id = "0";
-        gpu._device_id = "0";
-      }
-    }
-    VariantClear(&vt_prop);
-    obj->Release();
-    gpus.push_back(std::move(gpu));
+
+    gpus.push_back(gpu);
+    pAdapter->Release();
   }
+  pFactory->Release();
 #ifdef USE_OCL
   auto cl_gpus = opencl_::DeviceManager::get_list<opencl_::Filter::GPU>();
   for (auto& gpu : gpus) {
     for (auto* cl_gpu : cl_gpus) {
       if (cl_gpu->name() == gpu.name()) {
         gpu._driverVersion = cl_gpu->driver_version();
-        gpu._frequency_MHz = static_cast<int64_t>(cl_gpu->clock_frequency_MHz());
+        gpu._frequency_hz = static_cast<int64_t>(cl_gpu->clock_frequency_MHz()) * 1'000'000;
         gpu._num_cores = static_cast<int>(cl_gpu->cores());
-        gpu._memory_Bytes = static_cast<int64_t>(cl_gpu->memory_Bytes());
+        gpu._dedicated_memory_Bytes = cl_gpu->memory_Bytes();
         break;
       }
     }

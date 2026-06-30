@@ -4,6 +4,7 @@
 [![MacOS](https://github.com/lfreist/hwinfo/actions/workflows/build-macos.yml/badge.svg)](https://github.com/lfreist/hwinfo/actions/workflows/build-macos.yml)
 
 [![Windows (Visual Studio)](https://github.com/lfreist/hwinfo/actions/workflows/build-windows-vs.yml/badge.svg)](https://github.com/lfreist/hwinfo/actions/workflows/build-windows-vs.yml)
+[![Windows (MinGW)](https://github.com/lfreist/hwinfo/actions/workflows/build-windows-mingw.yml/badge.svg)](https://github.com/lfreist/hwinfo/actions/workflows/build-windows-mingw.yml)
 
 [![clang format](https://github.com/lfreist/hwinfo/actions/workflows/format-check.yml/badge.svg)](https://github.com/lfreist/hwinfo/actions/workflows/format-check.yml)
 
@@ -51,8 +52,8 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 |                  | Name               |   ❌   |   ❌   |   ✔️    |
 |                  | Serial Number      |   ❌   |   ❌   |   ✔️    |
 |                  | Total Memory Size  |  ✔️   |  ✔️   |   ✔️    |
-|                  | Free Memory Size   |  ✔️   |   ❌   |   ✔️    |
-| Mainboard        | Vendor             |  ✔️   |   ❌   |   ✔️    |
+|                  | Free Memory Size   |  ✔️   |  ✔️   |   ✔️    |
+| Mainboard        | Vendor             |  ✔️   |  ✔️   |   ✔️    |
 |                  | Model              |  ✔️   |   ❌   |   ✔️    |
 |                  | Version            |  ✔️   |   ❌   |   ✔️    |
 |                  | Serial-Number      |   ❌   |  ✔️   |   ✔️    |
@@ -64,7 +65,7 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 |                  | Free Size          |  ✔️   |  ✔️   |   ✔️    |
 |                  | Volumes            |  ✔️   |  ✔️   |   ✔️    |
 | Operating System | Name               |  ✔️   |  ✔️   |   ✔️    |
-|                  | Short Name         |  ✔️   |  ❌️   |   ✔️    |
+|                  | Short Name         |  ✔️   |  ✔️   |   ✔️    |
 |                  | Version            |  ✔️   |  ✔️   |    ❌    |
 |                  | Kernel             |  ✔️   |  ✔️   |    ❌    |
 |                  | Architecture (Bit) |  ✔️   |  ✔️   |   ✔️    |
@@ -82,6 +83,7 @@ link against depending on your needs.
 ```cmake
 target_link_libraries(your_target PRIVATE hwinfo::hwinfo)
 ```
+
 or
 
 ```cmake

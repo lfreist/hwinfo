@@ -17,5 +17,6 @@ else()
 endif()
 
 add_library(opencl_device STATIC device.cpp)
+hwinfo_configure_api(opencl_device)
 target_include_directories(opencl_device PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(opencl_device PUBLIC OpenCL::HeadersCpp OpenCL::OpenCL)

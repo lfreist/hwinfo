@@ -10,7 +10,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#ifndef __MINGW32__
 #pragma comment(lib, "wbemuuid.lib")
+#endif
 
 namespace hwinfo {
 

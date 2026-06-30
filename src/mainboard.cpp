@@ -15,6 +15,6 @@ const std::string& MainBoard::name() const { return _name; }
 const std::string& MainBoard::version() const { return _version; }
 
 // _____________________________________________________________________________________________________________________
-const std::string& MainBoard::serialNumber() const { return _serialNumber; }
+const std::string& MainBoard::serialNumber() const { return _serial_number; }
 
 }  // namespace hwinfo

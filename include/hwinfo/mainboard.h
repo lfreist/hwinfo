@@ -25,7 +25,7 @@ class HWINFO_API MainBoard {
   std::string _vendor;
   std::string _name;
   std::string _version;
-  std::string _serialNumber;
+  std::string _serial_number;
 };
 
 }  // namespace hwinfo
