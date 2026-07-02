@@ -260,15 +260,19 @@ DeviceManager& DeviceManager::get_instance() {
 }
 
 DeviceManager::DeviceManager() {
-  std::vector<cl::Platform> cl_platforms;
-  cl::Platform::get(&cl_platforms);
-  uint32_t id = 0;
-  for (const auto& clp : cl_platforms) {
-    std::vector<cl::Device> cl_devices;
-    clp.getDevices(CL_DEVICE_TYPE_ALL, &cl_devices);
-    for (auto& cld : cl_devices) {
-      _devices.emplace_back(id++, std::move(cld));
+  try {
+    std::vector<cl::Platform> cl_platforms;
+    cl::Platform::get(&cl_platforms);
+    uint32_t id = 0;
+    for (const auto& clp : cl_platforms) {
+      std::vector<cl::Device> cl_devices;
+      clp.getDevices(CL_DEVICE_TYPE_ALL, &cl_devices);
+      for (auto& cld : cl_devices) {
+        _devices.emplace_back(id++, std::move(cld));
+      }
     }
+  } catch (const cl::Error &e) {
+    std::cerr << "failed to initialize opencl device manager: " << e.what() << std::endl;
   }
 }
 

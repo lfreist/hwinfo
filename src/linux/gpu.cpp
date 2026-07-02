@@ -241,9 +241,6 @@ std::vector<GPU> getAllGPUs() {
   std::vector<GPU> gpus{};
   PCIMapper pci = PCI::getMapper();
 
-  // Enumerate the "cardN" nodes that actually exist rather than probing a
-  // contiguous id range. directory_iterator yields no particular order, so we
-  // collect and sort by index to keep card0 before card1, etc.
   std::vector<std::filesystem::path> card_paths;
   std::error_code ec;
   for (const auto& entry : std::filesystem::directory_iterator("/sys/class/drm", ec)) {
