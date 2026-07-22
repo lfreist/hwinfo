@@ -56,6 +56,11 @@ class HWINFO_API Device {
   [[nodiscard]] uint32_t get_id() const;
 
   /**
+   * @brief Returns the vendor id (pci.ids).
+   */
+  [[nodiscard]] uint32_t vendor_id() const;
+
+  /**
    * @brief Returns a const reference to the underlying cl::Device.
    */
   [[nodiscard]] const cl::Device& get_cl_device() const;
@@ -74,6 +79,8 @@ class HWINFO_API Device {
    * @brief Returns the vendor of the device.
    */
   [[nodiscard]] std::string vendor() const;
+
+  [[nodiscard]] bool unified_memory() const;
 
   /**
    * @brief Returns the driver version of the device.
