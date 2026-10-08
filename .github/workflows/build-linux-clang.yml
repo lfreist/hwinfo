@@ -8,15 +8,23 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        stdlib: [ libstdc++, libc++ ]
+    env:
+      CXX: clang++-20
+      CXXFLAGS: ${{ matrix.stdlib == 'libc++' && '-stdlib=libc++' || '' }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      - name: Setup gitmodules
-        run: git submodule update --init --recursive
-
-      - name: Setup clang
-        uses: egor-tensin/setup-clang@v1
+      - name: Install clang 20
+        run: |
+          wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- 20
+          sudo apt-get install -y g++-14 libc++-20-dev libc++abi-20-dev
 
       - name: Build and Test
         run: ./scripts/feature-tests.shell
