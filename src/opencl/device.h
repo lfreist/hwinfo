@@ -20,11 +20,11 @@ namespace opencl_ {
  * @brief Device represents a single OpenCL Device.
  *        It provides instant methods for retrieving common data.
  */
-class HWINFO_API Device {
+class Device {
   template <unsigned dimension, typename T>
   friend class Memory;
   friend class DeviceManager;
-  friend HWINFO_API std::ostream& operator<<(std::ostream& os, const Device& device);
+  friend std::ostream& operator<<(std::ostream& os, const Device& device);
 
  public:
   /**
@@ -220,9 +220,9 @@ class HWINFO_API Device {
  *
  * format: "[GPU|CPU]: <name> (<id>, <vendor>)"
  */
-HWINFO_API std::ostream& operator<<(std::ostream& os, const Device& device);
+std::ostream& operator<<(std::ostream& os, const Device& device);
 
-HWINFO_API std::ostream& operator<<(std::ostream& os, const Device::Type& type);
+std::ostream& operator<<(std::ostream& os, const Device::Type& type);
 
 // ===== DeviceManager =================================================================================================
 /**

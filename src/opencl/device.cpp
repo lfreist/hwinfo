@@ -1,7 +1,7 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include <hwinfo/opencl/device.h>
+#include "device.h"
 
 #include <algorithm>
 
