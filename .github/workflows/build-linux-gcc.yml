@@ -8,16 +8,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-24.04
+    env:
+      CXX: g++-14
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    - name: Setup gcc
-      uses: egor-tensin/setup-gcc@v1
+      - name: Install gcc 14
+        run: sudo apt-get update && sudo apt-get install -y g++-14
 
-    - name: Setup gitmodules
-      run: git submodule update --init --recursive
-
-    - name: Build and Test
-      run: ./scripts/feature-tests.shell
+      - name: Build and Test
+        run: ./scripts/feature-tests.shell
