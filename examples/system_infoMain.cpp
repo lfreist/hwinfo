@@ -2,150 +2,158 @@
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
 #include <hwinfo/hwinfo.h>
-#include <hwinfo/utils/unit.h>
-#include <hwinfo/utils/stringutils.h>
 
-#include <iomanip>
-#include <iostream>
-#include <vector>
+#include <print>
+#include <ranges>
+#include <string>
+#include <string_view>
 
-using namespace hwinfo::unit;
+namespace {
 
-int main(/*int argc, char** argv*/) {
-  std::cout << "hwinfo is an open source, MIT licensed project that implements a platform independent "
-               "hardware and system information gathering API for C++.\n\n"
-               "If you face any issues, find bugs or if your platform is not supported yet, do not hesitate to create "
-               "a ticket at https://github.com/lfreist/hwinfo/issues.\n"
-            << std::endl;
+void section(std::string_view title) { std::println("{:-^80}", std::format(" {} ", title)); }
 
-  std::cout << "Hardware Report:\n"
-            << "----------------------------------- CPU ------------------------------------\n";
-  const auto cpus = hwinfo::getAllCPUs();
-  for (const auto& cpu : cpus) {
-    std::cout << "Socket " << cpu.id() << "\n"
-              << std::left << std::setw(20) << " vendor: " << cpu.vendor() << "\n"
-              << std::left << std::setw(20) << " model: " << cpu.modelName() << "\n"
-              << std::left << std::setw(20) << " physical cores: " << cpu.numPhysicalCores() << "\n"
-              << std::left << std::setw(20) << " logical cores: " << cpu.numLogicalCores() << "\n"
-              << std::left << std::setw(20) << " cores: " << cpu.numPhysicalCores() << " (" << cpu.numLogicalCores()
-              << ")\n";
-    for (const auto& core : cpu.cores()) {
-      std::cout << std::left << std::setw(20) << ("  core " + std::to_string(core.id) + ":") << "\n"
-                << std::left << std::setw(20) << "   SMT: " << (core.smt ? "yes" : "no") << "\n"
-                << std::left << std::setw(20) << "   cache:" << "\n"
-                << std::left << std::setw(20)
-                << "    L1 Data:" << unit_prefix_to(core.cache.l1_data, IECPrefix::KIBI) << " KiB\n"
-                << std::left << std::setw(20)
-                << "    L1 Inst.:" << unit_prefix_to(core.cache.l1_instruction, IECPrefix::KIBI) << " KiB\n"
-                << std::left << std::setw(20) << "    L2:" << unit_prefix_to(core.cache.l2, IECPrefix::KIBI)
-                << " KiB\n"
-                << std::left << std::setw(20) << "    L3:" << unit_prefix_to(core.cache.l3, IECPrefix::KIBI)
-                << " KiB\n"
-                << std::left << std::setw(20)
-                << "   regular freq.:" << unit_prefix_to(core.regular_frequency_hz, SiPrefix::MEGA) << " MHz\n"
-                << std::left << std::setw(20)
-                << "   max freq.:" << unit_prefix_to(core.max_frequency_hz, SiPrefix::MEGA) << " MHz\n";
-    }
-  }
+void field(std::string_view name, const auto& value) { std::println("  {:<22}{}", name, value); }
 
-  hwinfo::OS os;
-  std::cout << "----------------------------------- OS ------------------------------------\n"
-            << std::left << std::setw(20) << "name: " << os.name() << "\n"
-            << std::left << std::setw(20) << "version: " << os.version() << "\n"
-            << std::left << std::setw(20) << "kernel: " << os.kernel() << "\n"
-            << std::left << std::setw(20) << "bitness: " << (os.is32bit() ? "32 bit" : "64 bit") << "\n"
-            << std::left << std::setw(20) << "endianess: " << (os.isLittleEndian() ? "little endian" : "big endian")
-            << "\n";
-
-  auto gpus = hwinfo::getAllGPUs();
-  std::cout << "----------------------------------- GPU -----------------------------------\n";
-  for (const auto& gpu : gpus) {
-    std::cout << "GPU " << gpu.id() << "\n"
-              << std::left << std::setw(20) << " vendor: " << gpu.vendor() << "\n"
-              << std::left << std::setw(20) << " model: " << gpu.name() << "\n"
-              << std::left << std::setw(20) << " driver version: " << gpu.driverVersion() << "\n"
-              << std::left << std::setw(20)
-              << " dedicated memory: " << unit_prefix_to(gpu.dedicated_memory_Bytes(), IECPrefix::GIBI) << " GiB\n"
-              << std::left << std::setw(20)
-              << " shared memory: " << unit_prefix_to(gpu.shared_memory_Bytes(), IECPrefix::GIBI) << " GiB\n"
-              << std::left << std::setw(20) << " frequency: " << unit_prefix_to(gpu.frequency_hz(), SiPrefix::MEGA)
-              << " MHz\n"
-              << std::left << std::setw(20) << " cores: " << gpu.num_cores() << "\n"
-              << std::left << std::setw(20) << " vendor_id: " << gpu.vendor_id() << "\n"
-              << std::left << std::setw(20) << " device_id: " << gpu.device_id() << "\n";
-  }
-
-  hwinfo::Memory memory;
-  std::cout << "----------------------------------- RAM -----------------------------------\n"
-            << std::left << std::setw(20) << "size: " << unit_prefix_to(memory.size(), IECPrefix::GIBI) << "\n"
-            << std::left << std::setw(20) << "free: " << unit_prefix_to(memory.free(), IECPrefix::GIBI) << "\n"
-            << std::left << std::setw(20)
-            << "available: " << unit_prefix_to(memory.available(), IECPrefix::GIBI) << "\n";
-  for (const auto& module : memory.modules()) {
-    std::cout << std::left << std::setw(20) << (" RAM " + std::to_string(module.id)) << "\n"
-              << std::left << std::setw(20) << "  vendor: " << module.vendor << "\n"
-              << std::left << std::setw(20) << "  model: " << module.model << "\n"
-              << std::left << std::setw(20) << "  name: " << module.name << "\n"
-              << std::left << std::setw(20) << "  serial number: " << module.serial_number << "\n"
-              << std::left << std::setw(20) << "  frequency: " << unit_prefix_to(module.frequency_hz, SiPrefix::MEGA)
-              << "\n";
-  }
-
-  hwinfo::MainBoard main_board;
-  std::cout << "------------------------------- Main Board --------------------------------\n"
-            << std::left << std::setw(20) << "vendor: " << main_board.vendor() << "\n"
-            << std::left << std::setw(20) << "name: " << main_board.name() << "\n"
-            << std::left << std::setw(20) << "version: " << main_board.version() << "\n"
-            << std::left << std::setw(20) << "serial number: " << main_board.serialNumber() << "\n";
-
-  std::vector<hwinfo::Battery> batteries = hwinfo::getAllBatteries();
-
-  std::cout << "------------------------------- Batteries ---------------------------------\n";
-  if (!batteries.empty()) {
-    for (auto& battery : batteries) {
-      std::cout << std::left << std::setw(20) << ("Battery " + std::to_string(battery.id()) + ":") << "\n"
-                << std::left << std::setw(20) << " vendor: " << battery.vendor() << "\n"
-                << std::left << std::setw(20) << " model: " << battery.model() << "\n"
-                << std::left << std::setw(20) << " serial number: " << battery.serialNumber() << "\n"
-                << std::left << std::setw(20) << " state: " << battery.state() << "\n"
-                << std::left << std::setw(20) << " capacity: " << battery.capacity() << "\n";
-    }
+template <typename T>
+void field(std::string_view name, const std::optional<T>& value) {
+  if (value) {
+    field(name, *value);
   } else {
-    std::cout << "No Batteries installed or detected\n";
+    field(name, "<unknown>");
   }
+}
 
-  std::vector<hwinfo::Disk> disks = hwinfo::getAllDisks();
-  std::cout << "--------------------------------- Disks -----------------------------------\n";
-  if (!disks.empty()) {
-    for (const auto& disk : disks) {
-      std::cout << std::left << std::setw(20) << ("Disk " + std::to_string(disk.id()) + ":") << "\n"
-                << std::left << std::setw(20) << " vendor: " << disk.vendor() << "\n"
-                << std::left << std::setw(20) << " model: " << disk.model() << "\n"
-                << std::left << std::setw(20) << " serial number: " << disk.serial_number() << "\n"
-                << std::left << std::setw(20) << " interface: " << disk.disk_interface() << "\n"
-                << std::left << std::setw(20) << " size: " << unit_prefix_to(disk.size(), IECPrefix::GIBI) << " GiB\n"
-                << std::left << std::setw(20) << " mount points: " << hwinfo::utils::join(disk.mount_points(), ", ") << "\n";
-    }
-  } else {
-    std::cout << "No Disks installed or detected\n";
+// Prints the error of a failed query and returns false.
+template <typename T>
+bool check(const hwinfo::result<T>& r) {
+  if (!r) {
+    std::println("  error: {}", r.error());
   }
+  return r.has_value();
+}
 
-  std::vector<hwinfo::Network> networks = hwinfo::getAllNetworks();
-  std::cout << "--------------------------------- Networks -----------------------------------\n";
-  if (!networks.empty()) {
-    int network_counter = 0;
-    for (const auto& network : networks) {
-      if (!network.ip4().empty() || !network.ip6().empty()) {
-        std::cout << std::left << std::setw(20) << ("Network " + std::to_string(network_counter++) + ":") << "\n"
-                  << std::left << std::setw(20) << " description: " << network.description() << "\n"
-                  << std::left << std::setw(20) << " interface index: " << network.interfaceIndex() << "\n"
-                  << std::left << std::setw(20) << " mac: " << network.mac() << "\n"
-                  << std::left << std::setw(20) << " ipv4 address: " << network.ip4() << "\n"
-                  << std::left << std::setw(20) << " ipv6 address: " << network.ip6() << "\n";
+std::string join(const auto& range, std::string_view separator = ", ") {
+  std::string out;
+  for (const auto& value : range) {
+    out += std::format("{}{}", out.empty() ? "" : separator, value);
+  }
+  return out;
+}
+
+}  // namespace
+
+int main() {
+  std::println(
+      "hwinfo is an open source, MIT licensed project that implements a platform independent hardware and system "
+      "information gathering API for C++.\n\nIf you face any issues, find bugs or if your platform is not supported "
+      "yet, do not hesitate to create a ticket at https://github.com/lfreist/hwinfo/issues.\n");
+
+  section("CPU");
+  if (const auto cpus = hwinfo::cpus(); check(cpus)) {
+    for (const auto& cpu : *cpus) {
+      std::println("Socket {}", cpu.socket);
+      field("vendor:", cpu.vendor);
+      field("model:", cpu.model);
+      field("cores:", std::format("{} ({} threads)", cpu.physical_cores, cpu.logical_cores));
+      field("flags:", std::format("{} flags", cpu.flags.size()));
+      if (!cpu.cores.empty()) {
+        const auto& core = cpu.cores.front();
+        field("L1d / L1i:", std::format("{} / {}", core.cache.l1_data.value_or(hwinfo::Bytes{}),
+                                        core.cache.l1_instruction.value_or(hwinfo::Bytes{})));
+        field("L2 / L3:",
+              std::format("{} / {}", core.cache.l2.value_or(hwinfo::Bytes{}), core.cache.l3.value_or(hwinfo::Bytes{})));
+        field("base frequency:", core.base_frequency);
+        field("max frequency:", core.max_frequency);
       }
     }
-  } else {
-    std::cout << "No Networks installed or detected\n";
+  }
+
+  section("Operating System");
+  if (const auto os = hwinfo::os(); check(os)) {
+    field("name:", os->name);
+    field("version:", os->version);
+    field("kernel:", os->kernel);
+    field("architecture:", std::format("{} ({}-bit)", os->architecture, os->bits));
+  }
+
+  section("GPU");
+  if (const auto gpus = hwinfo::gpus(); check(gpus)) {
+    for (const auto& gpu : *gpus) {
+      std::println("GPU {}", gpu.index);
+      field("vendor:", gpu.vendor);
+      field("model:", gpu.name);
+      field("driver:", gpu.driver);
+      field("driver version:", gpu.driver_version);
+      field("memory:", gpu.dedicated_memory);
+      field("frequency:", gpu.frequency);
+      field("cores:", gpu.cores);
+    }
+  }
+
+  section("Memory");
+  if (const auto memory = hwinfo::memory(); check(memory)) {
+    field("total:", memory->total);
+    for (const auto& module : memory->modules) {
+      std::println("Module {}", module.index);
+      field("vendor:", module.vendor);
+      field("model:", module.model);
+      field("serial number:", module.serial_number);
+      field("size:", module.size);
+      field("frequency:", module.frequency);
+    }
+  }
+
+  section("Mainboard");
+  if (const auto board = hwinfo::mainboard(); check(board)) {
+    field("vendor:", board->vendor);
+    field("name:", board->name);
+    field("version:", board->version);
+    field("serial number:", board->serial_number);
+  }
+
+  section("Batteries");
+  if (const auto batteries = hwinfo::batteries(); check(batteries)) {
+    if (batteries->empty()) {
+      std::println("No batteries installed or detected");
+    }
+    for (const auto& battery : *batteries) {
+      std::println("Battery {}", battery.index);
+      field("vendor:", battery.vendor);
+      field("model:", battery.model);
+      field("serial number:", battery.serial_number);
+      field("technology:", battery.technology);
+      field("capacity [Wh]:", battery.full_charge_capacity_wh);
+      if (const auto status = hwinfo::battery_status(battery.index)) {
+        field("state:", status->state);
+        field("charge:", status->charge.transform([](double c) { return std::format("{:.0f}%", c * 100); }));
+      }
+    }
+  }
+
+  section("Disks");
+  if (const auto disks = hwinfo::disks(); check(disks)) {
+    for (const auto& disk : *disks) {
+      std::println("Disk {}", disk.index);
+      field("vendor:", disk.vendor);
+      field("model:", disk.model);
+      field("serial number:", disk.serial_number);
+      field("bus:", disk.bus);
+      field("size:", disk.size);
+      field("mount points:", join(disk.mount_points | std::views::transform([](const auto& p) { return p.string(); })));
+    }
+  }
+
+  section("Network");
+  if (const auto nics = hwinfo::network_interfaces(); check(nics)) {
+    for (const auto& nic : *nics | std::views::filter([](const auto& n) { return !n.is_loopback; })) {
+      std::println("Interface {}", nic.index);
+      field("name:", nic.name);
+      field("description:", nic.description);
+      field("state:", nic.is_up ? "up" : "down");
+      field("mac:", nic.mac);
+      field("ipv4:", join(nic.ipv4));
+      field("ipv6:", join(nic.ipv6));
+    }
   }
   return 0;
 }
