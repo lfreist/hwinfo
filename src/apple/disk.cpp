@@ -3,8 +3,6 @@
 
 #include <hwinfo/platform.h>
 
-#include <cstdint>
-
 #ifdef HWINFO_APPLE
 
 #include <CoreFoundation/CoreFoundation.h>
@@ -13,235 +11,164 @@
 #include <IOKit/storage/IOMedia.h>
 #include <hwinfo/disk.h>
 #include <sys/mount.h>
-#include <sys/stat.h>
+#include <sys/param.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <filesystem>
 #include <string>
+#include <string_view>
 #include <unordered_map>
+#include <vector>
+
+#include "internal/apple_cf.h"
 
 namespace hwinfo {
 
-/**
-  Converts a CFStringRef to a std::string
- */
-std::string cf_to_std(CFStringRef cfString) {
-  if (cfString == nullptr) {
-    return "<unknown>";
+namespace {
+
+namespace cf = internal::apple;
+namespace fs = std::filesystem;
+
+// BSD name ("disk3s1s1") -> mount points
+using MountMap = std::unordered_map<std::string, std::vector<fs::path>>;
+
+MountMap mounted_devices() {
+  MountMap mounts;
+  const int count = getfsstat(nullptr, 0, MNT_NOWAIT);
+  if (count <= 0) {
+    return mounts;
   }
-
-  CFIndex length = CFStringGetLength(cfString);
-  CFIndex maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1;
-
-  // Initialize std::string with maxSize and fill with null characters
-  auto out = std::string(maxSize, '\0');
-
-  // Fill std::string with the actual string
-  auto success = CFStringGetCString(cfString, const_cast<char*>(out.data()), maxSize, kCFStringEncodingUTF8);
-
-  if (!success) {
-    return "<unknown>";
+  std::vector<struct statfs> entries(static_cast<std::size_t>(count));
+  const int filled = getfsstat(entries.data(), static_cast<int>(entries.size() * sizeof(struct statfs)), MNT_NOWAIT);
+  entries.resize(static_cast<std::size_t>(std::clamp(filled, 0, count)));
+  for (const auto& entry : entries) {
+    std::string_view device = entry.f_mntfromname;  // e.g. "/dev/disk3s1s1"
+    if (!device.starts_with("/dev/")) {
+      continue;
+    }
+    device.remove_prefix(5);
+    mounts[std::string(device)].emplace_back(entry.f_mntonname);
   }
-
-  // Resize the string to the actual length
-  out.resize(strlen(out.c_str()));
-  return out;
+  return mounts;
 }
 
-/**
-  Converts a CFNumberRef to a number of type ReturnType
- */
-template <typename NumberType>
-NumberType cf_to_std(CFNumberRef raw, CFNumberType cfNumberEnum) {
-  if (raw == nullptr) {
-    return NumberType();
-  }
-
-  NumberType out;
-  CFNumberGetValue(raw, cfNumberEnum, &out);
-
-  return out;
-}
-
-int64_t cf_to_std(CFNumberRef raw) { return cf_to_std<int64_t>(raw, kCFNumberSInt64Type); }
-
-template <typename ReturnType, typename CFType>
-ReturnType getIORegistryProperty(io_object_t service, CFStringRef key) {
-  // Get the property from I/O Registry
-  auto raw = static_cast<CFType>(IORegistryEntryCreateCFProperty(service, key, kCFAllocatorDefault, 0));
-
-  // Convert the property to a output type
-  ReturnType out = cf_to_std(raw);
-
-  // Release the property
-  if (raw) {
-    CFRelease(raw);
+// Mount points of the disk, its partitions and the volumes of APFS containers on it.
+// These are all IOMedia descendants of the disk in the service plane.
+std::vector<fs::path> mount_points(io_registry_entry_t disk, const MountMap& mounts) {
+  std::vector<fs::path> result;
+  const auto add = [&](io_registry_entry_t media) {
+    const auto bsd_name = cf::string_property(media, CFSTR(kIOBSDNameKey));
+    if (!bsd_name) {
+      return;
+    }
+    if (const auto it = mounts.find(*bsd_name); it != mounts.end()) {
+      result.insert(result.end(), it->second.begin(), it->second.end());
+    }
   };
-
-  return out;
-}
-
-/**
- * Extracts the base disk name (e.g. "disk3") from a
- * BSD device name like "disk3s1s1".
- *
- * @param bsdName A string such as "disk3s1s1"
- * @return "disk3" if bsdName starts with "disk", otherwise returns bsdName
- */
-std::string parseBaseDiskName(const std::string& bsdName) {
-  // Check if it starts with "disk"
-  if (bsdName.rfind("disk", 0) == 0) {
-    // skip the first 4 characters ("disk")
-    size_t pos = 4;
-    // consume all digits (e.g. "3") until we hit a non-digit
-    while (pos < bsdName.size() && std::isdigit(static_cast<unsigned char>(bsdName[pos]))) {
-      pos++;
-    }
-    // return the substring that includes "disk" and any trailing digits
-    return bsdName.substr(0, pos);
-  }
-  // fallback if it doesn't start with "disk"
-  return bsdName;
-}
-
-/**
- * Builds a mapping from BSD device names to mount points using getfsstat().
- *
- * For each mounted device (e.g. "/dev/disk3s1s1" -> "/"), we:
- *   1. Strip "/dev/" -> "disk3s1s1".
- *   2. Extract the base disk name (e.g. "disk3").
- *   3. Store "disk3s1s1" -> "/" in mountMap.
- *   4. Also link "disk3" to the same mount point if not already linked.
- *
- * This lets us find a container disk's mount (e.g. "disk3" -> "/").
- */
-std::unordered_map<std::string, std::string> getBSDToMountPointMapping() {
-  std::unordered_map<std::string, std::string> mountMap;             // partition -> mount point
-  std::unordered_map<std::string, std::string> baseDiskToPartition;  // diskX -> first found "diskXsY"
-
-  int mountCount = getfsstat(nullptr, 0, MNT_NOWAIT);
-  if (mountCount <= 0) {
-    return mountMap;
-  }
-
-  std::vector<struct statfs> mountInfo(mountCount);
-  if (getfsstat(mountInfo.data(), mountCount * sizeof(struct statfs), MNT_NOWAIT) == -1) {
-    return mountMap;
-  }
-
-  for (const auto& entry : mountInfo) {
-    std::string fullBSDName = entry.f_mntfromname;  // e.g. "/dev/disk3s1s1"
-    std::string mountPath = entry.f_mntonname;      // e.g. "/"
-
-    // Remove the "/dev/" prefix if present
-    if (fullBSDName.rfind("/dev/", 0) == 0) {
-      fullBSDName.erase(0, 5);
-    }
-
-    // Extract the base disk (e.g. "disk3") from e.g. "disk3s1s1"
-    std::string baseDisk = parseBaseDiskName(fullBSDName);
-
-    // Store partition -> mount
-    mountMap[fullBSDName] = mountPath;
-
-    // Link "disk3" to the first partition we see, if not already linked
-    if (baseDiskToPartition.find(baseDisk) == baseDiskToPartition.end()) {
-      baseDiskToPartition[baseDisk] = fullBSDName;
-    }
-  }
-
-  // Link each base disk "diskX" to the same mount as its first partition "diskXsY"
-  for (const auto& [disk, partition] : baseDiskToPartition) {
-    auto it = mountMap.find(partition);
-    if (it != mountMap.end()) {
-      mountMap[disk] = it->second;
-    }
-  }
-
-  return mountMap;
-}
-
-/**
- * Retrieves the free disk space (in bytes) for a given mount point
- * by calling statfs().
- *
- * @param mountPoint The path at which the filesystem is mounted (e.g. "/")
- * @return The free space in bytes, or (uint64_t)-1 on error
- */
-uint64_t getFreeDiskSpace(const std::string& mountPoint) {
-  struct statfs fsStats;
-
-  if (statfs(mountPoint.c_str(), &fsStats) == 0) {
-    uint64_t freeSpace = static_cast<uint64_t>(fsStats.f_bavail) * fsStats.f_bsize;
-    return freeSpace;
-  } else {
-    return static_cast<uint64_t>(-1);
-  }
-}
-
-// Retrieves disk information using I/O Kit
-std::vector<Disk> getAllDisks() {
-  std::vector<Disk> disks;
-
-  // Build a map from BSD devices (diskXsY) and base disks (diskX) to mount points
-  auto mountMap = getBSDToMountPointMapping();
-
-  CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOMediaClass);
-  CFDictionaryAddValue(matchingDict, CFSTR(kIOMediaWholeKey), kCFBooleanTrue);
-
-  io_iterator_t iter;
-  if (IOServiceGetMatchingServices(0, matchingDict, &iter) == KERN_SUCCESS) {
-    int i_disk = 0;
-    while (true) {
-      auto service = IOIteratorNext(iter);
-      if (service == 0) {
-        break;
+  add(disk);
+  io_iterator_t raw = IO_OBJECT_NULL;
+  if (IORegistryEntryCreateIterator(disk, kIOServicePlane, kIORegistryIterateRecursively, &raw) == KERN_SUCCESS) {
+    const cf::io_ptr iterator(raw);
+    for (const auto& child : cf::collect(iterator.get())) {
+      if (IOObjectConformsTo(child.get(), kIOMediaClass)) {
+        add(child.get());
       }
+    }
+  }
+  std::ranges::sort(result);
+  const auto duplicates = std::ranges::unique(result);
+  result.erase(duplicates.begin(), duplicates.end());
+  return result;
+}
 
-      Disk disk;
-      disk._id = i_disk;
+// Whole media that are part of another medium, e.g. APFS containers (synthesized disks) on a physical partition.
+bool is_synthesized(io_registry_entry_t disk) {
+  for (auto current = cf::parent(disk); current; current = cf::parent(current.get())) {
+    if (IOObjectConformsTo(current.get(), kIOMediaClass)) {
+      return true;
+    }
+  }
+  return false;
+}
 
-      // Retrieve the BSD name (e.g. "disk3")
-      std::string bsdName = getIORegistryProperty<std::string, CFStringRef>(service, CFSTR(kIOBSDNameKey));
+// "Physical Interconnect" of the "Protocol Characteristics" (IOStorageProtocolCharacteristics.h).
+DiskBus disk_bus(CFTypeRef protocol_characteristics) {
+  const auto interconnect =
+      cf::to_string(cf::dictionary_value(protocol_characteristics, CFSTR("Physical Interconnect")));
+  if (!interconnect) {
+    return DiskBus::unknown;
+  }
+  const std::string_view type = *interconnect;
+  if (type == "USB") {
+    return DiskBus::usb;
+  }
+  // Apple Silicon's internal SSD is attached via "Apple Fabric"; PCIe SSDs of Macs are NVMe (or AHCI before 2015)
+  if (type == "PCI-Express" || type == "Apple Fabric" || type == "NVMe") {
+    return DiskBus::nvme;
+  }
+  if (type == "SATA" || type == "ATA") {
+    return DiskBus::sata;
+  }
+  if (type == "SAS" || type == "SCSI Parallel Interface" || type == "Fibre Channel Interface") {
+    return DiskBus::scsi;
+  }
+  if (type == "Secure Digital" || type == "SD") {
+    return DiskBus::mmc;
+  }
+  return DiskBus::unknown;  // e.g. "Virtual Interface" (disk images), "FireWire", "Thunderbolt"
+}
 
-      // Get disk name
-      char model[128];
-      if (IORegistryEntryGetName(service, model) != KERN_SUCCESS) {
-        disk._model = "<unknown>";
-      } else {
-        disk._model = model;
-      }
+}  // namespace
 
-      // Guess vendor based on model
-      if (disk._model.find("APPLE") != std::string::npos || disk._model.find("Apple") != std::string::npos) {
-        disk._vendor = "Apple";
-      } else {
-        disk._vendor = "<unknown>";
-      }
+result<std::vector<Disk>> disks() {
+  CFMutableDictionaryRef matching = IOServiceMatching(kIOMediaClass);
+  if (matching != nullptr) {
+    CFDictionarySetValue(matching, CFSTR(kIOMediaWholeKey), kCFBooleanTrue);
+  }
+  const auto media = cf::matching_services(matching, kIOMediaClass);
+  if (!media) {
+    return std::unexpected(media.error());
+  }
+  const MountMap mounts = mounted_devices();
 
-      disk._serial_number = getIORegistryProperty<std::string, CFStringRef>(service, CFSTR(kIOMediaUUIDKey));
+  std::vector<Disk> result;
+  for (const auto& medium : *media) {
+    const io_registry_entry_t disk = medium.get();
+    if (is_synthesized(disk)) {
+      continue;
+    }
+    // published by the storage device (e.g. IONVMeBlockStorageDevice), an ancestor of the IOMedia
+    const auto device = cf::search_property(disk, CFSTR("Device Characteristics"));
+    const auto protocol = cf::search_property(disk, CFSTR("Protocol Characteristics"));
 
-      disk._size_bytes = getIORegistryProperty<int64_t, CFNumberRef>(service, CFSTR(kIOMediaSizeKey));
-
-      // If there's no BSD name, we can't look it up in the mount map
-      if (!bsdName.empty()) {
-        // Look up this BSD device in the mountMap
-        if (auto it = mountMap.find(bsdName); it != mountMap.end()) {
-          // Get free space for the found mount point
-          const std::string& mountPoint = it->second;
-          disk._size_bytes = getFreeDiskSpace(mountPoint);
-
-          disk._mount_points.push_back(mountPoint);
+    auto model = cf::to_string(cf::dictionary_value(device.get(), CFSTR("Product Name")));
+    if (!model) {
+      // registry name, e.g. "APPLE SSD AP0512Q Media"
+      model = cf::entry_name(disk).and_then([](std::string name) {
+        if (name.ends_with(" Media")) {
+          name.resize(name.size() - 6);
         }
-      }
-
-      disks.push_back(std::move(disk));
-
-      IOObjectRelease(service);
-
-      i_disk++;
+        return internal::non_empty(name);
+      });
     }
-    IOObjectRelease(iter);
+    auto vendor = cf::to_string(cf::dictionary_value(device.get(), CFSTR("Vendor Name")));
+    if (!vendor && model && (model->contains("APPLE") || model->contains("Apple"))) {
+      vendor = "Apple";
+    }
+
+    result.push_back(Disk{
+        .index = static_cast<std::uint32_t>(result.size()),
+        .vendor = std::move(vendor),
+        .model = std::move(model),
+        .serial_number = cf::to_string(cf::dictionary_value(device.get(), CFSTR("Serial Number"))),
+        .size = Bytes{cf::number_property<std::uint64_t>(disk, CFSTR(kIOMediaSizeKey)).value_or(0)},
+        .bus = disk_bus(protocol.get()),
+        .link_speed_gbps = std::nullopt,
+        .mount_points = mount_points(disk, mounts),
+    });
   }
-  return disks;
+  return result;
 }
 
 }  // namespace hwinfo

@@ -3,29 +3,32 @@
 
 #pragma once
 
+#include <hwinfo/detail/formatter.h>
+#include <hwinfo/error.h>
 #include <hwinfo/platform.h>
 
+#include <format>
+#include <optional>
 #include <string>
 
 namespace hwinfo {
 
-class HWINFO_API MainBoard {
-  friend std::string get_dmi_by_name(const std::string& name);
+struct Mainboard {
+  std::optional<std::string> vendor{};
+  std::optional<std::string> name{};
+  std::optional<std::string> version{};
+  std::optional<std::string> serial_number{};  // usually requires elevated privileges
 
- public:
-  MainBoard();
-  ~MainBoard() = default;
-
-  HWI_NODISCARD const std::string& vendor() const;
-  HWI_NODISCARD const std::string& name() const;
-  HWI_NODISCARD const std::string& version() const;
-  HWI_NODISCARD const std::string& serialNumber() const;
-
- private:
-  std::string _vendor;
-  std::string _name;
-  std::string _version;
-  std::string _serial_number;
+  friend bool operator==(const Mainboard&, const Mainboard&) = default;
 };
 
+[[nodiscard]] HWINFO_API result<Mainboard> mainboard();
+
+inline std::string to_string(const Mainboard& board) {
+  return std::format("{} {}", board.vendor.value_or("unknown vendor"), board.name.value_or("unknown mainboard"));
+}
+
 }  // namespace hwinfo
+
+template <>
+struct std::formatter<hwinfo::Mainboard> : hwinfo::detail::to_string_formatter<hwinfo::Mainboard> {};
