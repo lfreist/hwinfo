@@ -1,34 +1,40 @@
+// Copyright Leon Freist
+// Author Leon Freist <freist@informatik.uni-freiburg.de>
+
 #pragma once
 
+#include <hwinfo/detail/formatter.h>
+#include <hwinfo/error.h>
 #include <hwinfo/platform.h>
 
+#include <cstdint>
+#include <format>
+#include <optional>
 #include <string>
 #include <vector>
 
 namespace hwinfo {
 
-class HWINFO_API Network {
-  friend HWINFO_API std::vector<Network> getAllNetworks();
+struct NetworkInterface {
+  std::uint32_t index = 0;                   // OS interface index
+  std::string name{};                        // e.g. "eth0", "en0", adapter name on Windows
+  std::optional<std::string> description{};  // human readable adapter description
+  std::optional<std::string> mac{};          // "aa:bb:cc:dd:ee:ff"
+  std::vector<std::string> ipv4{};
+  std::vector<std::string> ipv6{};
+  bool is_up = false;
+  bool is_loopback = false;
 
- public:
-  ~Network() = default;
-
-  HWI_NODISCARD const std::string& interfaceIndex() const;
-  HWI_NODISCARD const std::string& description() const;
-  HWI_NODISCARD const std::string& mac() const;
-  HWI_NODISCARD const std::string& ip4() const;
-  HWI_NODISCARD const std::string& ip6() const;
-
- private:
-  Network() = default;
-
-  std::string _index;
-  std::string _description;
-  std::string _mac;
-  std::string _ip4;
-  std::string _ip6;
+  friend bool operator==(const NetworkInterface&, const NetworkInterface&) = default;
 };
 
-HWINFO_API std::vector<Network> getAllNetworks();
+[[nodiscard]] HWINFO_API result<std::vector<NetworkInterface>> network_interfaces();
+
+inline std::string to_string(const NetworkInterface& nic) {
+  return std::format("{} ({})", nic.name, nic.description.value_or(nic.is_up ? "up" : "down"));
+}
 
 }  // namespace hwinfo
+
+template <>
+struct std::formatter<hwinfo::NetworkInterface> : hwinfo::detail::to_string_formatter<hwinfo::NetworkInterface> {};

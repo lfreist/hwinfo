@@ -1,51 +1,64 @@
-// Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
-// This software is part of HWBenchmark
+// Copyright Leon Freist
+// Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include "hwinfo/platform.h"
+#include <hwinfo/platform.h>
 
 #ifdef HWINFO_APPLE
 
-#include <fstream>
-#include <sstream>
-#include <regex>
+#include <hwinfo/os.h>
+#include <sys/utsname.h>
+
+#include <cerrno>
+#include <format>
+#include <iterator>
+#include <optional>
+#include <ranges>
 #include <string>
+#include <string_view>
+#include <vector>
 
-#include "hwinfo/os.h"
-#include "hwinfo/utils/sysctl.h"
-
-std::string getOSVersionFromPlist() {
-    std::ifstream file("/System/Library/CoreServices/SystemVersion.plist");
-    if (!file.is_open()) return "";
-
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::string content = buffer.str();
-
-    std::smatch match;
-    std::regex version_regex("<key>ProductVersion</key>\\s*<string>([^<]+)</string>");
-    if (std::regex_search(content, match, version_regex)) {
-        return match[1];
-    }
-    return "";
-}
+#include "internal/file.h"
+#include "internal/strings.h"
+#include "internal/sysctl.h"
 
 namespace hwinfo {
 
-std::string getMarketingName(const std::string& version) {
-  size_t dotPos = version.find('.');
-  if (dotPos == std::string::npos) {
-    return "";
-  }
+namespace {
 
-  int majorVersion = 0;
-  try {
-    majorVersion = std::stoi(version.substr(0, dotPos));
-  } catch (...) {
-    return "";
+// <key>ProductVersion</key> <string>15.1</string>
+std::optional<std::string> plist_product_version(std::string_view plist) {
+  const auto key = plist.find("<key>ProductVersion</key>");
+  if (key == std::string_view::npos) {
+    return std::nullopt;
   }
+  constexpr std::string_view open_tag = "<string>";
+  const auto begin = plist.find(open_tag, key);
+  if (begin == std::string_view::npos) {
+    return std::nullopt;
+  }
+  const auto end = plist.find("</string>", begin);
+  if (end == std::string_view::npos) {
+    return std::nullopt;
+  }
+  return internal::non_empty(plist.substr(begin + open_tag.size(), end - begin - open_tag.size()));
+}
 
-  // map major version to marketing name
-  switch (majorVersion) {
+std::optional<std::string> product_version() {
+  if (const auto plist = internal::read_file("/System/Library/CoreServices/SystemVersion.plist")) {
+    if (auto version = plist_product_version(*plist)) {
+      return version;
+    }
+  }
+  return internal::sysctl_attribute("kern.osproductversion");
+}
+
+std::string_view marketing_name(std::string_view version) {
+  const auto parts = internal::split(version, '.') | std::ranges::to<std::vector<std::string_view>>();
+  const auto major = internal::parse<int>(parts.empty() ? std::string_view{} : parts[0]);
+  if (!major) {
+    return {};
+  }
+  switch (*major) {
     case 26:
       return "Tahoe";
     case 15:
@@ -58,87 +71,54 @@ std::string getMarketingName(const std::string& version) {
       return "Monterey";
     case 11:
       return "Big Sur";
-    case 10: {
-      // handle 10.x versions - need to check minor version
-      size_t secondDot = version.find('.', dotPos + 1);
-      std::string minorStr = (secondDot != std::string::npos) ? version.substr(dotPos + 1, secondDot - dotPos - 1)
-                                                              : version.substr(dotPos + 1);
-      try {
-        switch (std::stoi(minorStr)) {
-          case 15:
-            return "Catalina";
-          case 14:
-            return "Mojave";
-          case 13:
-            return "High Sierra";
-          case 12:
-            return "Sierra";
-          case 11:
-            return "El Capitan";
-          case 10:
-            return "Yosemite";
-          case 9:
-            return "Mavericks";
-          case 8:
-            return "Mountain Lion";
-          case 7:
-            return "Lion";
-          case 6:
-            return "Snow Leopard";
-          case 5:
-            return "Leopard";
-          case 4:
-            return "Tiger";
-          case 3:
-            return "Panther";
-          case 2:
-            return "Jaguar";
-          case 1:
-            return "Puma";
-          case 0:
-            return "Cheetah";
-          default:
-            return "";
-        }
-      } catch (...) {
-        return "";
-      }
-    }
+    case 10:
+      break;
     default:
-      return "";
+      return {};
   }
+  const auto minor = internal::parse<int>(parts.size() > 1 ? parts[1] : std::string_view{});
+  if (!minor) {
+    return {};
+  }
+  // 10.0 ... 10.15
+  constexpr std::string_view names[]{
+      "Cheetah",       "Puma",      "Jaguar",   "Panther",    "Tiger",  "Leopard",     "Snow Leopard", "Lion",
+      "Mountain Lion", "Mavericks", "Yosemite", "El Capitan", "Sierra", "High Sierra", "Mojave",       "Catalina",
+  };
+  if (*minor < 0 || *minor >= static_cast<int>(std::size(names))) {
+    return {};
+  }
+  return names[*minor];
 }
 
-// _____________________________________________________________________________________________________________________
-OS::OS() {
-  _name = "macOS";
+}  // namespace
 
-  // Get kernel name and version
-  _kernel = utils::getSysctlString("kern.ostype", "<unknown name>");
-  _kernel += " " + utils::getSysctlString("kern.osrelease", "<unknown version>");
-
-  // get OS name and build version
-  _version = getOSVersionFromPlist();
-  if (_version.empty()) {
-    _version = utils::getSysctlString("kern.osproductversion", "<unknown>");
+result<Os> os() {
+  utsname info{};
+  if (uname(&info) != 0) {
+    return std::unexpected(error{std::error_code(errno, std::generic_category()), "uname"});
   }
-  std::string build = utils::getSysctlString("kern.osversion", "<unknown build>");
-  _version = _version + " (" + build + ")";
-  // add marketing name if we can determine it
-  if (std::string marketingName = getMarketingName(_version); !marketingName.empty()) {
-    _name = _name + " " + marketingName;
-  }
-  // determine endianess
-  const int byteorder = utils::getSysctlValue("hw.byteorder", 0);
-  _bigEndian = (byteorder == 4321);
-  _littleEndian = (byteorder == 1234);
 
-#if defined(__x86_64__) || defined(__aarch64__) || defined(__ppc64__)
-  _64bit = true;
+  // e.g. "15.1 Sequoia (24B83)"
+  std::string version = product_version().value_or(std::string{});
+  if (const auto name = marketing_name(version); !name.empty()) {
+    version += std::format(" {}", name);
+  }
+  if (const auto build = internal::sysctl_attribute("kern.osversion")) {
+    version += version.empty() ? *build : std::format(" ({})", *build);
+  }
+
+  return Os{
+      .name = "macOS",
+      .version = std::move(version),
+      .kernel = std::format("{} {}", std::string_view(info.sysname), std::string_view(info.release)),
+      .architecture = info.machine,  // "arm64", "x86_64"
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__arm64__) || defined(__ppc64__)
+      .bits = 64,
 #else
-  _64bit = false;
+      .bits = 32,
 #endif
-  _32bit = !_64bit;
+  };
 }
 
 }  // namespace hwinfo
