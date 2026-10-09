@@ -164,7 +164,7 @@ result<std::vector<Disk>> disks() {
         .serial_number = cf::to_string(cf::dictionary_value(device.get(), CFSTR("Serial Number"))),
         .size = Bytes{cf::number_property<std::uint64_t>(disk, CFSTR(kIOMediaSizeKey)).value_or(0)},
         .bus = disk_bus(protocol.get()),
-        .link_speed_gbps = std::nullopt,
+        .link_speed = std::nullopt,
         .mount_points = mount_points(disk, mounts),
     });
   }

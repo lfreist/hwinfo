@@ -33,6 +33,19 @@ enum class FrequencyUnit : std::uint64_t {
   GHz = 1'000'000'000,
 };
 
+enum class DataRateUnit : std::uint64_t {
+  bps = 1,
+  kbps = 1'000,
+  Mbps = 1'000'000,
+  Gbps = 1'000'000'000,
+};
+
+enum class EnergyUnit : std::uint64_t {
+  uWh = 1,
+  mWh = 1'000,
+  Wh = 1'000'000,
+};
+
 namespace detail {
 
 // Strongly typed unsigned quantity.
@@ -66,16 +79,24 @@ struct quantity {
 
 struct bytes_tag {};
 struct hertz_tag {};
+struct data_rate_tag {};
+struct energy_tag {};
 
 }  // namespace detail
 
 using Bytes = detail::quantity<detail::bytes_tag, ByteUnit>;
 using Hertz = detail::quantity<detail::hertz_tag, FrequencyUnit>;
+using DataRate = detail::quantity<detail::data_rate_tag, DataRateUnit>;  // bits per second
+using Energy = detail::quantity<detail::energy_tag, EnergyUnit>;         // microwatt-hours
 
 constexpr Bytes operator*(std::uint64_t value, ByteUnit unit) noexcept { return {value * std::to_underlying(unit)}; }
 constexpr Hertz operator*(std::uint64_t value, FrequencyUnit unit) noexcept {
   return {value * std::to_underlying(unit)};
 }
+constexpr DataRate operator*(std::uint64_t value, DataRateUnit unit) noexcept {
+  return {value * std::to_underlying(unit)};
+}
+constexpr Energy operator*(std::uint64_t value, EnergyUnit unit) noexcept { return {value * std::to_underlying(unit)}; }
 
 namespace literals {
 
@@ -93,6 +114,15 @@ consteval Hertz operator""_Hz(unsigned long long v) { return {v}; }
 consteval Hertz operator""_kHz(unsigned long long v) { return v * FrequencyUnit::kHz; }
 consteval Hertz operator""_MHz(unsigned long long v) { return v * FrequencyUnit::MHz; }
 consteval Hertz operator""_GHz(unsigned long long v) { return v * FrequencyUnit::GHz; }
+
+consteval DataRate operator""_bps(unsigned long long v) { return {v}; }
+consteval DataRate operator""_kbps(unsigned long long v) { return v * DataRateUnit::kbps; }
+consteval DataRate operator""_Mbps(unsigned long long v) { return v * DataRateUnit::Mbps; }
+consteval DataRate operator""_Gbps(unsigned long long v) { return v * DataRateUnit::Gbps; }
+
+consteval Energy operator""_uWh(unsigned long long v) { return {v}; }
+consteval Energy operator""_mWh(unsigned long long v) { return v * EnergyUnit::mWh; }
+consteval Energy operator""_Wh(unsigned long long v) { return v * EnergyUnit::Wh; }
 
 }  // namespace literals
 
@@ -119,6 +149,19 @@ inline constexpr std::array frequency_units{
     unit_name<FrequencyUnit>{"kHz", FrequencyUnit::kHz},
     unit_name<FrequencyUnit>{"MHz", FrequencyUnit::MHz},
     unit_name<FrequencyUnit>{"GHz", FrequencyUnit::GHz},
+};
+
+inline constexpr std::array data_rate_units{
+    unit_name<DataRateUnit>{"bps", DataRateUnit::bps},
+    unit_name<DataRateUnit>{"kbps", DataRateUnit::kbps},
+    unit_name<DataRateUnit>{"Mbps", DataRateUnit::Mbps},
+    unit_name<DataRateUnit>{"Gbps", DataRateUnit::Gbps},
+};
+
+inline constexpr std::array energy_units{
+    unit_name<EnergyUnit>{"uWh", EnergyUnit::uWh},
+    unit_name<EnergyUnit>{"mWh", EnergyUnit::mWh},
+    unit_name<EnergyUnit>{"Wh", EnergyUnit::Wh},
 };
 
 /**
@@ -209,3 +252,12 @@ template <>
 struct std::formatter<hwinfo::Hertz>
     : hwinfo::detail::quantity_formatter<hwinfo::Hertz, hwinfo::detail::frequency_units,
                                          hwinfo::detail::frequency_units, 2> {};
+
+template <>
+struct std::formatter<hwinfo::DataRate>
+    : hwinfo::detail::quantity_formatter<hwinfo::DataRate, hwinfo::detail::data_rate_units,
+                                         hwinfo::detail::data_rate_units, 2> {};
+
+template <>
+struct std::formatter<hwinfo::Energy> : hwinfo::detail::quantity_formatter<hwinfo::Energy, hwinfo::detail::energy_units,
+                                                                           hwinfo::detail::energy_units, 1> {};

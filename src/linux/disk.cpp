@@ -32,12 +32,12 @@ bool is_virtual_device(std::string_view name) {
 }
 
 // Walks up the device hierarchy to the USB device and reads its negotiated speed (Mbit/s).
-std::optional<double> usb_link_speed_gbps(const fs::path& device) {
+std::optional<DataRate> usb_link_speed(const fs::path& device) {
   std::error_code ec;
   for (fs::path current = fs::canonical(device, ec); !ec && current.has_relative_path();
        current = current.parent_path()) {
     if (const auto mbps = internal::read_number_attribute<double>(current / "speed")) {
-      return *mbps / 1000.0;
+      return DataRate{static_cast<std::uint64_t>(*mbps * 1e6)};  // "1.5" for USB 1.0 low speed
     }
   }
   return std::nullopt;
@@ -105,7 +105,7 @@ result<std::vector<Disk>> disks() {
         .bus = disk_bus(block),
     };
     if (disk.bus == DiskBus::usb) {
-      disk.link_speed_gbps = usb_link_speed_gbps(block / "device");
+      disk.link_speed = usb_link_speed(block / "device");
     }
 
     // the disk itself and its partitions (subdirectories containing a "partition" file)

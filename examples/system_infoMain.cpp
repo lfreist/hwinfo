@@ -122,7 +122,7 @@ int main() {
       field("model:", battery.model);
       field("serial number:", battery.serial_number);
       field("technology:", battery.technology);
-      field("capacity [Wh]:", battery.full_charge_capacity_wh);
+      field("capacity:", battery.full_charge_capacity);
       if (const auto status = hwinfo::battery_status(battery.index)) {
         field("state:", status->state);
         field("charge:", status->charge.transform([](double c) { return std::format("{:.0f}%", c * 100); }));
@@ -139,6 +139,7 @@ int main() {
       field("serial number:", disk.serial_number);
       field("bus:", disk.bus);
       field("size:", disk.size);
+      field("link speed:", disk.link_speed);
       field("mount points:", join(disk.mount_points | std::views::transform([](const auto& p) { return p.string(); })));
     }
   }

@@ -28,7 +28,7 @@ struct Disk {
   std::optional<std::string> serial_number{};
   Bytes size{};
   DiskBus bus = DiskBus::unknown;
-  std::optional<double> link_speed_gbps{};  // negotiated link speed (currently USB only)
+  std::optional<DataRate> link_speed{};  // negotiated link speed (currently USB only)
   std::vector<std::filesystem::path> mount_points{};
 
   friend bool operator==(const Disk&, const Disk&) = default;

@@ -43,8 +43,8 @@ std::optional<std::string> technology(std::optional<std::uint16_t> chemistry) {
   }
 }
 
-std::optional<double> watt_hours(std::optional<std::uint32_t> mwh) {
-  return mwh.value_or(0) > 0 ? std::optional(*mwh / 1000.0) : std::nullopt;
+std::optional<Energy> energy(std::optional<std::uint32_t> mwh) {
+  return mwh.value_or(0) > 0 ? std::optional(*mwh * EnergyUnit::mWh) : std::nullopt;
 }
 
 // Rows of a ROOT\WMI battery class if they (presumably) correspond one-to-one to the Win32_Battery rows.
@@ -101,11 +101,11 @@ result<std::vector<Battery>> batteries() {
         .model = acpi.string("DeviceName").or_else([&] { return battery.string("Name"); }),
         .serial_number = acpi.string("SerialNumber"),
         .technology = technology(battery.number<std::uint16_t>("Chemistry")),
-        .design_capacity_wh = watt_hours(battery.number<std::uint32_t>("DesignCapacity")).or_else([&] {
-          return watt_hours(acpi.number<std::uint32_t>("DesignedCapacity"));
+        .design_capacity = energy(battery.number<std::uint32_t>("DesignCapacity")).or_else([&] {
+          return energy(acpi.number<std::uint32_t>("DesignedCapacity"));
         }),
-        .full_charge_capacity_wh = watt_hours(battery.number<std::uint32_t>("FullChargeCapacity")).or_else([&] {
-          return watt_hours(full.number<std::uint32_t>("FullChargedCapacity"));
+        .full_charge_capacity = energy(battery.number<std::uint32_t>("FullChargeCapacity")).or_else([&] {
+          return energy(full.number<std::uint32_t>("FullChargedCapacity"));
         }),
     });
   }
