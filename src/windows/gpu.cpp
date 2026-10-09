@@ -5,87 +5,129 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <dxgi1_6.h>
+// clang-format off
 #include <windows.h>
+#include <dxgi.h>
+// clang-format on
+#include <hwinfo/gpu.h>
 
-#include <algorithm>
+#include <cstdint>
+#include <format>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
-#include "hwinfo/gpu.h"
-#include "hwinfo/utils/stringutils.h"
-#ifndef __MINGW32__
-#pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "setupapi.lib")
-#endif
+#include "internal/pci.h"
+#include "internal/windows_com.h"
+#include "internal/windows_error.h"
+#include "internal/windows_strings.h"
+#include "pci.ids.h"
 
 #ifdef USE_OCL
-#include <hwinfo/opencl/device.h>
+#include "opencl/device.h"
+#endif
+
+#ifdef _MSC_VER
+#pragma comment(lib, "dxgi.lib")
 #endif
 
 namespace hwinfo {
 
-// _____________________________________________________________________________________________________________________
-std::vector<GPU> getAllGPUs() {
-  std::vector<GPU> gpus;
+namespace {
 
-  IDXGIFactory1* pFactory;
-  if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&pFactory))) return {};
+std::string_view pci_database() { return {reinterpret_cast<const char*>(pci_ids), pci_ids_size}; }
 
-  IDXGIAdapter1* pAdapter;
-  for (UINT i = 0; pFactory->EnumAdapters1(i, &pAdapter) != DXGI_ERROR_NOT_FOUND; ++i) {
-    DXGI_ADAPTER_DESC1 desc;
-    pAdapter->GetDesc1(&desc);
-
-    if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) {
-      pAdapter->Release();
-      continue;
-    }
-
-    GPU gpu;
-    gpu._id = static_cast<int>(i);
-
-    std::wstring ws(desc.Description);
-    gpu._name = utils::wstring_to_std_string(ws);
-
-    gpu._dedicated_memory_Bytes = static_cast<int64_t>(desc.DedicatedVideoMemory);
-    gpu._shared_memory_Bytes = static_cast<int64_t>(desc.SharedSystemMemory);
-
-    char buffer[10];
-    sprintf_s(buffer, "0x%04X", desc.VendorId);
-    gpu._vendor_id = buffer;
-    sprintf_s(buffer, "0x%04X", desc.DeviceId);
-    gpu._device_id = buffer;
-
-    if (desc.VendorId == 0x10DE) {
-      gpu._vendor = "NVIDIA";
-    } else if (desc.VendorId == 0x1002 || desc.VendorId == 0x1022) {
-      gpu._vendor = "AMD";
-    } else if (desc.VendorId == 0x8086) {
-      gpu._vendor = "Intel";
-    } else {
-      gpu._vendor = "Unknown";
-    }
-
-    gpus.push_back(gpu);
-    pAdapter->Release();
+std::string vendor_name(std::uint16_t vendor_id) {
+  if (auto name = internal::lookup_pci(pci_database(), vendor_id, 0).vendor) {
+    return std::move(*name);
   }
-  pFactory->Release();
+  switch (vendor_id) {
+    case 0x10de:
+      return "NVIDIA";
+    case 0x1002:
+    case 0x1022:
+      return "AMD";
+    case 0x8086:
+      return "Intel";
+    default:
+      return std::format("{:#06x}", vendor_id);
+  }
+}
+
+// Version of the user mode driver, e.g. "31.0.15.3623".
+std::optional<std::string> driver_version(IDXGIAdapter1* adapter) {
+  LARGE_INTEGER version{};
+  if (FAILED(adapter->CheckInterfaceSupport(__uuidof(IDXGIDevice), &version))) {
+    return std::nullopt;
+  }
+  const auto high = static_cast<std::uint32_t>(version.HighPart);
+  const auto low = static_cast<std::uint32_t>(version.LowPart);
+  return std::format("{}.{}.{}.{}", high >> 16, high & 0xffff, low >> 16, low & 0xffff);
+}
+
 #ifdef USE_OCL
-  auto cl_gpus = opencl_::DeviceManager::get_list<opencl_::Filter::GPU>();
-  for (auto& gpu : gpus) {
-    for (auto* cl_gpu : cl_gpus) {
-      if (cl_gpu->name() == gpu.name()) {
-        gpu._driverVersion = cl_gpu->driver_version();
-        gpu._frequency_hz = static_cast<int64_t>(cl_gpu->clock_frequency_MHz()) * 1'000'000;
-        gpu._num_cores = static_cast<int>(cl_gpu->cores());
-        gpu._dedicated_memory_Bytes = cl_gpu->memory_Bytes();
-        break;
+void add_opencl_info(std::vector<Gpu>& gpus) {
+  for (auto* cl_gpu : opencl_::DeviceManager::get_list<opencl_::Filter::GPU>()) {
+    for (auto& gpu : gpus) {
+      if (!cl_gpu->name().contains(gpu.name)) {
+        continue;
+      }
+      if (!gpu.driver_version) {
+        gpu.driver_version = cl_gpu->driver_version();
+      }
+      gpu.frequency = cl_gpu->clock_frequency_MHz() * FrequencyUnit::MHz;
+      gpu.cores = static_cast<std::uint32_t>(cl_gpu->cores());
+      if (!gpu.dedicated_memory) {
+        gpu.dedicated_memory = Bytes{cl_gpu->memory_Bytes()};
       }
     }
   }
-#endif  // USE_OCL
-  return gpus;
+}
+#endif
+
+}  // namespace
+
+result<std::vector<Gpu>> gpus() {
+  internal::ComPtr<IDXGIFactory1> factory;
+  if (const HRESULT hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), factory.put_void()); FAILED(hr)) {
+    return std::unexpected(internal::hresult_error(hr, "CreateDXGIFactory1"));
+  }
+
+  std::vector<Gpu> result;
+  for (UINT i = 0;; ++i) {
+    internal::ComPtr<IDXGIAdapter1> adapter;
+    const HRESULT hr = factory->EnumAdapters1(i, adapter.put());
+    if (hr == DXGI_ERROR_NOT_FOUND) {
+      break;
+    }
+    if (FAILED(hr)) {
+      return std::unexpected(internal::hresult_error(hr, "IDXGIFactory1::EnumAdapters1"));
+    }
+    DXGI_ADAPTER_DESC1 desc{};
+    if (FAILED(adapter->GetDesc1(&desc)) || (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) != 0) {
+      continue;  // e.g. "Microsoft Basic Render Driver"
+    }
+    const auto vendor_id = static_cast<std::uint16_t>(desc.VendorId);
+    const auto device_id = static_cast<std::uint16_t>(desc.DeviceId);
+    result.push_back(Gpu{
+        .index = static_cast<std::uint32_t>(result.size()),
+        .vendor = vendor_name(vendor_id),
+        .name = internal::to_utf8(desc.Description),
+        .driver = std::nullopt,
+        .driver_version = driver_version(adapter.get()),
+        .dedicated_memory = Bytes{desc.DedicatedVideoMemory},
+        .shared_memory = Bytes{desc.SharedSystemMemory},
+        .frequency = std::nullopt,
+        .cores = std::nullopt,
+        .pci = PciId{vendor_id, device_id},
+    });
+  }
+
+#ifdef USE_OCL
+  add_opencl_info(result);
+#endif
+  return result;
 }
 
 }  // namespace hwinfo

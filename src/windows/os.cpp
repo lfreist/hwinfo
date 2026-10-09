@@ -1,62 +1,126 @@
-// Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
-// This software is part of HWBenchmark
+// Copyright Leon Freist
+// Author Leon Freist <freist@informatik.uni-freiburg.de>
 
 #include <hwinfo/platform.h>
 
 #ifdef HWINFO_WINDOWS
-#include <Windows.h>
-
-#include <sstream>
-#include <string>
-#define STATUS_SUCCESS 0x00000000
 
 #include <hwinfo/os.h>
-#include <hwinfo/utils/stringutils.h>
-#include <hwinfo/utils/wmi_wrapper.h>
+#include <windows.h>
+
+#include <cstdint>
+#include <format>
+#include <optional>
+#include <string>
+
+#include "internal/win_registry.h"
+#include "internal/wmi_wrapper.h"
 
 namespace hwinfo {
 
-// _____________________________________________________________________________________________________________________
-OS::OS() {
-  {
-    // Get endian. This is platform independent...
-    char16_t dummy = 0x0102;
-    _bigEndian = ((char*)&dummy)[0] == 0x01;
-    _littleEndian = ((char*)&dummy)[0] == 0x02;
+namespace {
+
+const std::wstring current_version = L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
+
+struct Architecture {
+  std::string name;
+  unsigned bits = 0;
+};
+
+Architecture architecture_of_machine(USHORT machine) {
+  switch (machine) {
+    case IMAGE_FILE_MACHINE_AMD64:
+      return {"x86_64", 64};
+    case IMAGE_FILE_MACHINE_ARM64:
+      return {"aarch64", 64};
+    case IMAGE_FILE_MACHINE_I386:
+      return {"x86", 32};
+    case IMAGE_FILE_MACHINE_ARMNT:
+      return {"arm", 32};
+    default:
+      return {std::format("unknown ({:#06x})", machine), 0};
   }
-  utils::WMI::_WMI wmi;
-  const std::wstring query_string(L"SELECT Caption, OSArchitecture, BuildNumber, Version FROM Win32_OperatingSystem");
-  bool success = wmi.execute_query(query_string);
-  if (!success) {
-    return;
+}
+
+// Native architecture of the system, also when running emulated (e.g. an x86_64 build on Windows on ARM).
+Architecture native_architecture() {
+  // IsWow64Process2 is available since Windows 10 1709: resolved at runtime to keep older systems supported.
+  using IsWow64Process2Fn = BOOL(WINAPI*)(HANDLE, USHORT*, USHORT*);
+  if (const HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll")) {
+    const auto proc = GetProcAddress(kernel32, "IsWow64Process2");
+    USHORT process_machine = 0;
+    USHORT native_machine = 0;
+    if (proc != nullptr && reinterpret_cast<IsWow64Process2Fn>(reinterpret_cast<void*>(proc))(
+                               GetCurrentProcess(), &process_machine, &native_machine)) {
+      return architecture_of_machine(native_machine);
+    }
   }
-  ULONG u_return = 0;
-  IWbemClassObject* obj = nullptr;
-  wmi.enumerator->Next((long)WBEM_INFINITE, 1, &obj, &u_return);
-  if (!u_return) {
-    return;
+  SYSTEM_INFO info{};
+  GetNativeSystemInfo(&info);
+  switch (info.wProcessorArchitecture) {
+    case PROCESSOR_ARCHITECTURE_AMD64:
+      return {"x86_64", 64};
+    case PROCESSOR_ARCHITECTURE_ARM64:
+      return {"aarch64", 64};
+    case PROCESSOR_ARCHITECTURE_INTEL:
+      return {"x86", 32};
+    case PROCESSOR_ARCHITECTURE_ARM:
+      return {"arm", 32};
+    default:
+      return {std::format("unknown ({})", info.wProcessorArchitecture), 0};
   }
-  VARIANT vt_prop;
-  HRESULT hr;
-  hr = obj->Get(L"Caption", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-    _name = utils::wstring_to_std_string(vt_prop.bstrVal);
+}
+
+// "<build>.<update build revision>", e.g. "22631.4317"
+std::optional<std::string> kernel_build(std::optional<std::string> build) {
+  if (!build) {
+    build = internal::registry::read_string(HKEY_LOCAL_MACHINE, current_version, L"CurrentBuildNumber");
   }
-  hr = obj->Get(L"OSArchitecture", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-    _64bit = utils::wstring_to_std_string(vt_prop.bstrVal).find("64") != std::string::npos;
-    _32bit = !_64bit;
+  const auto revision = internal::registry::read_dword(HKEY_LOCAL_MACHINE, current_version, L"UBR");
+  if (build && revision) {
+    return std::format("{}.{}", *build, *revision);
   }
-  hr = obj->Get(L"BuildNumber", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-    _version = utils::wstring_to_std_string(vt_prop.bstrVal);
+  return build;
+}
+
+}  // namespace
+
+result<Os> os() {
+  const auto [arch, bits] = native_architecture();
+  const auto rows = internal::wmi::query("Win32_OperatingSystem", {"Caption", "Version", "BuildNumber"});
+  if (rows && !rows->empty()) {
+    const auto& row = rows->front();
+    return Os{
+        .name = row.string("Caption").value_or("Microsoft Windows"),
+        .version = row.string("Version").value_or(""),
+        .kernel = kernel_build(row.string("BuildNumber")).value_or(""),
+        .architecture = arch,
+        .bits = bits,
+    };
   }
-  hr = obj->Get(L"Version", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-    _kernel = utils::wstring_to_std_string(vt_prop.bstrVal);
+
+  const auto name = internal::registry::read_string(HKEY_LOCAL_MACHINE, current_version, L"ProductName");
+  if (!name) {
+    return std::unexpected(rows ? error{errc::not_found, "WMI: Win32_OperatingSystem"} : rows.error());
   }
-  VariantClear(&vt_prop);
-  obj->Release();
+  const auto build = internal::registry::read_string(HKEY_LOCAL_MACHINE, current_version, L"CurrentBuildNumber");
+  const auto major = internal::registry::read_dword(HKEY_LOCAL_MACHINE, current_version, L"CurrentMajorVersionNumber");
+  const auto minor = internal::registry::read_dword(HKEY_LOCAL_MACHINE, current_version, L"CurrentMinorVersionNumber");
+  std::string version;
+  if (major && minor && build) {
+    version = std::format("{}.{}.{}", *major, *minor, *build);
+  } else if (const auto legacy =
+                 internal::registry::read_string(HKEY_LOCAL_MACHINE, current_version, L"CurrentVersion");
+             legacy && build) {
+    version = std::format("{}.{}", *legacy, *build);  // Windows < 10, e.g. "6.3.9600"
+  }
+  return Os{
+      .name = std::format("Microsoft {}", *name),
+      .version = std::move(version),
+      .kernel = kernel_build(build).value_or(""),
+      .architecture = arch,
+      .bits = bits,
+  };
 }
 
 }  // namespace hwinfo

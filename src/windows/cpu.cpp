@@ -1,198 +1,210 @@
-// Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
-// This software is part of HWBenchmark
+// Copyright Leon Freist
+// Author Leon Freist <freist@informatik.uni-freiburg.de>
 
 #include <hwinfo/platform.h>
 
 #ifdef HWINFO_WINDOWS
 
 #include <hwinfo/cpu.h>
-#include <hwinfo/utils/unit.h>
-#include <hwinfo/utils/win_registry.h>
-#include <intrin.h>
-#include <powrprof.h>
-#include <winternl.h>
+#include <windows.h>
 
-#include <numeric>
+#include <algorithm>
+#include <bit>
+#include <cstddef>
+#include <cstdint>
+#include <format>
+#include <optional>
 #include <string>
-#include <thread>
+#include <utility>
 #include <vector>
 
-#ifndef __MINGW32__
-#pragma comment(lib, "PowrProf.lib")
-#pragma comment(lib, "ntdll.lib")
-#endif
-
-inline int countSetBits(unsigned __int64 mask) {
-#if defined(_M_X64) || defined(__x86_64__)
-  return static_cast<int>(__popcnt64(mask));
-#else
-  return static_cast<int>(__popcnt(static_cast<unsigned int>(mask & 0xFFFFFFFF)) +
-                          __popcnt(static_cast<unsigned int>(mask >> 32)));
-#endif
-}
-
-struct PROCESSOR_POWER_INFORMATION {
-  ULONG id = std::numeric_limits<ULONG>::max();
-  ULONG maxMhz = 0;
-  ULONG currentMhz = 0;
-  ULONG mhzLimit = 0;
-  ULONG maxIdleState = 0;
-  ULONG currentIdleState = 0;
-};
-
-std::vector<PROCESSOR_POWER_INFORMATION> getProcPowerInfo() {
-  SYSTEM_INFO sys_info;
-  GetSystemInfo(&sys_info);
-  const unsigned num_logicals = sys_info.dwNumberOfProcessors;
-
-  std::vector<PROCESSOR_POWER_INFORMATION> powerInfo(num_logicals);
-
-  NTSTATUS status = CallNtPowerInformation(ProcessorInformation, nullptr, 0, &powerInfo[0],
-                                           sizeof(PROCESSOR_POWER_INFORMATION) * num_logicals);
-
-  if (status == 0) {
-    return powerInfo;
-  }
-  return {};
-}
+#include "internal/win_registry.h"
+#include "internal/windows_error.h"
+#include "internal/windows_power.h"
 
 namespace hwinfo {
 
-namespace monitor::cpu {
+namespace {
 
-double utilization(std::chrono::milliseconds sleep) {
-  auto info = core_utilization(sleep);
-  return std::accumulate(info.begin(), info.end(), 0.0,
-                         [](const double& a, const double& b) -> double { return a + b; }) /
-         static_cast<double>(info.size());
+struct CacheEntry {
+  GROUP_AFFINITY affinity{};
+  BYTE level = 0;
+  PROCESSOR_CACHE_TYPE type = CacheUnified;
+  DWORD size = 0;
+};
+
+struct Topology {
+  std::vector<std::vector<GROUP_AFFINITY>> packages;  // processor groups spanned by each package
+  std::vector<GROUP_AFFINITY> cores;
+  std::vector<CacheEntry> caches;
+};
+
+bool overlaps(const GROUP_AFFINITY& a, const GROUP_AFFINITY& b) { return a.Group == b.Group && (a.Mask & b.Mask) != 0; }
+
+std::vector<GROUP_AFFINITY> group_masks(const PROCESSOR_RELATIONSHIP& processor) {
+  const GROUP_AFFINITY* masks = processor.GroupMask;
+  return {masks, masks + processor.GroupCount};
 }
 
-std::vector<double> core_utilization(std::chrono::milliseconds sleep) {
-  SYSTEM_INFO sys_info;
-  GetSystemInfo(&sys_info);
-  const unsigned num_logicals = sys_info.dwNumberOfProcessors;
+result<Topology> read_topology() {
+  DWORD size = 0;
+  if (GetLogicalProcessorInformationEx(RelationAll, nullptr, &size) || GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+    return std::unexpected(internal::last_error("GetLogicalProcessorInformationEx"));
+  }
+  std::vector<std::byte> buffer(size);
+  if (!GetLogicalProcessorInformationEx(
+          RelationAll, reinterpret_cast<SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*>(buffer.data()), &size)) {
+    return std::unexpected(internal::last_error("GetLogicalProcessorInformationEx"));
+  }
 
-  std::vector<SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION> infoA(num_logicals);
-  std::vector<SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION> infoB(num_logicals);
-
-  auto getPerf = [&](std::vector<SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION>& info) {
-    NtQuerySystemInformation((SYSTEM_INFORMATION_CLASS)0x08, info.data(),
-                             sizeof(SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION) * num_logicals, nullptr);
-  };
-
-  getPerf(infoA);
-  std::this_thread::sleep_for(sleep);
-  getPerf(infoB);
-
-  std::vector<double> results;
-  for (unsigned i = 0; i < num_logicals; ++i) {
-    uint64_t idleDelta = infoB[i].IdleTime.QuadPart - infoA[i].IdleTime.QuadPart;
-    uint64_t kernelDelta = infoB[i].KernelTime.QuadPart - infoA[i].KernelTime.QuadPart;
-    uint64_t userDelta = infoB[i].UserTime.QuadPart - infoA[i].UserTime.QuadPart;
-
-    uint64_t totalDelta = kernelDelta + userDelta;
-
-    if (totalDelta == 0) {
-      results.push_back(0.0);
-    } else {
-      double util = (1.0 - static_cast<double>(idleDelta) / static_cast<double>(totalDelta));
-      results.push_back(std::max(0.0, std::min(1.0, util)));
+  Topology topology;
+  for (std::size_t offset = 0; offset < size;) {
+    const auto* info = reinterpret_cast<const SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*>(buffer.data() + offset);
+    if (info->Size == 0) {
+      break;
     }
-  }
-  return results;
-}
-
-// _____________________________________________________________________________________________________________________
-std::vector<int64_t> current_frequency_hz() {
-  std::vector<int64_t> result;
-  for (const auto& info : getProcPowerInfo()) {
-    result.emplace_back(info.currentMhz);
-  }
-
-  return result;
-}
-
-}  // namespace monitor::cpu
-
-// =====================================================================================================================
-// _____________________________________________________________________________________________________________________
-std::vector<CPU> getAllCPUs() {
-  std::vector<CPU> cpus;
-  CPU local_cpu;
-  local_cpu._id = 0;
-
-  std::wstring reg_cpu_path = L"HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0";
-  local_cpu._modelName =
-      internal::utils::getRegistryValue<std::string>(HKEY_LOCAL_MACHINE, reg_cpu_path, L"ProcessorNameString");
-  local_cpu._vendor =
-      internal::utils::getRegistryValue<std::string>(HKEY_LOCAL_MACHINE, reg_cpu_path, L"VendorIdentifier");
-
-  DWORD bufferSize = 0;
-  GetLogicalProcessorInformationEx(RelationAll, nullptr, &bufferSize);
-  std::vector<BYTE> buffer(bufferSize);
-
-  if (!GetLogicalProcessorInformationEx(RelationAll, (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)buffer.data(),
-                                        &bufferSize)) {
-    return {};
-  }
-
-  std::vector<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX> coreEntries;
-  std::vector<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX> cacheEntries;
-
-  unsigned char* ptr = buffer.data();
-  while (ptr < buffer.data() + bufferSize) {
-    auto info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)ptr;
-    if (info->Relationship == RelationProcessorCore) coreEntries.push_back(info);
-    if (info->Relationship == RelationCache) cacheEntries.push_back(info);
-    ptr += info->Size;
-  }
-
-  auto regular_frequency =
-      internal::utils::getRegistryValue<int64_t>(HKEY_LOCAL_MACHINE, reg_cpu_path, L"~MHz") * unit::SiPrefix::MEGA;
-
-  for (size_t i = 0; i < coreEntries.size(); ++i) {
-    auto cInfo = coreEntries[i];
-    CPU::Core core{};
-    core.id = i;
-    core.regular_frequency_hz = regular_frequency;
-    core.max_frequency_hz = regular_frequency;
-
-    // SMT is true if logical threads > 1 for this physical core
-    int threadsInThisCore = countSetBits(cInfo->Processor.GroupMask[0].Mask);
-    core.smt = (threadsInThisCore > 1);
-
-    local_cpu._numPhysicalCores++;
-    local_cpu._numLogicalCores += threadsInThisCore;
-
-    // Initialize cache vector [L1 Data, L1 Instruction, L2, L3]
-    core.cache = {0, 0, 0, 0};
-
-    for (auto cache : cacheEntries) {
-      if ((cInfo->Processor.GroupMask[0].Mask & cache->Cache.GroupMask.Mask) != 0) {
-        uint8_t level = cache->Cache.Level;
-        auto type = cache->Cache.Type;
-
-        if (level == 1) {
-          if (type == CacheData) {
-            core.cache.l1_data = cache->Cache.CacheSize;
-          } else if (type == CacheInstruction) {
-            core.cache.l1_instruction = cache->Cache.CacheSize;
-          } else if (type == CacheUnified) {
-            // Some CPUs have unified L1 (rare but possible)
-            core.cache.l1_data = core.cache.l1_instruction = cache->Cache.CacheSize;
-          }
-        } else if (level == 2) {
-          core.cache.l2 = cache->Cache.CacheSize;
-        } else if (level == 3) {
-          core.cache.l3 = cache->Cache.CacheSize;
+    switch (info->Relationship) {
+      case RelationProcessorPackage:
+        topology.packages.push_back(group_masks(info->Processor));
+        break;
+      case RelationProcessorCore:
+        if (info->Processor.GroupCount > 0) {
+          topology.cores.push_back(info->Processor.GroupMask[0]);
         }
-      }
+        break;
+      case RelationCache:
+        topology.caches.push_back(CacheEntry{
+            .affinity = info->Cache.GroupMask,
+            .level = info->Cache.Level,
+            .type = info->Cache.Type,
+            .size = info->Cache.CacheSize,
+        });
+        break;
+      default:
+        break;
     }
-    local_cpu._cores.push_back(core);
+    offset += info->Size;
   }
+  return topology;
+}
 
-  cpus.emplace_back(local_cpu);
-  return cpus;
+// System wide number of the first logical processor in `affinity`, as used by the registry and the power information.
+std::uint32_t first_processor(const GROUP_AFFINITY& affinity) {
+  std::uint32_t number = 0;
+  for (WORD group = 0; group < affinity.Group; ++group) {
+    number += GetActiveProcessorCount(group);
+  }
+  return number + static_cast<std::uint32_t>(std::countr_zero(static_cast<std::uint64_t>(affinity.Mask)));
+}
+
+std::wstring processor_key(std::uint32_t processor) {
+  return std::format(L"HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\{}", processor);
+}
+
+Cache read_cache(const GROUP_AFFINITY& core, const std::vector<CacheEntry>& caches) {
+  Cache cache;
+  for (const auto& entry : caches) {
+    if (!overlaps(core, entry.affinity)) {
+      continue;
+    }
+    const Bytes size{entry.size};
+    if (entry.level == 1 && entry.type == CacheData) {
+      cache.l1_data = size;
+    } else if (entry.level == 1 && entry.type == CacheInstruction) {
+      cache.l1_instruction = size;
+    } else if (entry.level == 1 && entry.type == CacheUnified) {
+      cache.l1_data = size;
+      cache.l1_instruction = size;
+    } else if (entry.level == 2) {
+      cache.l2 = size;
+    } else if (entry.level == 3) {
+      cache.l3 = size;
+    }
+  }
+  return cache;
+}
+
+std::optional<Hertz> mhz(std::uint64_t value) {
+  return value > 0 ? std::optional(value * FrequencyUnit::MHz) : std::nullopt;
+}
+
+// Feature flags named like the flags in Linux' /proc/cpuinfo.
+// The PF_* constants are given as numbers since older Windows SDKs do not define all of them.
+// Unknown features are reported as not present by older Windows versions.
+std::vector<std::string> read_flags() {
+  struct Feature {
+    DWORD id;
+    const char* name;
+  };
+#if defined(HWINFO_X86)
+  constexpr Feature features[] = {
+      {3, "mmx"},     {6, "sse"},    {10, "sse2"},   {13, "pni"},     {36, "ssse3"},    {37, "sse4_1"},
+      {38, "sse4_2"}, {39, "avx"},   {40, "avx2"},   {41, "avx512f"}, {7, "3dnow"},     {8, "tsc"},
+      {9, "pae"},     {12, "nx"},    {14, "cx16"},   {17, "xsave"},   {22, "fsgsbase"}, {28, "rdrand"},
+      {32, "rdtscp"}, {33, "rdpid"}, {35, "mwaitx"}, {42, "erms"},
+  };
+#elif defined(HWINFO_ARM)
+  constexpr Feature features[] = {
+      {19, "asimd"}, {30, "aes"},     {30, "pmull"},   {30, "sha1"},  {30, "sha2"},
+      {31, "crc32"}, {34, "atomics"}, {43, "asimddp"}, {44, "jscvt"}, {45, "lrcpc"},
+  };
+#else
+  constexpr Feature features[] = {{0, nullptr}};
+#endif
+  std::vector<std::string> flags;
+  for (const auto& [id, name] : features) {
+    if (name != nullptr && IsProcessorFeaturePresent(id)) {
+      flags.emplace_back(name);
+    }
+  }
+  return flags;
+}
+
+}  // namespace
+
+result<std::vector<Cpu>> cpus() {
+  auto topology = read_topology();
+  if (!topology) {
+    return std::unexpected(topology.error());
+  }
+  if (topology->packages.empty()) {
+    // should not happen: treat all cores as one package
+    topology->packages.push_back(topology->cores);
+  }
+  const auto power =
+      internal::processor_power_information().value_or(std::vector<internal::ProcessorPowerInformation>{});
+  const auto flags = read_flags();
+
+  std::vector<Cpu> result;
+  result.reserve(topology->packages.size());
+  for (const auto& package : topology->packages) {
+    const auto key = processor_key(package.empty() ? 0 : first_processor(package.front()));
+    Cpu cpu{
+        .socket = static_cast<std::uint32_t>(result.size()),
+        .vendor = internal::registry::read_string(HKEY_LOCAL_MACHINE, key, L"VendorIdentifier").value_or(""),
+        .model = internal::registry::read_string(HKEY_LOCAL_MACHINE, key, L"ProcessorNameString").value_or(""),
+        .flags = flags,
+    };
+    for (const auto& core : topology->cores) {
+      if (std::ranges::none_of(package, [&](const GROUP_AFFINITY& group) { return overlaps(group, core); })) {
+        continue;
+      }
+      const std::uint32_t processor = first_processor(core);
+      const auto threads = static_cast<std::uint32_t>(std::popcount(static_cast<std::uint64_t>(core.Mask)));
+      cpu.cores.push_back(Core{
+          .id = static_cast<std::uint32_t>(cpu.cores.size()),
+          .threads = threads,
+          .cache = read_cache(core, topology->caches),
+          .base_frequency =
+              internal::registry::read_dword(HKEY_LOCAL_MACHINE, processor_key(processor), L"~MHz").and_then(mhz),
+          .max_frequency = processor < power.size() ? mhz(power[processor].max_mhz) : std::nullopt,
+      });
+      cpu.logical_cores += threads;
+    }
+    cpu.physical_cores = static_cast<std::uint32_t>(cpu.cores.size());
+    result.push_back(std::move(cpu));
+  }
+  return result;
 }
 
 }  // namespace hwinfo

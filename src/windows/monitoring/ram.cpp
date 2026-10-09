@@ -1,26 +1,31 @@
-#include "hwinfo/platform.h"
+// Copyright Leon Freist
+// Author Leon Freist <freist@informatik.uni-freiburg.de>
+
+#include <hwinfo/platform.h>
 
 #ifdef HWINFO_WINDOWS
 
+#include <hwinfo/monitoring.h>
 #include <windows.h>
 
-#include "hwinfo/monitoring/ram.h"
+#include "internal/windows_error.h"
 
-namespace hwinfo::monitoring::ram {
+namespace hwinfo {
 
-Data fetch() {
-  MEMORYSTATUSEX status;
+result<MemoryUsage> memory_usage() {
+  MEMORYSTATUSEX status{};
   status.dwLength = sizeof(status);
-  if (!GlobalMemoryStatusEx(&status)) return {};
-  // ullAvailPhys is memory available to the calling process (free + standby).
-  // Windows does not expose raw "free" separately via this API, so both fields
-  // report the same value (consistent with Memory::free() / Memory::available()).
-  return Data{status.ullAvailPhys, status.ullAvailPhys};
+  if (!GlobalMemoryStatusEx(&status)) {
+    return std::unexpected(internal::last_error("GlobalMemoryStatusEx"));
+  }
+  // Windows does not report unused memory separately: ullAvailPhys covers the free, zeroed and standby (cache) lists.
+  return MemoryUsage{
+      .total = {status.ullTotalPhys},
+      .free = {status.ullAvailPhys},
+      .available = {status.ullAvailPhys},
+  };
 }
 
-uint64_t free_bytes() { return fetch().free_bytes; }
-uint64_t available_bytes() { return fetch().available_bytes; }
-
-}  // namespace hwinfo::monitoring::ram
+}  // namespace hwinfo
 
 #endif  // HWINFO_WINDOWS
