@@ -7,9 +7,11 @@
 
 #include <hwinfo/cpu.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <format>
 #include <map>
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -80,7 +82,10 @@ result<std::vector<Cpu>> cpus() {
           .cache = read_cache(path),
           .base_frequency = read_khz(path / "cpufreq/base_frequency"),
           .max_frequency = read_khz(path / "cpufreq/cpuinfo_max_freq"),
+          .logical_ids = threads | std::views::transform(&internal::procfs::CpuinfoProcessor::processor) |
+                         std::ranges::to<std::vector>(),
       });
+      std::ranges::sort(cpu.cores.back().logical_ids);
       cpu.logical_cores += static_cast<std::uint32_t>(threads.size());
     }
     cpu.physical_cores = static_cast<std::uint32_t>(cpu.cores.size());

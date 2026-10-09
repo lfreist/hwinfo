@@ -32,8 +32,9 @@ namespace hwinfo {
 // ----- CPU ----------------------------------------------------------------------------------------------------------
 
 struct CpuLoad {
-  double total = 0;                  // average over all logical cores, [0, 1]
-  std::vector<double> per_thread{};  // per logical core, [0, 1]
+  double total = 0;  // average over all logical cores, [0, 1]
+  // per logical core, [0, 1], indexed by OS CPU number (see Core::logical_ids). Offline cores report 0.
+  std::vector<double> per_thread{};
 };
 
 namespace detail {
@@ -63,7 +64,7 @@ class HWINFO_API CpuSampler {
   std::vector<detail::CpuTicks> _last;  // [0]: all cores, [1 + i]: logical core i
 };
 
-// Current clock rate per logical core. Offline cores report 0 Hz.
+// Current clock rate per logical core, indexed by OS CPU number (see Core::logical_ids). Offline cores report 0 Hz.
 [[nodiscard]] HWINFO_API result<std::vector<Hertz>> cpu_frequencies();
 
 // ----- Memory -------------------------------------------------------------------------------------------------------
