@@ -22,19 +22,6 @@ namespace {
 
 const std::filesystem::path sysfs_cpu = "/sys/devices/system/cpu";
 
-// sysfs cache sizes look like "32K", "1024K", "16M"
-std::optional<Bytes> parse_cache_size(std::string_view s) {
-  std::uint64_t factor = 1;
-  switch (s.back()) {
-    case 'K': factor = std::to_underlying(ByteUnit::KiB); break;
-    case 'M': factor = std::to_underlying(ByteUnit::MiB); break;
-    case 'G': factor = std::to_underlying(ByteUnit::GiB); break;
-    default: s.remove_suffix(1);
-  }
-  const auto value = internal::parse<std::uint64_t>(s);
-  return value ? std::optional<Bytes>({*value * factor}) : std::nullopt;
-}
-
 Cache read_cache(const std::filesystem::path& cpu_path) {
   Cache cache;
   std::error_code ec;
@@ -44,7 +31,7 @@ Cache read_cache(const std::filesystem::path& cpu_path) {
     }
     const auto level = internal::read_number_attribute<int>(entry.path() / "level");
     const auto type = internal::read_attribute(entry.path() / "type");
-    const auto size = internal::read_attribute(entry.path() / "size").and_then(parse_cache_size);
+    const auto size = internal::read_attribute(entry.path() / "size").and_then(internal::procfs::parse_cache_size);
     if (!level || !type) {
       continue;
     }

@@ -13,12 +13,22 @@ else()
     set(HWINFO_PLATFORM linux)
 endif()
 
+# All headers are installed independent of the enabled components: hwinfo.h and computer.h include every component.
 set(HWINFO_PUBLIC_HEADERS
         ${HWINFO_INCLUDE_DIR}/hwinfo/platform.h
         ${HWINFO_INCLUDE_DIR}/hwinfo/error.h
         ${HWINFO_INCLUDE_DIR}/hwinfo/units.h
         ${HWINFO_INCLUDE_DIR}/hwinfo/monitoring.h
         ${HWINFO_INCLUDE_DIR}/hwinfo/hwinfo.h
+        ${HWINFO_INCLUDE_DIR}/hwinfo/computer.h
+        ${HWINFO_INCLUDE_DIR}/hwinfo/battery.h
+        ${HWINFO_INCLUDE_DIR}/hwinfo/cpu.h
+        ${HWINFO_INCLUDE_DIR}/hwinfo/disk.h
+        ${HWINFO_INCLUDE_DIR}/hwinfo/gpu.h
+        ${HWINFO_INCLUDE_DIR}/hwinfo/mainboard.h
+        ${HWINFO_INCLUDE_DIR}/hwinfo/network.h
+        ${HWINFO_INCLUDE_DIR}/hwinfo/os.h
+        ${HWINFO_INCLUDE_DIR}/hwinfo/ram.h
 )
 
 # hwinfo_add_component(<name> SOURCES <files...> [PUBLIC_LINK <libs...>] [PRIVATE_LINK <libs...>])
@@ -52,7 +62,6 @@ function(hwinfo_add_component name)
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    install(FILES ${HWINFO_INCLUDE_DIR}/hwinfo/${name}.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwinfo)
 endfunction()
 
 if(WIN32)
@@ -60,6 +69,10 @@ if(WIN32)
 endif()
 
 # === Components =======================================================================================================
+if (HWINFO_COMPUTER)
+    hwinfo_add_component(computer SOURCES ${HWINFO_WMI_SOURCES})
+endif ()
+
 if (HWINFO_BATTERY)
     hwinfo_add_component(battery SOURCES ${HWINFO_WMI_SOURCES})
 endif ()

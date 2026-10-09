@@ -9,6 +9,7 @@
 
 #include <vector>
 
+#include "internal/dmi.h"
 #include "internal/wmi_wrapper.h"
 
 namespace hwinfo {
@@ -21,10 +22,10 @@ result<Mainboard> mainboard() {
         }
         const auto& board = rows.front();
         return Mainboard{
-            .vendor = board.string("Manufacturer"),
-            .name = board.string("Product"),
-            .version = board.string("Version"),
-            .serial_number = board.string("SerialNumber"),
+            .vendor = internal::dmi_string(board.string("Manufacturer")),
+            .name = internal::dmi_string(board.string("Product")),
+            .version = internal::dmi_string(board.string("Version")),
+            .serial_number = internal::dmi_string(board.string("SerialNumber")),
         };
       });
 }

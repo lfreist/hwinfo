@@ -37,6 +37,7 @@ option(BUILD_TESTING  "Build test program" ${PROJECT_IS_TOP_LEVEL})
 
 # Components
 option(HWINFO_OS "Enable OS information" ON)
+option(HWINFO_COMPUTER "Enable computer information" ON)
 option(HWINFO_MAINBOARD "Enable mainboard information" ON)
 option(HWINFO_CPU "Enable CPU information" ON)
 option(HWINFO_DISK "Enable disk information" ON)

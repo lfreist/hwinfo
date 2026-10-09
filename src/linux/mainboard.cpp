@@ -7,28 +7,23 @@
 
 #include <hwinfo/mainboard.h>
 
-#include <array>
-#include <filesystem>
-
+#include "internal/dmi.h"
 #include "internal/file.h"
 
 namespace hwinfo {
 
 result<Mainboard> mainboard() {
-  const std::array candidates{std::filesystem::path("/sys/devices/virtual/dmi/id"),
-                              std::filesystem::path("/sys/class/dmi/id")};
-  for (const auto& dmi : candidates) {
-    if (!std::filesystem::exists(dmi)) {
-      continue;
-    }
-    return Mainboard{
-        .vendor = internal::read_attribute(dmi / "board_vendor"),
-        .name = internal::read_attribute(dmi / "board_name"),
-        .version = internal::read_attribute(dmi / "board_version"),
-        .serial_number = internal::read_attribute(dmi / "board_serial"),
-    };
+  const auto dmi = internal::dmi_directory();
+  if (!dmi) {
+    return std::unexpected(error{errc::not_supported, "no DMI information available"});
   }
-  return std::unexpected(error{errc::not_supported, "no DMI information available"});
+  const auto read = [&](std::string_view name) { return internal::dmi_string(internal::read_attribute(*dmi / name)); };
+  return Mainboard{
+      .vendor = read("board_vendor"),
+      .name = read("board_name"),
+      .version = read("board_version"),
+      .serial_number = read("board_serial"),
+  };
 }
 
 }  // namespace hwinfo

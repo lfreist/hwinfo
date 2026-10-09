@@ -13,6 +13,8 @@ endif ()
 include(GoogleTest)
 
 add_executable(hwinfo_tests
+        apple_models_test.cpp
+        dmi_test.cpp
         error_test.cpp
         units_test.cpp
         strings_test.cpp
@@ -23,7 +25,7 @@ add_executable(hwinfo_tests
 )
 target_include_directories(hwinfo_tests PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(hwinfo_tests PRIVATE lfreist-hwinfo::hwinfo GTest::gtest_main)
-foreach (component battery cpu disk gpu mainboard os ram network)
+foreach (component battery computer cpu disk gpu mainboard os ram network)
     if (TARGET hwinfo_${component})
         string(TOUPPER ${component} COMPONENT)
         target_compile_definitions(hwinfo_tests PRIVATE HWINFO_HAS_${COMPONENT})
