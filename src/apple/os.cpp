@@ -6,27 +6,27 @@
 #ifdef HWINFO_APPLE
 
 #include <fstream>
-#include <sstream>
 #include <regex>
+#include <sstream>
 #include <string>
 
 #include "hwinfo/os.h"
 #include "hwinfo/utils/sysctl.h"
 
 std::string getOSVersionFromPlist() {
-    std::ifstream file("/System/Library/CoreServices/SystemVersion.plist");
-    if (!file.is_open()) return "";
+  std::ifstream file("/System/Library/CoreServices/SystemVersion.plist");
+  if (!file.is_open()) return "";
 
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::string content = buffer.str();
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  std::string content = buffer.str();
 
-    std::smatch match;
-    std::regex version_regex("<key>ProductVersion</key>\\s*<string>([^<]+)</string>");
-    if (std::regex_search(content, match, version_regex)) {
-        return match[1];
-    }
-    return "";
+  std::smatch match;
+  std::regex version_regex("<key>ProductVersion</key>\\s*<string>([^<]+)</string>");
+  if (std::regex_search(content, match, version_regex)) {
+    return match[1];
+  }
+  return "";
 }
 
 namespace hwinfo {

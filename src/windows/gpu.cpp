@@ -5,9 +5,11 @@
 
 #ifdef HWINFO_WINDOWS
 
-#include <dxgi1_6.h>
+// clang-format off
 #include <windows.h>
 #include <d3dkmthk.h>
+#include <dxgi1_6.h>
+// clang-format on
 
 #include <algorithm>
 #include <cctype>
@@ -112,9 +114,8 @@ std::vector<GPU> getAllGPUs() {
         sprintf_s(vendorId, "0x%04X", desc.VendorId);
         sprintf_s(deviceId, "0x%04X", desc.DeviceId);
 
-        auto gpu = std::find_if(gpus.begin(), gpus.end(), [&](const GPU& candidate) {
-          return candidate._name == adapterName;
-        });
+        auto gpu = std::find_if(gpus.begin(), gpus.end(),
+                                [&](const GPU& candidate) { return candidate._name == adapterName; });
         if (gpu == gpus.end() && vendorId[0] != '\0' && deviceId[0] != '\0') {
           gpu = std::find_if(gpus.begin(), gpus.end(), [&](const GPU& candidate) {
             return candidate._vendor_id == vendorId && candidate._device_id == deviceId;
