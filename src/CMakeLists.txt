@@ -151,11 +151,11 @@ if (HWINFO_GPU)
     target_include_directories(hwinfo_gpu PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<BUILD_INTERFACE:${HWINFO_CMAKE_BINARY_DIR}/generated> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
     add_dependencies(hwinfo_gpu generate_pci_ids_header)
     if(WIN32)
-        target_link_libraries(hwinfo_gpu PRIVATE dxgi setupapi)
+        target_link_libraries(hwinfo_gpu PRIVATE wbemuuid dxgi gdi32)
     endif()
 
     if(MINGW)
-        target_link_libraries(hwinfo_gpu PUBLIC dxgi setupapi)
+        target_link_libraries(hwinfo_gpu PUBLIC wbemuuid dxgi gdi32)
     endif()
     target_link_libraries(hwinfo INTERFACE hwinfo_gpu)
 
