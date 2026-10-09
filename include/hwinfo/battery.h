@@ -6,6 +6,7 @@
 #include <hwinfo/detail/formatter.h>
 #include <hwinfo/error.h>
 #include <hwinfo/platform.h>
+#include <hwinfo/units.h>
 
 #include <cstdint>
 #include <format>
@@ -22,8 +23,8 @@ struct Battery {
   std::optional<std::string> model{};
   std::optional<std::string> serial_number{};
   std::optional<std::string> technology{};
-  std::optional<double> design_capacity_wh{};
-  std::optional<double> full_charge_capacity_wh{};
+  std::optional<Energy> design_capacity{};
+  std::optional<Energy> full_charge_capacity{};
 
   friend bool operator==(const Battery&, const Battery&) = default;
 };

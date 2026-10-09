@@ -37,15 +37,15 @@ result<std::vector<std::filesystem::path>> battery_paths() {
   return paths;
 }
 
-// Energy in Wh from energy_* (µWh) or charge_* (µAh, converted with the design voltage) attributes.
-std::optional<double> read_wh(const std::filesystem::path& path, std::string_view suffix) {
-  if (const auto energy = internal::read_number_attribute<double>(path / std::format("energy_{}", suffix))) {
-    return *energy / 1e6;
+// Energy from energy_* (µWh) or charge_* (µAh, converted with the design voltage in µV) attributes.
+std::optional<Energy> read_energy(const std::filesystem::path& path, std::string_view suffix) {
+  if (const auto energy = internal::read_number_attribute<std::uint64_t>(path / std::format("energy_{}", suffix))) {
+    return Energy{*energy};
   }
-  const auto charge = internal::read_number_attribute<double>(path / std::format("charge_{}", suffix));
-  const auto voltage = internal::read_number_attribute<double>(path / "voltage_min_design");
+  const auto charge = internal::read_number_attribute<std::uint64_t>(path / std::format("charge_{}", suffix));
+  const auto voltage = internal::read_number_attribute<std::uint64_t>(path / "voltage_min_design");
   if (charge && voltage) {
-    return *charge * *voltage / 1e12;
+    return Energy{*charge * *voltage / 1'000'000};
   }
   return std::nullopt;
 }
@@ -62,8 +62,8 @@ result<std::vector<Battery>> batteries() {
           .model = internal::read_attribute(path / "model_name"),
           .serial_number = internal::read_attribute(path / "serial_number"),
           .technology = internal::read_attribute(path / "technology"),
-          .design_capacity_wh = read_wh(path, "full_design"),
-          .full_charge_capacity_wh = read_wh(path, "full"),
+          .design_capacity = read_energy(path, "full_design"),
+          .full_charge_capacity = read_energy(path, "full"),
       });
     }
     return result;
@@ -94,8 +94,9 @@ result<BatteryStatus> battery_status(std::uint32_t index) {
 
   if (const auto percent = internal::read_number_attribute<double>(path / "capacity")) {
     status.charge = *percent / 100.0;
-  } else if (const auto now = read_wh(path, "now"), full = read_wh(path, "full"); now && full && *full > 0) {
-    status.charge = std::clamp(*now / *full, 0.0, 1.0);
+  } else if (const auto now = read_energy(path, "now"), full = read_energy(path, "full");
+             now && full && full->value > 0) {
+    status.charge = std::clamp(now->to(EnergyUnit::uWh) / full->to(EnergyUnit::uWh), 0.0, 1.0);
   }
   return status;
 }

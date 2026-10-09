@@ -26,12 +26,12 @@ namespace cf = internal::apple;
 
 result<std::vector<cf::io_ptr>> smart_batteries() { return cf::matching_services("AppleSmartBattery"); }
 
-// mAh * mV -> Wh
-std::optional<double> watt_hours(std::optional<std::int64_t> mah, std::optional<std::int64_t> mv) {
+// mAh * mV = µWh
+std::optional<Energy> energy(std::optional<std::int64_t> mah, std::optional<std::int64_t> mv) {
   if (!mah || !mv || *mah <= 0 || *mv <= 0) {
     return std::nullopt;
   }
-  return static_cast<double>(*mah) * static_cast<double>(*mv) / 1e6;
+  return Energy{static_cast<std::uint64_t>(*mah) * static_cast<std::uint64_t>(*mv)};
 }
 
 // Full charge capacity in mAh. "MaxCapacity" is given in mAh on Intel Macs but in percent on Apple Silicon.
@@ -64,9 +64,8 @@ result<std::vector<Battery>> batteries() {
           .model = cf::string_property(battery, CFSTR("DeviceName")),
           .serial_number = std::move(serial),
           .technology = std::nullopt,
-          .design_capacity_wh =
-              watt_hours(cf::number_property<std::int64_t>(battery, CFSTR("DesignCapacity")), voltage),
-          .full_charge_capacity_wh = watt_hours(full_charge_mah(battery), voltage),
+          .design_capacity = energy(cf::number_property<std::int64_t>(battery, CFSTR("DesignCapacity")), voltage),
+          .full_charge_capacity = energy(full_charge_mah(battery), voltage),
       });
     }
     return result;
