@@ -8,6 +8,7 @@
 
 #include <hwinfo/error.h>
 #include <hwinfo/monitoring.h>
+#include <hwinfo/units.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -140,6 +141,39 @@ inline result<std::vector<CpuinfoProcessor>> parse_cpuinfo(std::string_view cont
     result.push_back(std::move(p));
   }
   return result;
+}
+
+// ----- /sys/devices/system/cpu/cpuN/cache/indexM/size
+// -----------------------------------------------------------------
+
+// Sizes look like "48K", "1280K" or "16M" (binary units); a plain number is in bytes.
+inline std::optional<Bytes> parse_cache_size(std::string_view s) {
+  s = trim(s);
+  if (s.empty()) {
+    return std::nullopt;
+  }
+  ByteUnit unit = ByteUnit::B;
+  switch (s.back()) {
+    case 'K':
+      unit = ByteUnit::KiB;
+      break;
+    case 'M':
+      unit = ByteUnit::MiB;
+      break;
+    case 'G':
+      unit = ByteUnit::GiB;
+      break;
+    case 'T':
+      unit = ByteUnit::TiB;
+      break;
+    default:
+      break;
+  }
+  if (unit != ByteUnit::B) {
+    s.remove_suffix(1);
+  }
+  const auto value = parse<std::uint64_t>(s);
+  return value ? std::optional(*value * unit) : std::nullopt;
 }
 
 // ----- /proc/stat ---------------------------------------------------------------------------------------------------

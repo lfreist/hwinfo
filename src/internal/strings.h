@@ -7,6 +7,7 @@
 
 #include <hwinfo/error.h>
 
+#include <algorithm>
 #include <charconv>
 #include <concepts>
 #include <cstdlib>
@@ -95,6 +96,13 @@ result<T> parse(std::string_view s, int base = 10) {
     return std::unexpected(error{errc::parse_error, std::format("cannot parse '{}' as a number", s)});
   }
   return value;
+}
+
+constexpr char to_lower(char c) noexcept { return c >= 'A' && c <= 'Z' ? static_cast<char>(c - 'A' + 'a') : c; }
+
+// ASCII case-insensitive comparison.
+constexpr bool equals_ignore_case(std::string_view a, std::string_view b) noexcept {
+  return std::ranges::equal(a, b, [](char x, char y) { return to_lower(x) == to_lower(y); });
 }
 
 // Converts an empty or whitespace-only string to std::nullopt.

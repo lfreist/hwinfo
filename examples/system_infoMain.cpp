@@ -58,10 +58,11 @@ int main() {
       field("flags:", std::format("{} flags", cpu.flags.size()));
       if (!cpu.cores.empty()) {
         const auto& core = cpu.cores.front();
-        field("L1d / L1i:", std::format("{} / {}", core.cache.l1_data.value_or(hwinfo::Bytes{}),
-                                        core.cache.l1_instruction.value_or(hwinfo::Bytes{})));
-        field("L2 / L3:",
-              std::format("{} / {}", core.cache.l2.value_or(hwinfo::Bytes{}), core.cache.l3.value_or(hwinfo::Bytes{})));
+        const auto size = [](const std::optional<hwinfo::Bytes>& s) {
+          return s ? std::format("{}", *s) : std::string("<unknown>");
+        };
+        field("L1d / L1i:", std::format("{} / {}", size(core.cache.l1_data), size(core.cache.l1_instruction)));
+        field("L2 / L3:", std::format("{} / {}", size(core.cache.l2), size(core.cache.l3)));
         field("base frequency:", core.base_frequency);
         field("max frequency:", core.max_frequency);
       }
@@ -101,6 +102,17 @@ int main() {
       field("size:", module.size);
       field("frequency:", module.frequency);
     }
+  }
+
+  section("Computer");
+  if (const auto computer = hwinfo::computer(); check(computer)) {
+    field("vendor:", computer->vendor);
+    field("model:", computer->model);
+    field("family:", computer->family);
+    field("version:", computer->version);
+    field("sku:", computer->sku);
+    field("serial number:", computer->serial_number);
+    field("chassis:", computer->chassis);
   }
 
   section("Mainboard");

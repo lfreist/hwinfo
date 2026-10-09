@@ -79,6 +79,7 @@ Every component is a plain aggregate returned by a free function:
 
 | Function                       | Returns                                        | Header              |
 |--------------------------------|------------------------------------------------|---------------------|
+| `hwinfo::computer()`           | `result<Computer>` (vendor, model, chassis)    | `hwinfo/computer.h` |
 | `hwinfo::cpus()`               | `result<std::vector<Cpu>>` (one per socket)    | `hwinfo/cpu.h`      |
 | `hwinfo::memory()`             | `result<Memory>` (total + installed modules)   | `hwinfo/ram.h`      |
 | `hwinfo::gpus()`               | `result<std::vector<Gpu>>`                     | `hwinfo/gpu.h`      |
@@ -104,6 +105,16 @@ bool avx2 = hwinfo::cpus().transform([](const auto& cpus) { return cpus.front().
 Information that the platform does not expose, or that requires elevated privileges, is a `std::optional` (e.g.
 `Disk::serial_number`, `Gpu::driver_version`, `Mainboard::serial_number`) instead of a placeholder string.
 
+`hwinfo::computer()` identifies the machine as a product (e.g. a notebook or prebuilt PC) and gives access to its
+components. Each member function queries on call, so only the components you use need to be linked:
+
+```c++
+if (auto pc = hwinfo::computer()) {
+  std::println("{} ({})", *pc, pc->chassis);  // "LENOVO 21CBCTO1WW (laptop)"
+  auto gpus = pc->gpus();                      // same as hwinfo::gpus()
+}
+```
+
 ### Error handling
 
 All queries return `hwinfo::result<T>`, an alias for `std::expected<T, hwinfo::error>`. A query fails only if its
@@ -126,7 +137,8 @@ std::error_code ec = board.error().code();         // the underlying code
 
 ### Units
 
-Sizes and frequencies are strong types: `hwinfo::Bytes` and `hwinfo::Hertz`. They are formatted with automatic
+Sizes, frequencies, data rates and energies are strong types: `hwinfo::Bytes`, `hwinfo::Hertz`, `hwinfo::DataRate`
+and `hwinfo::Energy`. They are formatted with automatic
 scaling, support an explicit unit and precision in the format spec, and can be converted to any unit:
 
 ```c++
@@ -184,6 +196,9 @@ See [live_monitorMain.cpp](examples/live_monitorMain.cpp) for a complete example
 | Memory (RAM) | Total | ✔️ | ✔️ | ✔️ |
 |  | Modules (vendor, model, serial, size, frequency) | ❌ | ❌ | ✔️ |
 |  | Free / available | ✔️ | ✔️ | ✔️ |
+| Computer | Vendor, model, serial number | ✔️ | ✔️ | ✔️ |
+|  | Family, version, SKU | ✔️ | family (marketing name) | ✔️ |
+|  | Chassis type | ✔️ | from model | ✔️ |
 | Mainboard | Vendor, name | ✔️ | ✔️ | ✔️ |
 |  | Version | ✔️ | ❌ | ✔️ |
 |  | Serial number | root | ✔️ | ✔️ |
@@ -212,7 +227,8 @@ or
 ```cmake
 target_link_libraries(
   your_target
-  PRIVATE lfreist-hwinfo::cpu
+  PRIVATE lfreist-hwinfo::computer
+          lfreist-hwinfo::cpu
           lfreist-hwinfo::gpu
           lfreist-hwinfo::ram
           lfreist-hwinfo::mainboard
@@ -225,6 +241,7 @@ target_link_libraries(
 The CMake options control which components will be built and available in the library:
 
 - `HWINFO_OS` "Enable OS detection" (default to `ON`)
+- `HWINFO_COMPUTER` "Enable computer detection" (default to `ON`)
 - `HWINFO_MAINBOARD` "Enable mainboard detection" (default to `ON`)
 - `HWINFO_CPU` "Enable CPU detection" (default to `ON`)
 - `HWINFO_DISK` "Enable disk detection" (default to `ON`)

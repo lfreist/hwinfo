@@ -4,6 +4,7 @@
 #pragma once
 
 #include <hwinfo/battery.h>
+#include <hwinfo/computer.h>
 #include <hwinfo/cpu.h>
 #include <hwinfo/disk.h>
 #include <hwinfo/error.h>
