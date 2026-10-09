@@ -88,13 +88,28 @@ result<Topology> read_topology() {
   return topology;
 }
 
-// System wide number of the first logical processor in `affinity`, as used by the registry and the power information.
-std::uint32_t first_processor(const GROUP_AFFINITY& affinity) {
+// System wide number of the first logical processor of `group`.
+std::uint32_t group_offset(WORD group) {
   std::uint32_t number = 0;
-  for (WORD group = 0; group < affinity.Group; ++group) {
-    number += GetActiveProcessorCount(group);
+  for (WORD g = 0; g < group; ++g) {
+    number += GetActiveProcessorCount(g);
   }
-  return number + static_cast<std::uint32_t>(std::countr_zero(static_cast<std::uint64_t>(affinity.Mask)));
+  return number;
+}
+
+// System wide numbers of the logical processors in `affinity`, as used by the registry and the power information.
+std::vector<std::uint32_t> processors(const GROUP_AFFINITY& affinity) {
+  const std::uint32_t offset = group_offset(affinity.Group);
+  std::vector<std::uint32_t> numbers;
+  for (auto mask = static_cast<std::uint64_t>(affinity.Mask); mask != 0; mask &= mask - 1) {
+    numbers.push_back(offset + static_cast<std::uint32_t>(std::countr_zero(mask)));
+  }
+  return numbers;
+}
+
+std::uint32_t first_processor(const GROUP_AFFINITY& affinity) {
+  return group_offset(affinity.Group) +
+         static_cast<std::uint32_t>(std::countr_zero(static_cast<std::uint64_t>(affinity.Mask)));
 }
 
 std::wstring processor_key(std::uint32_t processor) {
@@ -189,8 +204,9 @@ result<std::vector<Cpu>> cpus() {
       if (std::ranges::none_of(package, [&](const GROUP_AFFINITY& group) { return overlaps(group, core); })) {
         continue;
       }
-      const std::uint32_t processor = first_processor(core);
-      const auto threads = static_cast<std::uint32_t>(std::popcount(static_cast<std::uint64_t>(core.Mask)));
+      auto logical_ids = processors(core);
+      const std::uint32_t processor = logical_ids.empty() ? 0 : logical_ids.front();
+      const auto threads = static_cast<std::uint32_t>(logical_ids.size());
       cpu.cores.push_back(Core{
           .id = static_cast<std::uint32_t>(cpu.cores.size()),
           .threads = threads,
@@ -198,6 +214,7 @@ result<std::vector<Cpu>> cpus() {
           .base_frequency =
               internal::registry::read_dword(HKEY_LOCAL_MACHINE, processor_key(processor), L"~MHz").and_then(mhz),
           .max_frequency = processor < power.size() ? mhz(power[processor].max_mhz) : std::nullopt,
+          .logical_ids = std::move(logical_ids),
       });
       cpu.logical_cores += threads;
     }

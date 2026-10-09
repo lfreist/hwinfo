@@ -178,18 +178,30 @@ inline std::optional<Bytes> parse_cache_size(std::string_view s) {
 
 // ----- /proc/stat ---------------------------------------------------------------------------------------------------
 
-// Returns the tick counters of the "cpu" line followed by those of every "cpuN" line.
+// Returns the tick counters of the "cpu" line at [0] and those of "cpuN" at [1 + N]. Offline CPUs have no line and
+// keep zero ticks, so the index always matches the OS CPU number.
 inline result<std::vector<detail::CpuTicks>> parse_stat(std::string_view content) {
   std::vector<detail::CpuTicks> ticks;
+  bool has_aggregate = false;
   for (const auto line : lines(content)) {
     if (!line.starts_with("cpu")) {
       continue;
+    }
+    auto fields = words(line);
+    const std::string_view name = *fields.begin();
+    std::size_t index = 0;
+    if (name != "cpu") {
+      const auto number = parse<std::uint32_t>(name.substr(3));
+      if (!number) {
+        return std::unexpected(error{errc::parse_error, "/proc/stat"});
+      }
+      index = std::size_t{*number} + 1;
     }
     // cpu  user nice system idle iowait irq softirq steal guest guest_nice
     // guest times are already included in user / nice.
     std::uint64_t values[8]{};
     std::size_t n = 0;
-    for (const auto word : words(line) | std::views::drop(1) | std::views::take(8)) {
+    for (const auto word : fields | std::views::drop(1) | std::views::take(8)) {
       auto value = parse<std::uint64_t>(word);
       if (!value) {
         return std::unexpected(error{errc::parse_error, "/proc/stat"});
@@ -204,9 +216,13 @@ inline result<std::vector<detail::CpuTicks>> parse_stat(std::string_view content
       t.total += v;
     }
     t.busy = t.total - values[3] - values[4];  // idle + iowait
-    ticks.push_back(t);
+    if (ticks.size() <= index) {
+      ticks.resize(index + 1);
+    }
+    ticks[index] = t;
+    has_aggregate |= index == 0;
   }
-  if (ticks.empty()) {
+  if (!has_aggregate) {
     return std::unexpected(error{errc::parse_error, "/proc/stat: no cpu entries"});
   }
   return ticks;

@@ -29,11 +29,21 @@ struct Cache {
 
 // A physical core.
 struct Core {
-  std::uint32_t id = 0;       // core id within its socket
+  // Topology id of the core within its socket.
+  // Stable across runs, but not necessarily contiguous (Linux reports the hardware core id) and not usable for thread
+  // affinity: use logical_ids for that.
+  std::uint32_t id = 0;
   std::uint32_t threads = 1;  // hardware threads (logical cores) of this core; > 1 means SMT
   Cache cache{};
   std::optional<Hertz> base_frequency{};
   std::optional<Hertz> max_frequency{};
+  // OS numbers of this core's logical processors, ascending.
+  // These are the numbers thread affinity APIs take (sched_setaffinity / CPU_SET on Linux) and the indices of
+  // CpuLoad::per_thread and cpu_frequencies().
+  // On Windows they are numbered system wide across processor groups: with more than 64 logical processors, map them
+  // to (group, bit) for SetThreadGroupAffinity.
+  // Empty on macOS, which has no thread affinity API.
+  std::vector<std::uint32_t> logical_ids{};
 
   friend bool operator==(const Core&, const Core&) = default;
 };
