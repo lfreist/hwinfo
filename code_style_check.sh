@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+clang-format --version
 printf "Checking sources for code style\n"
 SOURCE_FILES=()
 find ./src/ ./test/ ./include/ -regextype egrep -regex '.*\.(h|c)(pp|xx)?$' -print0 > sourcelist
