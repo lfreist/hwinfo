@@ -26,8 +26,8 @@ namespace hwinfo {
 enum class ChassisType { unknown, desktop, laptop, tablet, all_in_one, mini_pc, server, other };
 
 // The computer as a product (e.g. a notebook or prebuilt PC), as opposed to its mainboard.
-// The member functions give access to the installed components. Each one queries on call and requires linking the
-// corresponding component (e.g. lfreist-hwinfo::cpu for cpus()).
+// The member functions give access to the installed components.
+// Each one queries on call and requires linking the corresponding component (e.g. lfreist-hwinfo::cpu for cpus()).
 struct Computer {
   std::optional<std::string> vendor{};  // e.g. "LENOVO", "Apple Inc."
   std::optional<std::string> model{};   // e.g. "21CBCTO1WW", "MacBookPro18,3"
@@ -44,9 +44,7 @@ struct Computer {
   static result<std::vector<Gpu>> gpus(const GpuQuery& query = {}) { return hwinfo::gpus(query); }
   static result<std::vector<Disk>> disks() { return hwinfo::disks(); }
   static result<std::vector<Battery>> batteries() { return hwinfo::batteries(); }
-  static result<std::vector<NetworkInterface>> network_interfaces() {
-    return hwinfo::network_interfaces();
-  }
+  static result<std::vector<NetworkInterface>> network_interfaces() { return hwinfo::network_interfaces(); }
 
   friend bool operator==(const Computer&, const Computer&) = default;
 };
