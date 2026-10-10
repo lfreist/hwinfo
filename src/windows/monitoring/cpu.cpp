@@ -55,10 +55,10 @@ result<std::vector<detail::CpuTicks>> internal::read_cpu_ticks() {
 
 result<std::vector<Hertz>> cpu_frequencies() {
   return internal::processor_power_information().transform([](const auto& processors) {
-    return processors | std::views::transform([](const internal::ProcessorPowerInformation& p) {
-             return std::uint64_t{p.current_mhz} * FrequencyUnit::MHz;
-           }) |
-           std::ranges::to<std::vector>();
+    return std::ranges::to<std::vector>(processors |
+                                        std::views::transform([](const internal::ProcessorPowerInformation& p) {
+                                          return std::uint64_t{p.current_mhz} * FrequencyUnit::MHz;
+                                        }));
   });
 }
 
