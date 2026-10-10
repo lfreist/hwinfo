@@ -19,6 +19,11 @@ add_executable(hwinfo_tests
         units_test.cpp
         strings_test.cpp
         procfs_test.cpp
+        gpu_test.cpp
+        gpu_merge_test.cpp
+        ${PROJECT_SOURCE_DIR}/src/common/gpu/intel.cpp
+        ${PROJECT_SOURCE_DIR}/src/common/gpu/merge.cpp
+        ${PROJECT_SOURCE_DIR}/src/common/gpu/nvidia.cpp
         pci_test.cpp
         monitor_test.cpp
         smoke_test.cpp
