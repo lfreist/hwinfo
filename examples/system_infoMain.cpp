@@ -56,6 +56,9 @@ int main() {
       field("model:", cpu.model);
       field("cores:", std::format("{} ({} threads)", cpu.physical_cores, cpu.logical_cores));
       field("flags:", std::format("{} flags", cpu.flags.size()));
+      field("core -> logical ids:", join(cpu.cores | std::views::transform([](const hwinfo::Core& core) {
+                                           return std::format("{}:[{}]", core.id, join(core.logical_ids, ","));
+                                         })));
       if (!cpu.cores.empty()) {
         const auto& core = cpu.cores.front();
         const auto size = [](const std::optional<hwinfo::Bytes>& s) {
@@ -83,11 +86,32 @@ int main() {
       std::println("GPU {}", gpu.index);
       field("vendor:", gpu.vendor);
       field("model:", gpu.name);
+      field("type:", gpu.type);
+      field("unified memory:", gpu.unified_memory.transform([](bool unified) { return unified ? "yes" : "no"; }));
+      field("uuid:", gpu.uuid);
+      field("architecture:", gpu.architecture);
+      field("compute capability:", gpu.compute_capability);
+      field("compute units:", gpu.compute_units);
+      field("cores:", gpu.cores);
       field("driver:", gpu.driver);
       field("driver version:", gpu.driver_version);
+      field("vbios version:", gpu.vbios_version);
       field("memory:", gpu.dedicated_memory);
-      field("frequency:", gpu.frequency);
-      field("cores:", gpu.cores);
+      field("memory type:", gpu.memory_type);
+      field("memory bus width:",
+            gpu.memory_bus_width.transform([](std::uint32_t bits) { return std::format("{} bit", bits); }));
+      field("L2 cache:", gpu.l2_cache);
+      field("max frequency:", gpu.max_frequency);
+      field("max memory frequency:", gpu.max_memory_frequency);
+      field("power limit:", gpu.power_limit);
+      field("compute APIs:", join(gpu.compute_apis | std::views::transform([](const hwinfo::GpuApi& api) {
+                                    return std::format("{} {}", api.name, api.version);
+                                  })));
+      if (gpu.pci) {
+        field("pci id:", std::format("{:04x}:{:04x}", gpu.pci->vendor_id, gpu.pci->device_id));
+        field("pci address:", gpu.pci->address);
+        field("pcie link:", gpu.pci->max_link);
+      }
     }
   }
 

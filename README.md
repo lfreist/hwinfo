@@ -165,6 +165,9 @@ auto ram = hwinfo::memory_usage();                   // result<MemoryUsage>: tot
 auto space = hwinfo::disk_space("/");                // result<DiskSpace>: capacity, free, available
 auto battery = hwinfo::battery_status(0);            // result<BatteryStatus>: state, charge in [0, 1]
 
+hwinfo::GpuSampler gpu((*hwinfo::gpus())[0]);       // like CpuSampler, for one GPU
+auto status = gpu.sample();                          // result<GpuStatus>: utilization, VRAM used, temperature, power, ...
+
 // periodic updates on a background thread (std::jthread), stopped on destruction
 hwinfo::Monitor monitor{1s, [s = hwinfo::CpuSampler{}]() mutable { return s.sample(); },
                         [](const hwinfo::result<hwinfo::CpuLoad>& load) {
@@ -173,6 +176,36 @@ hwinfo::Monitor monitor{1s, [s = hwinfo::CpuSampler{}]() mutable { return s.samp
 ```
 
 See [live_monitorMain.cpp](examples/live_monitorMain.cpp) for a complete example.
+
+### GPU vendor libraries
+
+`gpus()` and `GpuSampler` start from what the operating system reports and add details from vendor and compute
+libraries, if installed. They are loaded at runtime (`dlopen` / `LoadLibrary`): hwinfo has no build or link
+dependency on any of them, and a missing library is simply skipped.
+
+| Library | Ships with | Adds |
+|---|---|---|
+| NVML (`libnvidia-ml` / `nvml.dll`) | NVIDIA driver | marketing name, UUID, architecture, CUDA cores, clocks, VRAM, bus width, power limit, VBIOS; live data |
+| CUDA driver API (`libcuda` / `nvcuda.dll`) | NVIDIA driver | SM count, compute capability, L2 cache |
+| Level Zero (`libze_loader` / `ze_loader.dll`) | Intel compute runtime | Xe-cores, EUs, IP version / architecture, memory, PCIe; live data via Sysman |
+| OpenCL (`libOpenCL` / `OpenCL.dll` / OpenCL.framework) | any vendor's driver | compute units, clocks, memory, cache (fallback for all vendors) |
+
+AMD GPUs on Linux are covered by the amdgpu / KFD sysfs files of the kernel driver (no ROCm needed). Vendor libraries
+take precedence over OpenCL, which takes precedence over the operating system. Devices are matched by PCI address,
+LUID or UUID, never by name.
+
+```c++
+auto all = hwinfo::gpus();                               // OS + every installed library
+auto fast = hwinfo::gpus(hwinfo::GpuQuery::os_only());   // OS only
+auto no_cl = hwinfo::gpus({.opencl = false});
+```
+
+Things to know:
+- The first use of CUDA or OpenCL in a process takes ~100 ms each; the libraries stay loaded afterwards.
+- Vendor libraries power up a discrete GPU that is runtime suspended (idle laptop dGPUs). `GpuQuery::os_only()` never
+  does. `GpuSampler` does not wake up a suspended GPU (Linux): it reports `suspended` instead.
+- Live data of Intel integrated GPUs needs access to the i915 / xe perf PMU (`perf_event_paranoid` <= 2 or
+  `CAP_PERFMON`); otherwise utilization stays empty.
 
 ## Supported Components
 
@@ -190,9 +223,12 @@ See [live_monitorMain.cpp](examples/live_monitorMain.cpp) for a complete example
 |  | Feature flags | ✔️ | ✔️ | ✔️ |
 |  | Utilization (`CpuSampler`) | ✔️ | ✔️ | ✔️ |
 |  | Current frequency | ✔️ | Intel (nominal) | ✔️ |
-| GPU | Vendor, model, PCI id | ✔️ | ✔️ | ✔️ |
+| GPU | Vendor, model, PCI id / address | ✔️ | ✔️ | ✔️ |
+|  | Integrated / discrete, unified memory | ✔️ | ✔️ | ✔️ |
 |  | Driver version | ✔️ | ❌ | ✔️ |
-|  | Memory size | amdgpu | ✔️ | ✔️ |
+|  | Memory size | ✔️ | ✔️ | ✔️ |
+|  | UUID, architecture, compute capability, cores, clocks, bus width, power limit | NVIDIA, Intel, AMD | ❌ | NVIDIA, Intel |
+|  | Utilization, VRAM used, temperature, power (`GpuSampler`) | NVIDIA, Intel, AMD | utilization, memory | ✔️ (utilization, memory); NVIDIA, Intel: all |
 | Memory (RAM) | Total | ✔️ | ✔️ | ✔️ |
 |  | Modules (vendor, model, serial, size, frequency) | ❌ | ❌ | ✔️ |
 |  | Free / available | ✔️ | ✔️ | ✔️ |
@@ -247,12 +283,14 @@ The CMake options control which components will be built and available in the li
 - `HWINFO_DISK` "Enable disk detection" (default to `ON`)
 - `HWINFO_RAM` "Enable RAM detection" (default to `ON`)
 - `HWINFO_GPU` "Enable GPU detection" (default to `ON`)
-- `HWINFO_GPU_OPENCL` "Enable usage of OpenCL in GPU information" (default to `OFF`)
+- `HWINFO_GPU_BACKENDS` "Load vendor GPU libraries (NVML, CUDA, Level Zero, OpenCL) at runtime, if installed"
+  (default to `ON`)
 - `HWINFO_BATTERY` "Enable battery detection" (default to `ON`)
 - `HWINFO_NETWORK` "Enable network interface detection" (default to `ON`)
 
 The monitoring functions are part of their component's library: `CpuSampler` and `cpu_frequencies()` of `cpu`,
-`memory_usage()` of `ram` and `battery_status()` of `battery`; `disk_space()` and `Monitor` are header-only.
+`memory_usage()` of `ram`, `battery_status()` of `battery` and `GpuSampler` of `gpu`; `disk_space()` and `Monitor` are
+header-only.
 
 ## Build `hwinfo`
 
@@ -286,6 +324,7 @@ Socket 0
   model:                13th Gen Intel(R) Core(TM) i7-13700H
   cores:                14 (20 threads)
   flags:                138 flags
+  core -> logical ids:  0:[0,1], 4:[2,3], 8:[4,5], 12:[6,7], 16:[8,9], 20:[10,11], 24:[12], 25:[13], 26:[14], 27:[15], 28:[16], 29:[17], 30:[18], 31:[19]
   L1d / L1i:            48.0 KiB / 32.0 KiB
   L2 / L3:              1.2 MiB / 24.0 MiB
   base frequency:       2.40 GHz
@@ -297,55 +336,104 @@ Socket 0
   architecture:         x86_64 (64-bit)
 ------------------------------------- GPU --------------------------------------
 GPU 0
+  vendor:               Intel Corporation
+  model:                Intel(R) Iris(R) Xe Graphics
+  type:                 integrated
+  unified memory:       yes
+  uuid:                 ***
+  architecture:         Xe-LP
+  compute capability:   12.3.0
+  compute units:        6
+  cores:                768
+  driver:               i915
+  driver version:       26.05.037020
+  vbios version:        <unknown>
+  memory:               <unknown>
+  memory type:          <unknown>
+  memory bus width:     <unknown>
+  L2 cache:             480.0 KiB
+  max frequency:        1.50 GHz
+  max memory frequency: <unknown>
+  power limit:          <unknown>
+  compute APIs:         Level Zero 1.14, OpenCL 3.0 NEO
+  pci id:               8086:a7a0
+  pci address:          0000:00:02.0
+  pcie link:            <unknown>
+GPU 1
   vendor:               NVIDIA Corporation
-  model:                AD106M [GeForce RTX 4070 Max-Q / Mobile]
+  model:                NVIDIA GeForce RTX 4070 Laptop GPU
+  type:                 discrete
+  unified memory:       no
+  uuid:                 ***
+  architecture:         Ada Lovelace
+  compute capability:   8.9
+  compute units:        36
+  cores:                4608
   driver:               nvidia
   driver version:       595.91.07
-  memory:               <unknown>
-  frequency:            <unknown>
-  cores:                <unknown>
-GPU 1
-  vendor:               Intel Corporation
-  model:                Raptor Lake-P [Iris Xe Graphics]
-  driver:               i915
-  driver version:       <unknown>
-  memory:               <unknown>
-  frequency:            1.50 GHz
-  cores:                <unknown>
+  vbios version:        95.06.17.00.62
+  memory:               8.0 GiB
+  memory type:          <unknown>
+  memory bus width:     128 bit
+  L2 cache:             32.0 MiB
+  max frequency:        3.10 GHz
+  max memory frequency: 8.00 GHz
+  power limit:          60.0 W
+  compute APIs:         CUDA 13.2, OpenCL 3.0 CUDA
+  pci id:               10de:2820
+  pci address:          0000:01:00.0
+  pcie link:            PCIe 4.0 x8
 ------------------------------------ Memory ------------------------------------
   total:                14.9 GiB
+----------------------------------- Computer -----------------------------------
+  vendor:               SchenkerTechnologiesGmbH
+  model:                SCHENKER VISION (M23)
+  family:               <unknown>
+  version:              Standard
+  sku:                  SVS14M23 / SVS16M23
+  serial number:        <unknown>
+  chassis:              laptop
 ---------------------------------- Mainboard -----------------------------------
   vendor:               NB02
   name:                 PH6PG01_PH6PG71
   version:              Standard
-  serial number:        ***
+  serial number:        <unknown>
 ---------------------------------- Batteries -----------------------------------
 Battery 0
   vendor:               OEM
   model:                standard
-  serial number:        ***
+  serial number:        00001
   technology:           Li-ion
-  capacity [Wh]:        82.044
-  state:                discharging
-  charge:               65%
+  capacity:             60.4 Wh
+  state:                full
+  charge:               100%
 ------------------------------------ Disks -------------------------------------
 Disk 0
-  vendor:               <unknown>
-  model:                SAMSUNG MZVL2512HDJD-00B07
-  serial number:        ***
-  bus:                  NVMe
-  size:                 476.9 GiB
-  mount points:         /, /boot/efi
-Disk 1
   vendor:               <unknown>
   model:                KINGSTON SFYRS1000G
   serial number:        ***
   bus:                  NVMe
   size:                 931.5 GiB
+  link speed:           <unknown>
   mount points:         
+Disk 1
+  vendor:               <unknown>
+  model:                SAMSUNG MZVL2512HDJD-00B07
+  serial number:        ***
+  bus:                  NVMe
+  size:                 476.9 GiB
+  link speed:           <unknown>
+  mount points:         /, /boot/efi
 ----------------------------------- Network ------------------------------------
 Interface 2
   name:                 wlo1
+  description:          <unknown>
+  state:                up
+  mac:                  ***
+  ipv4:                 ***
+  ipv6:                 ***
+Interface 4
+  name:                 br-0442e9d65826
   description:          <unknown>
   state:                up
   mac:                  ***

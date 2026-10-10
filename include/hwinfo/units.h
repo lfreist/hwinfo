@@ -46,6 +46,12 @@ enum class EnergyUnit : std::uint64_t {
   Wh = 1'000'000,
 };
 
+enum class PowerUnit : std::uint64_t {
+  uW = 1,
+  mW = 1'000,
+  W = 1'000'000,
+};
+
 namespace detail {
 
 // Strongly typed unsigned quantity.
@@ -81,6 +87,7 @@ struct bytes_tag {};
 struct hertz_tag {};
 struct data_rate_tag {};
 struct energy_tag {};
+struct power_tag {};
 
 }  // namespace detail
 
@@ -88,6 +95,7 @@ using Bytes = detail::quantity<detail::bytes_tag, ByteUnit>;
 using Hertz = detail::quantity<detail::hertz_tag, FrequencyUnit>;
 using DataRate = detail::quantity<detail::data_rate_tag, DataRateUnit>;  // bits per second
 using Energy = detail::quantity<detail::energy_tag, EnergyUnit>;         // microwatt-hours
+using Power = detail::quantity<detail::power_tag, PowerUnit>;            // microwatts
 
 constexpr Bytes operator*(std::uint64_t value, ByteUnit unit) noexcept { return {value * std::to_underlying(unit)}; }
 constexpr Hertz operator*(std::uint64_t value, FrequencyUnit unit) noexcept {
@@ -97,6 +105,7 @@ constexpr DataRate operator*(std::uint64_t value, DataRateUnit unit) noexcept {
   return {value * std::to_underlying(unit)};
 }
 constexpr Energy operator*(std::uint64_t value, EnergyUnit unit) noexcept { return {value * std::to_underlying(unit)}; }
+constexpr Power operator*(std::uint64_t value, PowerUnit unit) noexcept { return {value * std::to_underlying(unit)}; }
 
 namespace literals {
 
@@ -123,6 +132,10 @@ consteval DataRate operator""_Gbps(unsigned long long v) { return v * DataRateUn
 consteval Energy operator""_uWh(unsigned long long v) { return {v}; }
 consteval Energy operator""_mWh(unsigned long long v) { return v * EnergyUnit::mWh; }
 consteval Energy operator""_Wh(unsigned long long v) { return v * EnergyUnit::Wh; }
+
+consteval Power operator""_uW(unsigned long long v) { return {v}; }
+consteval Power operator""_mW(unsigned long long v) { return v * PowerUnit::mW; }
+consteval Power operator""_W(unsigned long long v) { return v * PowerUnit::W; }
 
 }  // namespace literals
 
@@ -162,6 +175,12 @@ inline constexpr std::array energy_units{
     unit_name<EnergyUnit>{"uWh", EnergyUnit::uWh},
     unit_name<EnergyUnit>{"mWh", EnergyUnit::mWh},
     unit_name<EnergyUnit>{"Wh", EnergyUnit::Wh},
+};
+
+inline constexpr std::array power_units{
+    unit_name<PowerUnit>{"uW", PowerUnit::uW},
+    unit_name<PowerUnit>{"mW", PowerUnit::mW},
+    unit_name<PowerUnit>{"W", PowerUnit::W},
 };
 
 /**
@@ -261,3 +280,7 @@ struct std::formatter<hwinfo::DataRate>
 template <>
 struct std::formatter<hwinfo::Energy> : hwinfo::detail::quantity_formatter<hwinfo::Energy, hwinfo::detail::energy_units,
                                                                            hwinfo::detail::energy_units, 1> {};
+
+template <>
+struct std::formatter<hwinfo::Power>
+    : hwinfo::detail::quantity_formatter<hwinfo::Power, hwinfo::detail::power_units, hwinfo::detail::power_units, 1> {};

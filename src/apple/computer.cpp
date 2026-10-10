@@ -15,6 +15,7 @@
 
 #include "internal/apple_cf.h"
 #include "internal/apple_models.h"
+#include "internal/sysctl.h"
 
 namespace hwinfo {
 
@@ -29,7 +30,8 @@ std::optional<std::string> marketing_name(const std::optional<std::string>& mode
   if (auto name = product ? cf::string_property(product.get(), CFSTR("product-name")) : std::nullopt) {
     return name;
   }
-  if (const auto name = model ? cf::mac_marketing_name(*model) : std::nullopt) {
+  const auto cpu = internal::sysctl_attribute("machdep.cpu.brand_string");  // tells apart models sharing an identifier
+  if (const auto name = model ? cf::mac_marketing_name(*model, cpu.value_or("")) : std::nullopt) {
     return std::string(*name);
   }
   return std::nullopt;
