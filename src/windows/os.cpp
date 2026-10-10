@@ -83,6 +83,14 @@ std::optional<std::string> kernel_build(std::optional<std::string> build) {
   return build;
 }
 
+// e.g. "24H2"; Windows 10 releases before 20H2 only provide the numeric "ReleaseId", e.g. "1909"
+std::string marketing_name() {
+  if (auto name = internal::registry::read_string(HKEY_LOCAL_MACHINE, current_version, L"DisplayVersion")) {
+    return std::move(*name);
+  }
+  return internal::registry::read_string(HKEY_LOCAL_MACHINE, current_version, L"ReleaseId").value_or("");
+}
+
 }  // namespace
 
 result<Os> os() {
@@ -91,7 +99,9 @@ result<Os> os() {
   if (rows && !rows->empty()) {
     const auto& row = rows->front();
     return Os{
+        .family = OsFamily::windows,
         .name = row.string("Caption").value_or("Microsoft Windows"),
+        .marketing_name = marketing_name(),
         .version = row.string("Version").value_or(""),
         .kernel = kernel_build(row.string("BuildNumber")).value_or(""),
         .architecture = arch,
@@ -115,7 +125,9 @@ result<Os> os() {
     version = std::format("{}.{}", *legacy, *build);  // Windows < 10, e.g. "6.3.9600"
   }
   return Os{
+      .family = OsFamily::windows,
       .name = std::format("Microsoft {}", *name),
+      .marketing_name = marketing_name(),
       .version = std::move(version),
       .kernel = kernel_build(build).value_or(""),
       .architecture = arch,

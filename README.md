@@ -259,6 +259,7 @@ Things to know:
 |  | Mount points | ✔️ | ✔️ | ✔️ |
 |  | Free space (`disk_space`) | ✔️ | ✔️ | ✔️ |
 | Operating System | Name, version, kernel | ✔️ | ✔️ | ✔️ |
+|  | Family, marketing name | ✔️ | ✔️ | ✔️ |
 |  | Architecture, bits | ✔️ | ✔️ | ✔️ |
 | Battery | Vendor, model, serial number | ✔️ | ✔️ | ✔️ |
 |  | Technology | ✔️ | ❌ | ✔️ |
@@ -346,7 +347,9 @@ Socket 0
   base frequency:       2.40 GHz
   max frequency:        4.80 GHz
 ------------------------------- Operating System -------------------------------
+  family:               Linux
   name:                 Ubuntu
+  marketing name:       Resolute Raccoon
   version:              26.04.1 LTS (Resolute Raccoon)
   kernel:               7.0.0-34-generic
   architecture:         x86_64 (64-bit)
