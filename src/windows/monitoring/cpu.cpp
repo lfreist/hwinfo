@@ -1,103 +1,67 @@
-#include "hwinfo/platform.h"
+// Copyright Leon Freist
+// Author Leon Freist <freist@informatik.uni-freiburg.de>
+
+#include <hwinfo/platform.h>
 
 #ifdef HWINFO_WINDOWS
 
 // clang-format off
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <powrprof.h>
 #include <winternl.h>
 // clang-format on
+#include <hwinfo/monitoring.h>
 
-#include <numeric>
-#include <thread>
+#include <cstdint>
+#include <format>
+#include <ranges>
 #include <vector>
 
-#include "hwinfo/monitoring/cpu.h"
-#ifndef __MINGW32__
-#pragma comment(lib, "PowrProf.lib")
+#include "internal/cpu_ticks.h"
+#include "internal/windows_power.h"
+
+#ifdef _MSC_VER
 #pragma comment(lib, "ntdll.lib")
 #endif
 
-namespace {
+namespace hwinfo {
 
-struct PROCESSOR_POWER_INFORMATION {
-  ULONG id;
-  ULONG maxMhz;
-  ULONG currentMhz;
-  ULONG mhzLimit;
-  ULONG maxIdleState;
-  ULONG currentIdleState;
-};
-
-}  // namespace
-
-namespace hwinfo::monitoring::cpu {
-
-std::vector<double> thread_utilization(std::chrono::milliseconds sleep) {
-  SYSTEM_INFO sys_info;
-  GetSystemInfo(&sys_info);
-  const unsigned num_logicals = sys_info.dwNumberOfProcessors;
-
-  std::vector<SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION> infoA(num_logicals);
-  std::vector<SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION> infoB(num_logicals);
-
-  auto getPerf = [&](std::vector<SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION>& info) {
-    NtQuerySystemInformation((SYSTEM_INFORMATION_CLASS)0x08, info.data(),
-                             sizeof(SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION) * num_logicals, nullptr);
-  };
-
-  getPerf(infoA);
-  std::this_thread::sleep_for(sleep);
-  getPerf(infoB);
-
-  std::vector<double> results;
-  results.reserve(num_logicals);
-  for (unsigned i = 0; i < num_logicals; ++i) {
-    const uint64_t idle = infoB[i].IdleTime.QuadPart - infoA[i].IdleTime.QuadPart;
-    const uint64_t kernel = infoB[i].KernelTime.QuadPart - infoA[i].KernelTime.QuadPart;
-    const uint64_t user = infoB[i].UserTime.QuadPart - infoA[i].UserTime.QuadPart;
-    const uint64_t total = kernel + user;
-    if (total == 0) {
-      results.push_back(0.0);
-    } else {
-      results.push_back(std::max(0.0, std::min(1.0, 1.0 - static_cast<double>(idle) / static_cast<double>(total))));
-    }
+result<std::vector<detail::CpuTicks>> internal::read_cpu_ticks() {
+  SYSTEM_INFO info{};
+  GetSystemInfo(&info);
+  std::vector<SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION> performance(info.dwNumberOfProcessors);
+  ULONG length = 0;
+  const NTSTATUS status =
+      NtQuerySystemInformation(SystemProcessorPerformanceInformation, performance.data(),
+                               static_cast<ULONG>(performance.size() * sizeof(performance.front())), &length);
+  if (status != 0) {
+    return std::unexpected(error{errc::platform_error, std::format("NtQuerySystemInformation: NTSTATUS {:#010x}",
+                                                                   static_cast<unsigned long>(status))});
   }
-  return results;
-}
+  performance.resize(length / sizeof(performance.front()));
 
-double utilization(std::chrono::milliseconds sleep) {
-  const auto tu = thread_utilization(sleep);
-  if (tu.empty()) return 0.0;
-  return std::accumulate(tu.begin(), tu.end(), 0.0) / static_cast<double>(tu.size());
-}
-
-std::vector<int64_t> thread_frequency_hz() {
-  SYSTEM_INFO sys_info;
-  GetSystemInfo(&sys_info);
-  const unsigned num_logicals = sys_info.dwNumberOfProcessors;
-
-  std::vector<PROCESSOR_POWER_INFORMATION> powerInfo(num_logicals);
-  const NTSTATUS status = CallNtPowerInformation(ProcessorInformation, nullptr, 0, powerInfo.data(),
-                                                 sizeof(PROCESSOR_POWER_INFORMATION) * num_logicals);
-  if (status != 0) return {};
-
-  std::vector<int64_t> result;
-  result.reserve(num_logicals);
-  for (const auto& info : powerInfo) {
-    result.push_back(static_cast<int64_t>(info.currentMhz) * 1'000'000LL);
+  // KernelTime includes IdleTime
+  std::vector<detail::CpuTicks> ticks(1);  // [0]: aggregate over all cores
+  ticks.reserve(performance.size() + 1);
+  for (const auto& p : performance) {
+    const auto total = static_cast<std::uint64_t>(p.KernelTime.QuadPart + p.UserTime.QuadPart);
+    const auto idle = static_cast<std::uint64_t>(p.IdleTime.QuadPart);
+    const detail::CpuTicks core{.busy = total >= idle ? total - idle : 0, .total = total};
+    ticks.front().busy += core.busy;
+    ticks.front().total += core.total;
+    ticks.push_back(core);
   }
-  return result;
+  return ticks;
 }
 
-Data fetch(std::chrono::milliseconds sleep) {
-  auto tu = thread_utilization(sleep);
-  auto tf = thread_frequency_hz();
-  const double avg = tu.empty() ? 0.0 : std::accumulate(tu.begin(), tu.end(), 0.0) / static_cast<double>(tu.size());
-  return Data{avg, std::move(tu), std::move(tf)};
+result<std::vector<Hertz>> cpu_frequencies() {
+  return internal::processor_power_information().transform([](const auto& processors) {
+    return std::ranges::to<std::vector>(processors |
+                                        std::views::transform([](const internal::ProcessorPowerInformation& p) {
+                                          return std::uint64_t{p.current_mhz} * FrequencyUnit::MHz;
+                                        }));
+  });
 }
 
-}  // namespace hwinfo::monitoring::cpu
+}  // namespace hwinfo
 
 #endif  // HWINFO_WINDOWS

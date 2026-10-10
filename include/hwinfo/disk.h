@@ -3,65 +3,84 @@
 
 #pragma once
 
+#include <hwinfo/detail/formatter.h>
+#include <hwinfo/error.h>
 #include <hwinfo/platform.h>
+#include <hwinfo/units.h>
 
 #include <cstdint>
-#include <limits>
+#include <filesystem>
+#include <format>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace hwinfo {
 
-class HWINFO_API Disk {
- public:
-  enum class Interface {
-    NVME,
-    USB,
-    USB1,
-    USB2,
-    USB3_5GBit,
-    USB3_10GBit,
-    USB3_20GBit,
-    USB4_20GBit,
-    USB4_40GBit,
-    USB4_80GBit,
-    SATA,
-    SCSI,
-    UNKNOWN
-  };
+enum class DiskBus { unknown, nvme, sata, scsi, usb, mmc, virtio };
 
-  friend HWINFO_API std::vector<Disk> getAllDisks();
-  friend HWINFO_API std::ostream& operator<<(std::ostream& os, const Disk::Interface& disk_interface);
-  friend HWINFO_API std::ostream& operator<<(std::ostream& os, const Disk& disk);
+// A mounted filesystem on a disk (or one of its partitions / volumes).
+struct MountPoint {
+  std::filesystem::path path{};
+  std::optional<std::string> filesystem{};  // as named by the OS, e.g. "ext4", "apfs", "NTFS"
 
- public:
-  static constexpr std::uint32_t invalid_id = std::numeric_limits<std::uint32_t>::max();
-
- public:
-  ~Disk() = default;
-
-  HWI_NODISCARD const std::string& vendor() const;
-  HWI_NODISCARD const std::string& model() const;
-  HWI_NODISCARD const std::string& serial_number() const;
-  HWI_NODISCARD std::uint64_t size() const;
-  HWI_NODISCARD const std::vector<std::string>& mount_points() const;
-  HWI_NODISCARD std::uint32_t id() const;
-  HWI_NODISCARD Interface disk_interface() const;
-
- private:
-  Disk() = default;
-
-  std::string _vendor = "<unknown>";
-  std::string _model = "<unknown>";
-  std::string _serial_number = "<unknown>";
-  std::uint64_t _size_bytes = 0;
-  std::vector<std::string> _mount_points;
-  std::uint32_t _id = invalid_id;
-  Interface _interface = Interface::UNKNOWN;
+  friend bool operator==(const MountPoint&, const MountPoint&) = default;
 };
 
-HWINFO_API std::vector<Disk> getAllDisks();
+// A physical (or virtual) block device.
+struct Disk {
+  std::uint32_t index = 0;
+  std::optional<std::string> vendor{};
+  std::optional<std::string> model{};
+  std::optional<std::string> serial_number{};
+  Bytes size{};
+  DiskBus bus = DiskBus::unknown;
+  std::optional<DataRate> link_speed{};  // negotiated link speed (currently USB only)
+  std::vector<MountPoint> mount_points{};
 
-HWINFO_API std::ostream& operator<<(std::ostream& os, const hwinfo::Disk::Interface& disk_interface);
+  friend bool operator==(const Disk&, const Disk&) = default;
+};
+
+// All disks of the system.
+// See hwinfo/monitoring.h for free space.
+[[nodiscard]] HWINFO_API result<std::vector<Disk>> disks();
+
+constexpr std::string_view to_string(DiskBus bus) noexcept {
+  switch (bus) {
+    case DiskBus::nvme:
+      return "NVMe";
+    case DiskBus::sata:
+      return "SATA";
+    case DiskBus::scsi:
+      return "SCSI";
+    case DiskBus::usb:
+      return "USB";
+    case DiskBus::mmc:
+      return "MMC";
+    case DiskBus::virtio:
+      return "VirtIO";
+    case DiskBus::unknown:
+      break;
+  }
+  return "unknown";
+}
+
+inline std::string to_string(const MountPoint& mount_point) {
+  return std::format("{} ({})", mount_point.path.string(), mount_point.filesystem.value_or("unknown"));
+}
+
+inline std::string to_string(const Disk& disk) {
+  return std::format("{} ({}, {})", disk.model.value_or("unknown disk"), disk.size, to_string(disk.bus));
+}
 
 }  // namespace hwinfo
+
+template <>
+struct std::formatter<hwinfo::DiskBus> : hwinfo::detail::to_string_formatter<hwinfo::DiskBus> {};
+
+template <>
+struct std::formatter<hwinfo::MountPoint> : hwinfo::detail::to_string_formatter<hwinfo::MountPoint> {};
+
+template <>
+struct std::formatter<hwinfo::Disk> : hwinfo::detail::to_string_formatter<hwinfo::Disk> {};

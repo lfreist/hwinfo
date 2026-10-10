@@ -3,72 +3,74 @@
 
 #pragma once
 
+#include <hwinfo/detail/formatter.h>
+#include <hwinfo/error.h>
 #include <hwinfo/platform.h>
-#include <hwinfo/utils/wmi_wrapper.h>
+#include <hwinfo/units.h>
 
-#include <array>
-#include <chrono>
+#include <algorithm>
 #include <cstdint>
-#include <map>
+#include <format>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
-
-using namespace std::chrono_literals;
 
 namespace hwinfo {
 
-namespace monitor::cpu {
+struct Cache {
+  std::optional<Bytes> l1_data{};
+  std::optional<Bytes> l1_instruction{};
+  std::optional<Bytes> l2{};
+  std::optional<Bytes> l3{};
 
-HWINFO_API double utilization(std::chrono::milliseconds sleep = 200ms);
-HWINFO_API std::vector<double> core_utilization(std::chrono::milliseconds sleep = 200ms);
-HWINFO_API std::vector<int64_t> current_frequency_hz();
-
-}  // namespace monitor::cpu
-
-class HWINFO_API CPU {
-  friend HWINFO_API std::vector<CPU> getAllCPUs();
-
- public:
-  static constexpr std::uint32_t invalid_id = std::numeric_limits<std::uint32_t>::max();
-
- public:
-  struct Cache {
-    std::uint64_t l1_data;
-    std::uint64_t l1_instruction;
-    std::uint64_t l2;
-    std::uint64_t l3;
-  };
-  struct Core {
-    std::uint64_t id;
-    Cache cache;
-    std::uint64_t regular_frequency_hz;
-    std::uint64_t max_frequency_hz;
-    bool smt;
-  };
-
- public:
-  ~CPU() = default;
-
-  HWI_NODISCARD std::uint32_t id() const;
-  HWI_NODISCARD const std::string& modelName() const;
-  HWI_NODISCARD const std::string& vendor() const;
-  HWI_NODISCARD std::uint64_t numPhysicalCores() const;
-  HWI_NODISCARD std::uint64_t numLogicalCores() const;
-  HWI_NODISCARD const std::vector<std::string>& flags() const;
-  HWI_NODISCARD const std::vector<Core>& cores() const;
-
- private:
-  CPU() = default;
-
-  std::uint32_t _id = invalid_id;
-  std::string _modelName;
-  std::string _vendor;
-  std::uint64_t _numPhysicalCores = 0;
-  std::uint64_t _numLogicalCores = 0;
-  std::vector<std::string> _flags;
-  std::vector<Core> _cores;
+  friend bool operator==(const Cache&, const Cache&) = default;
 };
 
-HWINFO_API std::vector<CPU> getAllCPUs();
+// A physical core.
+struct Core {
+  // Topology id of the core within its socket.
+  // Stable across runs, but not necessarily contiguous (Linux reports the hardware core id) and not usable for thread
+  // affinity: use logical_ids for that.
+  std::uint32_t id = 0;
+  std::uint32_t threads = 1;  // hardware threads (logical cores) of this core; > 1 means SMT
+  Cache cache{};
+  std::optional<Hertz> base_frequency{};
+  std::optional<Hertz> max_frequency{};
+  // OS numbers of this core's logical processors, ascending.
+  // These are the numbers thread affinity APIs take (sched_setaffinity / CPU_SET on Linux) and the indices of
+  // CpuLoad::per_thread and cpu_frequencies().
+  // On Windows they are numbered system wide across processor groups: with more than 64 logical processors, map them
+  // to (group, bit) for SetThreadGroupAffinity.
+  // Empty on macOS, which has no thread affinity API.
+  std::vector<std::uint32_t> logical_ids{};
+
+  friend bool operator==(const Core&, const Core&) = default;
+};
+
+// A physical CPU package (socket).
+struct Cpu {
+  std::uint32_t socket = 0;
+  std::string vendor{};
+  std::string model{};
+  std::uint32_t physical_cores = 0;
+  std::uint32_t logical_cores = 0;
+  std::vector<std::string> flags{};  // ISA extensions / feature flags, e.g. "avx2", "neon"
+  std::vector<Core> cores{};
+
+  [[nodiscard]] bool has_flag(std::string_view flag) const { return std::ranges::find(flags, flag) != flags.end(); }
+
+  friend bool operator==(const Cpu&, const Cpu&) = default;
+};
+
+// All CPU packages of the system.
+[[nodiscard]] HWINFO_API result<std::vector<Cpu>> cpus();
+
+inline std::string to_string(const Cpu& cpu) {
+  return std::format("{} {} ({} cores, {} threads)", cpu.vendor, cpu.model, cpu.physical_cores, cpu.logical_cores);
+}
 
 }  // namespace hwinfo
+
+template <>
+struct std::formatter<hwinfo::Cpu> : hwinfo::detail::to_string_formatter<hwinfo::Cpu> {};

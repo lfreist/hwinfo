@@ -1,134 +1,106 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include "hwinfo/platform.h"
+#include <hwinfo/platform.h>
 
 #ifdef HWINFO_UNIX
 
-#include <filesystem>
-#include <fstream>
+#include <hwinfo/battery.h>
+#include <hwinfo/monitoring.h>
 
-#include "hwinfo/battery.h"
+#include <algorithm>
+#include <filesystem>
+#include <format>
+#include <vector>
+
+#include "internal/file.h"
 
 namespace hwinfo {
 
-static std::filesystem::path base_path("/sys/class/power_supply/");
-
 namespace {
 
-// _____________________________________________________________________________________________________________________
-std::string get_vendor(std::uint32_t id) {
-  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(id)) / "manufacturer");
-  std::string vendor;
-  if (vendor_file.is_open()) {
-    getline(vendor_file, vendor);
-    return vendor;
+const std::filesystem::path power_supply = "/sys/class/power_supply";
+
+// Battery directories in /sys/class/power_supply, sorted by name (BAT0, BAT1, ...).
+result<std::vector<std::filesystem::path>> battery_paths() {
+  std::error_code ec;
+  std::vector<std::filesystem::path> paths;
+  for (const auto& entry : std::filesystem::directory_iterator(power_supply, ec)) {
+    if (internal::read_attribute(entry.path() / "type") == "Battery") {
+      paths.push_back(entry.path());
+    }
   }
-  return "<unknown>";
+  if (ec && ec != std::errc::no_such_file_or_directory) {
+    return std::unexpected(error{ec, power_supply.string()});
+  }
+  std::ranges::sort(paths);
+  return paths;
 }
 
-// _____________________________________________________________________________________________________________________
-std::string get_model(std::uint32_t id) {
-  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(id)) / "model_name");
-  std::string value;
-  if (vendor_file.is_open()) {
-    getline(vendor_file, value);
-    return value;
+// Energy from energy_* (µWh) or charge_* (µAh, converted with the design voltage in µV) attributes.
+std::optional<Energy> read_energy(const std::filesystem::path& path, std::string_view suffix) {
+  if (const auto energy = internal::read_number_attribute<std::uint64_t>(path / std::format("energy_{}", suffix))) {
+    return Energy{*energy};
   }
-  return "<unknown>";
-}
-
-// _____________________________________________________________________________________________________________________
-std::string get_serial_number(std::uint32_t id) {
-  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(id)) / "serial_number");
-  std::string value;
-  if (vendor_file.is_open()) {
-    getline(vendor_file, value);
-    return value;
+  const auto charge = internal::read_number_attribute<std::uint64_t>(path / std::format("charge_{}", suffix));
+  const auto voltage = internal::read_number_attribute<std::uint64_t>(path / "voltage_min_design");
+  if (charge && voltage) {
+    return Energy{*charge * *voltage / 1'000'000};
   }
-  return "<unknown>";
-}
-
-// _____________________________________________________________________________________________________________________
-std::string get_technology(std::uint32_t id) {
-  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(id)) / "technology");
-  std::string value;
-  if (vendor_file.is_open()) {
-    getline(vendor_file, value);
-    return value;
-  }
-  return "<unknown>";
+  return std::nullopt;
 }
 
 }  // namespace
 
-// =====================================================================================================================
-// _____________________________________________________________________________________________________________________
-uint32_t get_energy_full(std::uint32_t id) {
-  auto path = std::filesystem::path(base_path / ("BAT" + std::to_string(id)) / "energy_full");
-  if (!std::filesystem::exists(path)) {
-    path = std::filesystem::path(base_path / ("BAT" + std::to_string(id)) / "charge_full");
-  }
-  std::ifstream vendor_file(path);
-  std::string value;
-  if (vendor_file.is_open()) {
-    getline(vendor_file, value);
-    try {
-      return std::stoi(value);
-    } catch (const std::invalid_argument& e) {
-      return 0;
+result<std::vector<Battery>> batteries() {
+  return battery_paths().transform([](const std::vector<std::filesystem::path>& paths) {
+    std::vector<Battery> result;
+    for (const auto& path : paths) {
+      result.push_back(Battery{
+          .index = static_cast<std::uint32_t>(result.size()),
+          .vendor = internal::read_attribute(path / "manufacturer"),
+          .model = internal::read_attribute(path / "model_name"),
+          .serial_number = internal::read_attribute(path / "serial_number"),
+          .technology = internal::read_attribute(path / "technology"),
+          .design_capacity = read_energy(path, "full_design"),
+          .full_charge_capacity = read_energy(path, "full"),
+      });
     }
-  }
-  return 0;
+    return result;
+  });
 }
 
-// _____________________________________________________________________________________________________________________
-uint32_t Battery::energyNow() const {
-  auto path = std::filesystem::path(base_path / ("BAT" + std::to_string(_id)) / "energy_now");
-  if (!std::filesystem::exists(path)) {
-    path = std::filesystem::path(base_path / ("BAT" + std::to_string(_id)) / "charge_now");
+result<BatteryStatus> battery_status(std::uint32_t index) {
+  const auto paths = battery_paths();
+  if (!paths) {
+    return std::unexpected(paths.error());
   }
-  std::ifstream vendor_file(path);
-  std::string value;
-  if (vendor_file.is_open()) {
-    getline(vendor_file, value);
-    try {
-      return std::stoi(value);
-    } catch (const std::invalid_argument& e) {
-      return 0;
-    }
+  if (index >= paths->size()) {
+    return std::unexpected(error{errc::not_found, std::format("battery {}", index)});
   }
-  return 0;
-}
+  const auto& path = (*paths)[index];
 
-// _____________________________________________________________________________________________________________________
-Battery::State Battery::state() const {
-  std::ifstream vendor_file(base_path / ("BAT" + std::to_string(_id)) / "status");
-  std::string value;
-  if (vendor_file.is_open()) {
-    getline(vendor_file, value);
-    return value == "Charging" ? State::CHARGING : State::DISCHARGING;
+  BatteryStatus status;
+  const auto state = internal::read_attribute(path / "status").value_or("Unknown");
+  if (state == "Charging") {
+    status.state = BatteryState::charging;
+  } else if (state == "Discharging") {
+    status.state = BatteryState::discharging;
+  } else if (state == "Full") {
+    status.state = BatteryState::full;
+  } else if (state == "Not charging") {
+    status.state = BatteryState::not_charging;
   }
-  return State::UNKNOWN;
-}
 
-// =====================================================================================================================
-// _____________________________________________________________________________________________________________________
-std::vector<Battery> getAllBatteries() {
-  std::vector<Battery> batteries;
-  std::uint32_t id = 0;
-  while (std::filesystem::exists(base_path / ("BAT" + std::to_string(id)))) {
-    batteries.emplace_back(id++);
-    auto& battery = batteries.back();
-    battery._vendor = get_vendor(id);
-    battery._model = get_model(id);
-    battery._energyFull = get_energy_full(id);
-    battery._serial_number = get_serial_number(id);
-    battery._technology = get_technology(id);
+  if (const auto percent = internal::read_number_attribute<double>(path / "capacity")) {
+    status.charge = *percent / 100.0;
+  } else if (const auto now = read_energy(path, "now"), full = read_energy(path, "full");
+             now && full && full->value > 0) {
+    status.charge = std::clamp(now->to(EnergyUnit::uWh) / full->to(EnergyUnit::uWh), 0.0, 1.0);
   }
-  return batteries;
+  return status;
 }
 
 }  // namespace hwinfo
 
-#endif
+#endif  // HWINFO_UNIX

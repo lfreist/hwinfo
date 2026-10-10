@@ -1,69 +1,62 @@
-// Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
-// This software is part of HWBenchmark
+// Copyright Leon Freist
+// Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include "hwinfo/platform.h"
+#include <hwinfo/platform.h>
 
 #ifdef HWINFO_APPLE
 
-#include <Availability.h>
+#include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOKitLib.h>
+#include <hwinfo/mainboard.h>
 
-#include "hwinfo/mainboard.h"
+#include <optional>
+#include <string>
+#include <string_view>
 
-#if defined(__MAC_12_0) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_12_0
-#define SAFE_IO_MAIN_PORT kIOMainPortDefault
-#else
-#define SAFE_IO_MAIN_PORT kIOMasterPortDefault
-#endif
+#include "internal/apple_cf.h"
 
 namespace hwinfo {
 
-std::string get_mainboard_property(CFStringRef property_name) {
-  auto platformExpert = IOServiceGetMatchingService(SAFE_IO_MAIN_PORT, IOServiceMatching("IOPlatformExpertDevice"));
-  if (!platformExpert) {
-    return "<unknown>";
+namespace {
+
+namespace cf = internal::apple;
+
+// Board identifier: "board-id" on Intel Macs (e.g. "Mac-06F11FD93F0323C5").
+// On Apple Silicon, the first entry of the NUL-separated "compatible" list that is neither the model identifier nor the
+// generic "AppleARM" (e.g. "J316sAP").
+std::optional<std::string> board_name(io_registry_entry_t platform) {
+  if (auto board_id = cf::string_property(platform, CFSTR("board-id"))) {
+    return board_id;
   }
-
-  auto propertyRef = IORegistryEntryCreateCFProperty(platformExpert, property_name, kCFAllocatorDefault, 0);
-
-  IOObjectRelease(platformExpert);
-
-  if (!propertyRef) {
-    return "<unknown>";
+  const auto compatible = cf::property(platform, CFSTR("compatible"));
+  if (!compatible || CFGetTypeID(compatible.get()) != CFDataGetTypeID()) {
+    return std::nullopt;
   }
-
-  std::string result;
-
-  if (CFTypeID typeID = CFGetTypeID(propertyRef); typeID == CFStringGetTypeID()) {
-    auto stringRef = static_cast<CFStringRef>(propertyRef);
-    auto length = CFStringGetLength(stringRef);
-    auto maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1;
-
-    auto buffer = std::string(maxSize, '\0');
-    if (CFStringGetCString(stringRef, buffer.data(), maxSize, kCFStringEncodingUTF8)) {
-      result = buffer.c_str();  // Remove trailing nulls
-    }
-  } else if (typeID == CFDataGetTypeID()) {
-    const auto dataRef = static_cast<CFDataRef>(propertyRef);
-    const auto length = CFDataGetLength(dataRef);
-    const auto bytes = CFDataGetBytePtr(dataRef);
-    result = std::string(reinterpret_cast<const char*>(bytes), length);
-
-    if (!result.empty() && result.back() == '\0') {
-      result.pop_back();
+  const auto data = static_cast<CFDataRef>(compatible.get());
+  const std::string_view entries(reinterpret_cast<const char*>(CFDataGetBytePtr(data)),
+                                 static_cast<std::size_t>(CFDataGetLength(data)));
+  const auto model = cf::string_property(platform, CFSTR("model"));
+  for (const auto entry : internal::split(entries, '\0')) {
+    if (!entry.empty() && entry != model && entry != "AppleARM") {
+      return std::string(entry);
     }
   }
-
-  CFRelease(propertyRef);
-  return result.empty() ? "<unknown>" : result;
+  return std::nullopt;
 }
 
-// _____________________________________________________________________________________________________________________
-MainBoard::MainBoard() {
-  _vendor = get_mainboard_property(CFSTR("manufacturer"));
-  _name = "<unknown>";
-  _version = "<unknown>";
-  _serial_number = get_mainboard_property(CFSTR(kIOPlatformSerialNumberKey));
+}  // namespace
+
+result<Mainboard> mainboard() {
+  const cf::io_ptr platform(IOServiceGetMatchingService(MACH_PORT_NULL, IOServiceMatching("IOPlatformExpertDevice")));
+  if (!platform) {
+    return std::unexpected(error{errc::not_found, "IOPlatformExpertDevice"});
+  }
+  return Mainboard{
+      .vendor = cf::string_property(platform.get(), CFSTR("manufacturer")),  // "Apple Inc."
+      .name = board_name(platform.get()),
+      .version = std::nullopt,
+      .serial_number = cf::string_property(platform.get(), CFSTR(kIOPlatformSerialNumberKey)),
+  };
 }
 
 }  // namespace hwinfo

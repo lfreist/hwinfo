@@ -1,52 +1,33 @@
-// Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
-// This software is part of HWBenchmark
+// Copyright Leon Freist
+// Author Leon Freist <freist@informatik.uni-freiburg.de>
 
 #include <hwinfo/platform.h>
 
 #ifdef HWINFO_WINDOWS
 
 #include <hwinfo/mainboard.h>
-#include <hwinfo/utils/stringutils.h>
-#include <hwinfo/utils/wmi_wrapper.h>
 
-#include <string>
+#include <vector>
+
+#include "internal/dmi.h"
+#include "internal/wmi_wrapper.h"
 
 namespace hwinfo {
 
-// _____________________________________________________________________________________________________________________
-MainBoard::MainBoard() {
-  utils::WMI::_WMI wmi;
-  const std::wstring query_string(L"SELECT Manufacturer, Product, Version, SerialNumber FROM Win32_BaseBoard");
-  bool success = wmi.execute_query(query_string);
-  if (!success) {
-    return;
-  }
-  ULONG u_return = 0;
-  IWbemClassObject* obj = nullptr;
-  wmi.enumerator->Next((long)WBEM_INFINITE, 1, &obj, &u_return);
-  if (!u_return) {
-    return;
-  }
-  VARIANT vt_prop;
-  HRESULT hr;
-  hr = obj->Get(L"Manufacturer", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-    _vendor = utils::wstring_to_std_string(vt_prop.bstrVal);
-  }
-  hr = obj->Get(L"Product", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-    _name = utils::wstring_to_std_string(vt_prop.bstrVal);
-  }
-  hr = obj->Get(L"Version", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-    _version = utils::wstring_to_std_string(vt_prop.bstrVal);
-  }
-  hr = obj->Get(L"SerialNumber", 0, &vt_prop, nullptr, nullptr);
-  if (SUCCEEDED(hr) && (V_VT(&vt_prop) == VT_BSTR)) {
-    _serial_number = utils::wstring_to_std_string(vt_prop.bstrVal);
-  }
-  VariantClear(&vt_prop);
-  obj->Release();
+result<Mainboard> mainboard() {
+  return internal::wmi::query("Win32_BaseBoard", {"Manufacturer", "Product", "Version", "SerialNumber"})
+      .and_then([](const std::vector<internal::wmi::Row>& rows) -> result<Mainboard> {
+        if (rows.empty()) {
+          return std::unexpected(error{errc::not_found, "WMI: Win32_BaseBoard"});
+        }
+        const auto& board = rows.front();
+        return Mainboard{
+            .vendor = internal::dmi_string(board.string("Manufacturer")),
+            .name = internal::dmi_string(board.string("Product")),
+            .version = internal::dmi_string(board.string("Version")),
+            .serial_number = internal::dmi_string(board.string("SerialNumber")),
+        };
+      });
 }
 
 }  // namespace hwinfo

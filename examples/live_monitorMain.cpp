@@ -1,23 +1,21 @@
-// Live hardware monitor – refreshes in-place every second using the
-// hwinfo::monitoring API.  Press Ctrl+C to quit.
+// Live hardware monitor: refreshes in-place every second using hwinfo::Monitor. Press Ctrl+C to quit.
 
 #include <hwinfo/cpu.h>
 #include <hwinfo/disk.h>
-#include <hwinfo/monitoring/cpu.h>
-#include <hwinfo/monitoring/disk.h>
-#include <hwinfo/monitoring/monitor.h>
-#include <hwinfo/monitoring/ram.h>
+#include <hwinfo/gpu.h>
+#include <hwinfo/monitoring.h>
 #include <hwinfo/ram.h>
-#include <hwinfo/utils/unit.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <csignal>
-#include <iomanip>
+#include <format>
 #include <iostream>
-#include <mutex>
-#include <sstream>
+#include <optional>
+#include <ranges>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <vector>
 
@@ -25,15 +23,14 @@
 #include <windows.h>
 #endif
 
-using namespace hwinfo::unit;
 using namespace std::chrono_literals;
 
-// ---- signal handling --------------------------------------------------------
+namespace {
 
-static std::atomic<bool> g_running{true};
+std::atomic<bool> g_running{true};
 
 #ifdef _WIN32
-static BOOL WINAPI console_ctrl_handler(DWORD event) {
+BOOL WINAPI console_ctrl_handler(DWORD event) {
   if (event == CTRL_C_EVENT) {
     g_running = false;
     return TRUE;
@@ -41,12 +38,10 @@ static BOOL WINAPI console_ctrl_handler(DWORD event) {
   return FALSE;
 }
 #else
-static void signal_handler(int) { g_running = false; }
+void signal_handler(int) { g_running = false; }
 #endif
 
-// ---- helpers ----------------------------------------------------------------
-
-static void enable_ansi_on_windows() {
+void enable_ansi_on_windows() {
 #ifdef _WIN32
   HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
   DWORD mode = 0;
@@ -56,130 +51,139 @@ static void enable_ansi_on_windows() {
 #endif
 }
 
-// ASCII progress bar:  [####......]
-static std::string bar(double ratio, int width = 20) {
-  const int filled = std::max(0, std::min(width, static_cast<int>(ratio * width + 0.5)));
-  return '[' + std::string(filled, '#') + std::string(width - filled, '.') + ']';
+std::string bar(double ratio, int width = 20) {
+  const int filled = std::clamp(static_cast<int>(ratio * width + 0.5), 0, width);
+  return std::format("[{}{}]", std::string(filled, '#'), std::string(width - filled, '.'));
 }
 
-// ---- live snapshot ----------------------------------------------------------
-
 struct Snapshot {
-  hwinfo::monitoring::cpu::Data cpu;
-  hwinfo::monitoring::ram::Data ram;
-  std::vector<hwinfo::monitoring::disk::Data> disks;
+  hwinfo::result<hwinfo::CpuLoad> cpu;
+  hwinfo::result<std::vector<hwinfo::Hertz>> frequencies;
+  hwinfo::result<hwinfo::MemoryUsage> memory;
+  std::vector<std::pair<std::filesystem::path, hwinfo::result<hwinfo::DiskSpace>>> disks;
+  std::vector<hwinfo::result<hwinfo::GpuStatus>> gpus;
 };
 
-// ---- main -------------------------------------------------------------------
+template <typename T>
+std::string or_dash(const std::optional<T>& value, std::string_view spec = "{}") {
+  return value ? std::vformat(spec, std::make_format_args(*value)) : std::string("-");
+}
+
+std::string gpu_line(const hwinfo::GpuStatus& s) {
+  if (s.suspended) {
+    return "suspended (powered down)";
+  }
+  const std::string utilization =
+      s.utilization ? std::format("{} {:5.1f}%", bar(*s.utilization, 14), *s.utilization * 100.0) : "n/a";
+  return std::format("{:<23}  mem {:>9} {}  {:>6}  {:>7}", utilization, or_dash(s.memory_used, "{:.2GiB}"),
+                     s.memory_total ? std::format("of {:.1GiB}", *s.memory_total) : std::string{},
+                     s.temperature ? std::format("{:.0f}°C", *s.temperature) : std::string("-"),
+                     or_dash(s.power, "{:.1W}"));
+}
+
+}  // namespace
 
 int main() {
   enable_ansi_on_windows();
-
 #ifdef _WIN32
   SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
 #else
   std::signal(SIGINT, signal_handler);
 #endif
 
-  // Static hardware info gathered once at startup
-  const auto cpus = hwinfo::getAllCPUs();
-  const auto disks = hwinfo::getAllDisks();
-  hwinfo::Memory memory;
-
-  // Collect all mount points across all disks
-  std::vector<std::string> mount_points;
-  for (const auto& disk : disks) {
-    for (const auto& mp : disk.mount_points()) {
-      mount_points.push_back(mp);
-    }
-  }
+  // Static hardware information, gathered once
+  const auto cpus = hwinfo::cpus();
+  const auto disks = hwinfo::disks();
+  const auto memory = hwinfo::memory();
+  const auto gpus = hwinfo::gpus();
 
   std::cout << "=== hwinfo live monitor  (Ctrl+C to quit) ===\n\n";
-  for (const auto& cpu : cpus) {
-    std::cout << "CPU : " << cpu.vendor() << " " << cpu.modelName() << "  ("
-              << cpu.numPhysicalCores() << " physical / " << cpu.numLogicalCores() << " logical)\n";
+  for (const auto& cpu : cpus.value_or(std::vector<hwinfo::Cpu>{})) {
+    std::cout << std::format("CPU : {}", cpu) << '\n';
   }
-  std::cout << "RAM : " << std::fixed << std::setprecision(1)
-            << unit_prefix_to(memory.size(), IECPrefix::GIBI) << " GiB total\n";
-  for (const auto& disk : disks) {
-    std::cout << "Disk: [" << disk.id() << "] " << disk.model() << "  "
-              << unit_prefix_to(disk.size(), IECPrefix::GIBI) << " GiB  interface: " << disk.disk_interface()
-              << "  mounts:";
-    for (const auto& mp : disk.mount_points()) std::cout << ' ' << mp;
-    std::cout << '\n';
+  if (memory) {
+    std::cout << std::format("RAM : {} total", memory->total) << '\n';
+  }
+  std::vector<std::filesystem::path> mount_points;
+  for (const auto& disk : disks.value_or(std::vector<hwinfo::Disk>{})) {
+    std::cout << std::format("Disk: [{}] {}", disk.index, disk) << '\n';
+    for (const auto& mount_point : disk.mount_points) {
+      mount_points.push_back(mount_point.path);
+    }
+  }
+  std::vector<hwinfo::GpuSampler> gpu_samplers;
+  for (const auto& gpu : gpus.value_or(std::vector<hwinfo::Gpu>{})) {
+    std::cout << std::format("GPU : [{}] {}", gpu.index, gpu) << '\n';
+    gpu_samplers.emplace_back(gpu);
   }
   std::cout << '\n';
-  std::cout.flush();
 
-  // --- live rendering ----------------------------------------------------------
-
-  std::mutex render_mtx;
-  int prev_lines = 0;  // number of lines written in the last render pass
-
-  auto render = [&](const Snapshot& s) {
-    std::ostringstream out;
+  int previous_lines = 0;
+  const auto render = [&](const Snapshot& s) {
+    std::string out;
     int lines = 0;
+    const auto line = [&]<typename... Args>(std::format_string<Args...> fmt, Args&&... args) {
+      std::format_to(std::back_inserter(out), fmt, std::forward<Args>(args)...);
+      out += "\033[K\n";  // clear rest of line
+      ++lines;
+    };
 
-    // CPU – overall
-    out << std::fixed;
-    out << "CPU  avg : " << bar(s.cpu.utilization) << ' ' << std::setw(5) << std::setprecision(1)
-        << s.cpu.utilization * 100.0 << "%\n";
-    ++lines;
-
-    // CPU – per thread
-    for (std::size_t i = 0; i < s.cpu.thread_utilization.size(); ++i) {
-      const double u = s.cpu.thread_utilization[i];
-      out << "  T" << std::setw(2) << std::setfill('0') << i << std::setfill(' ') << " : "
-          << bar(u, 14) << ' ' << std::setw(5) << std::setprecision(1) << u * 100.0 << '%';
-      if (i < s.cpu.thread_frequency_hz.size() && s.cpu.thread_frequency_hz[i] > 0) {
-        out << "  " << std::setw(7) << std::setprecision(0) << unit_prefix_to(s.cpu.thread_frequency_hz[i], SiPrefix::MEGA) << " MHz";
+    if (s.cpu) {
+      line("CPU  avg : {} {:5.1f}%", bar(s.cpu->total), s.cpu->total * 100.0);
+      for (std::size_t i = 0; i < s.cpu->per_thread.size(); ++i) {
+        const double u = s.cpu->per_thread[i];
+        const auto frequency =
+            s.frequencies && i < s.frequencies->size() ? std::format("{:>10MHz}", (*s.frequencies)[i]) : std::string{};
+        line("  T{:02} : {} {:5.1f}%  {}", i, bar(u, 14), u * 100.0, frequency);
       }
-      out << '\n';
-      ++lines;
+    } else {
+      line("CPU      : {}", s.cpu.error());
     }
 
-    // RAM
-    out << std::setprecision(2);
-    out << "RAM  free: " << std::setw(7) << unit_prefix_to(s.ram.free_bytes, IECPrefix::GIBI)
-        << " GiB   available: " << std::setw(7)
-        << unit_prefix_to(s.ram.available_bytes, IECPrefix::GIBI) << " GiB\n";
-    ++lines;
-
-    // Disk – per mount point
-    for (const auto& d : s.disks) {
-      out << "Disk [" << d.mount_point << "]  free: " << std::setw(7)
-          << unit_prefix_to(d.free_bytes, IECPrefix::GIBI) << " GiB\n";
-      ++lines;
+    if (s.memory) {
+      line("RAM  free: {:>10.2GiB}   available: {:>10.2GiB}", s.memory->free, s.memory->available);
+    }
+    for (const auto& [path, space] : s.disks) {
+      if (space) {
+        line("Disk [{}]  free: {:>10.2GiB} of {:.2GiB}", path.string(), space->available, space->capacity);
+      }
     }
 
-    // Move cursor up to overwrite the previous live section
-    std::lock_guard<std::mutex> lock(render_mtx);
-    if (prev_lines > 0) {
-      std::cout << "\033[" << prev_lines << 'A';
+    for (std::size_t i = 0; i < s.gpus.size(); ++i) {
+      if (s.gpus[i]) {
+        line("GPU [{}]  : {}", i, gpu_line(*s.gpus[i]));
+      } else {
+        line("GPU [{}]  : {}", i, s.gpus[i].error());
+      }
     }
-    std::cout << out.str();
+
+    if (previous_lines > 0) {
+      std::cout << std::format("\033[{}A", previous_lines);  // move cursor up to overwrite the previous output
+    }
+    std::cout << out;
     std::cout.flush();
-    prev_lines = lines;
+    previous_lines = lines;
   };
 
-  // Fetch function: CPU blocks for 200 ms to measure utilisation
-  auto fetch_all = [&mount_points]() -> Snapshot {
-    Snapshot s;
-    s.cpu = hwinfo::monitoring::cpu::fetch(200ms);
-    s.ram = hwinfo::monitoring::ram::fetch();
-    for (const auto& mp : mount_points) {
-      s.disks.push_back(hwinfo::monitoring::disk::fetch(mp));
-    }
-    return s;
-  };
-
-  hwinfo::monitoring::Monitor<Snapshot> monitor(fetch_all, render, 1s);
-  monitor.start();
+  hwinfo::Monitor monitor{
+      1s,
+      [&mount_points, &gpu_samplers, sampler = hwinfo::CpuSampler{}]() mutable {
+        return Snapshot{
+            .cpu = sampler.sample(),
+            .frequencies = hwinfo::cpu_frequencies(),
+            .memory = hwinfo::memory_usage(),
+            .disks = std::ranges::to<std::vector>(mount_points | std::views::transform([](const auto& path) {
+                                                    return std::pair{path, hwinfo::disk_space(path)};
+                                                  })),
+            .gpus = std::ranges::to<std::vector>(gpu_samplers |
+                                                 std::views::transform([](auto& gpu) { return gpu.sample(); })),
+        };
+      },
+      render};
 
   while (g_running) {
     std::this_thread::sleep_for(100ms);
   }
-
   monitor.stop();
   std::cout << '\n';
   return 0;

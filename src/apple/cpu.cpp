@@ -1,315 +1,244 @@
-// Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
-// This software is part of HWBenchmark
+// Copyright Leon Freist
+// Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include "hwinfo/platform.h"
+#include <hwinfo/platform.h>
 
 #ifdef HWINFO_APPLE
 
-#include <mach/mach.h>
-#include <mach/mach_time.h>
-#include <sys/sysctl.h>
+#include <hwinfo/cpu.h>
+#include <mach/machine.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <format>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
-#include "hwinfo/cpu.h"
-#include "hwinfo/utils/sysctl.h"
+#include "internal/strings.h"
+#include "internal/sysctl.h"
 
 namespace hwinfo {
 
-// Helper functions to reduce code duplication
 namespace {
 
-// Check if the system is running on Apple Silicon
-bool isAppleSilicon() {
-  auto machine = utils::getSysctlString("hw.machine");
-  return machine.find("arm64") != std::string::npos;
+bool is_apple_silicon() {
+  return internal::sysctl_string("hw.machine").value_or(std::string{}).contains("arm64") ||
+         internal::sysctl_number<int>("hw.optional.arm64") == 1;
 }
 
-bool isPowerPC() {
-  int cputype = utils::getSysctlValue<int>("hw.cputype", -1);
-  return cputype == 18; // 18 is CPU_TYPE_POWERPC
-}
+bool is_powerpc() { return internal::sysctl_number<int>("hw.cputype") == CPU_TYPE_POWERPC; }
 
-// Get the number of physical CPU cores
-[[maybe_unused]] int getPhysicalCoreCount() { return utils::getSysctlValue<int>("hw.physicalcpu", 0); }
-
-// Calculate CPU frequency for Apple Silicon - simplified version
-uint64_t getCpuFrequency(bool isMax = true) {
-  // Try to get CPU frequency directly
-  return utils::getSysctlValue<uint64_t>(isMax ? "hw.cpufrequency_max" : "hw.cpufrequency", 0);
-}
-
-}  // anonymous namespace
-
-// _____________________________________________________________________________________________________________________
-[[maybe_unused]] uint64_t getMaxClockSpeed_MHz() { return getCpuFrequency(true); }
-
-// _____________________________________________________________________________________________________________________
-[[maybe_unused]] uint64_t getRegularClockSpeed_MHz() { return getCpuFrequency(false); }
-
-// _____________________________________________________________________________________________________________________
-[[maybe_unused]] uint64_t getMinClockSpeed_MHz() {
-  return utils::getSysctlValue<uint64_t>("hw.cpufrequency_min", 0) / 1000000;
-}
-
-// _____________________________________________________________________________________________________________________
-[[maybe_unused]] std::vector<int64_t> currentClockSpeed_MHz() {
-  std::vector<int64_t> clockSpeeds;
-
-  processor_info_array_t cpuInfo;
-  mach_msg_type_number_t numCpuInfo;
-  natural_t numCPUs = 0;
-  int num_cores = utils::getSysctlValue<int>("hw.logicalcpu", 0);
-
-  kern_return_t err = host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &numCPUs, &cpuInfo, &numCpuInfo);
-
-  if (err == KERN_SUCCESS) {
-    // Get CPU frequency
-    int64_t freq_mhz = utils::getSysctlValue<uint64_t>("hw.cpufrequency", 0) / 1000000;
-
-    // Fill the vector with the frequency for each logical CPU
-    clockSpeeds.resize(num_cores, freq_mhz > 0 ? freq_mhz : -1);
-
-    // Free the processor info when done
-    vm_deallocate(mach_task_self(), (vm_address_t)cpuInfo, numCpuInfo * sizeof(natural_t));
-  } else {
-    // If we can't get processor info, still resize the vector to match the number of cores
-    clockSpeeds.resize(num_cores, -1);
+std::string powerpc_model() {
+  const int subtype = internal::sysctl_number<int>("hw.cpusubtype").value_or(-1);
+  switch (subtype) {
+    case 100:
+      return "PowerPC G5 (970)";
+    case 11:
+      return "PowerPC G4 (7450)";
+    case 10:
+      return "PowerPC G4 (7400)";
+    case 9:
+      return "PowerPC G3 (750)";
+    case 1:
+      return "PowerPC 601";
+    default:
+      return std::format("PowerPC (unknown subtype: {})", subtype);
   }
-
-  return clockSpeeds;
 }
 
-// _____________________________________________________________________________________________________________________
-std::string getVendor() {
-#if defined(HWINFO_X86)
-  std::string vendor;
-  uint32_t regs[4]{0};
-  cpuid::cpuid(0, 0, regs);
-  vendor += std::string((const char*)&regs[1], 4);
-  vendor += std::string((const char*)&regs[3], 4);
-  vendor += std::string((const char*)&regs[2], 4);
-#else
-  // Try to get vendor from sysctl
-  auto vendor = utils::getSysctlString("machdep.cpu.vendor", "<unknown>");
-
-  // Check if this is Apple Silicon
-  if (vendor == "<unknown>" && isAppleSilicon()) {
+std::string vendor() {
+  if (auto vendor = internal::sysctl_attribute("machdep.cpu.vendor")) {
+    return std::move(*vendor);  // Intel: "GenuineIntel"
+  }
+  if (is_apple_silicon()) {
     return "Apple";
   }
-
-  if (vendor == "<unknown>" && isPowerPC()) {
+  if (is_powerpc()) {
     return "IBM";
   }
-#endif
-  return vendor;
+  return {};
 }
 
-// _____________________________________________________________________________________________________________________
-[[maybe_unused]] double currentUtilisation() {
-  host_cpu_load_info_data_t cpuinfo;
-  mach_msg_type_number_t count = HOST_CPU_LOAD_INFO_COUNT;
-
-  static uint64_t lastTotalTicks = 0;
-  static uint64_t lastIdleTicks = 0;
-
-  if (host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, (host_info_t)&cpuinfo, &count) == KERN_SUCCESS) {
-    uint64_t totalTicks = 0;
-    for (int i_tick = 0; i_tick < CPU_STATE_MAX; i_tick++) {
-      totalTicks += cpuinfo.cpu_ticks[i_tick];
-    }
-
-    uint64_t idleTicks = cpuinfo.cpu_ticks[CPU_STATE_IDLE];
-
-    uint64_t totalTicksSinceLastTime = totalTicks - lastTotalTicks;
-    uint64_t idleTicksSinceLastTime = idleTicks - lastIdleTicks;
-
-    lastTotalTicks = totalTicks;
-    lastIdleTicks = idleTicks;
-
-    if (totalTicksSinceLastTime > 0) {
-      return 1.0 - ((double)idleTicksSinceLastTime / totalTicksSinceLastTime);
-    }
+std::string model() {
+  if (auto brand = internal::sysctl_attribute("machdep.cpu.brand_string")) {
+    return std::move(*brand);  // e.g. "Apple M1 Pro", "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz"
   }
-
-  return -1.0;
+  if (is_apple_silicon()) {
+    return "Apple Silicon";
+  }
+  if (is_powerpc()) {
+    return powerpc_model();
+  }
+  return {};
 }
 
-// _____________________________________________________________________________________________________________________
-[[maybe_unused]] double threadUtilisation(std::uint32_t thread_index) {
-  // On macOS, getting per-thread utilization requires more complex code
-  // This is a simplified implementation that returns the same value for all threads
-  if (thread_index >= 0) {
-    processor_cpu_load_info_t cpuLoad;
-    mach_msg_type_number_t processorMsgCount;
-    natural_t processorCount;
-
-    kern_return_t err = host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &processorCount,
-                                            (processor_info_array_t*)&cpuLoad, &processorMsgCount);
-
-    if (err == KERN_SUCCESS && thread_index < processorCount) {
-      static std::vector<uint64_t> lastTotalTicks;
-      static std::vector<uint64_t> lastIdleTicks;
-
-      // Initialize on first call
-      if (lastTotalTicks.size() != processorCount) {
-        lastTotalTicks.resize(processorCount, 0);
-        lastIdleTicks.resize(processorCount, 0);
-      }
-
-      uint64_t totalTicks = 0;
-      for (int state = 0; state < CPU_STATE_MAX; state++) {
-        totalTicks += cpuLoad[thread_index].cpu_ticks[state];
-      }
-
-      uint64_t idleTicks = cpuLoad[thread_index].cpu_ticks[CPU_STATE_IDLE];
-
-      uint64_t totalTicksSinceLastTime = totalTicks - lastTotalTicks[thread_index];
-      uint64_t idleTicksSinceLastTime = idleTicks - lastIdleTicks[thread_index];
-
-      lastTotalTicks[thread_index] = totalTicks;
-      lastIdleTicks[thread_index] = idleTicks;
-
-      vm_deallocate(mach_task_self(), (vm_address_t)cpuLoad,
-                    processorMsgCount * sizeof(processor_cpu_load_info_data_t));
-
-      if (totalTicksSinceLastTime > 0) {
-        return 1.0 - ((double)idleTicksSinceLastTime / totalTicksSinceLastTime);
-      }
-    }
-
-    if (err == KERN_SUCCESS) {
-      vm_deallocate(mach_task_self(), (vm_address_t)cpuLoad,
-                    processorMsgCount * sizeof(processor_cpu_load_info_data_t));
-    }
+void add_flag(std::vector<std::string>& flags, std::string flag) {
+  if (std::ranges::find(flags, flag) == flags.end()) {
+    flags.push_back(std::move(flag));
   }
-
-  return -1.0;
 }
 
-// _____________________________________________________________________________________________________________________
-[[maybe_unused]] std::vector<double> threadsUtilisation() {
-  std::vector<double> thread_utility;
-  processor_cpu_load_info_t cpuLoad;
-  mach_msg_type_number_t processorMsgCount;
-  natural_t processorCount;
-
-  kern_return_t err = host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &processorCount,
-                                          (processor_info_array_t*)&cpuLoad, &processorMsgCount);
-
-  if (err == KERN_SUCCESS) {
-    static std::vector<uint64_t> lastTotalTicks;
-    static std::vector<uint64_t> lastIdleTicks;
-
-    // Initialize on first call
-    if (lastTotalTicks.size() != processorCount) {
-      lastTotalTicks.resize(processorCount, 0);
-      lastIdleTicks.resize(processorCount, 0);
-    }
-
-    thread_utility.resize(processorCount, -1.0);
-
-    for (natural_t i = 0; i < processorCount; i++) {
-      uint64_t totalTicks = 0;
-      for (int state = 0; state < CPU_STATE_MAX; state++) {
-        totalTicks += cpuLoad[i].cpu_ticks[state];
-      }
-
-      uint64_t idleTicks = cpuLoad[i].cpu_ticks[CPU_STATE_IDLE];
-
-      uint64_t totalTicksSinceLastTime = totalTicks - lastTotalTicks[i];
-      uint64_t idleTicksSinceLastTime = idleTicks - lastIdleTicks[i];
-
-      lastTotalTicks[i] = totalTicks;
-      lastIdleTicks[i] = idleTicks;
-
-      if (totalTicksSinceLastTime > 0) {
-        thread_utility[i] = 1.0 - ((double)idleTicksSinceLastTime / totalTicksSinceLastTime);
-      }
-    }
-
-    vm_deallocate(mach_task_self(), (vm_address_t)cpuLoad, processorMsgCount * sizeof(processor_cpu_load_info_data_t));
-  }
-
-  return thread_utility;
+std::string to_lower(std::string_view s) {
+  std::string out(s);
+  std::ranges::transform(out, out.begin(),
+                         [](char c) { return c >= 'A' && c <= 'Z' ? static_cast<char>(c - 'A' + 'a') : c; });
+  return out;
 }
 
-// _____________________________________________________________________________________________________________________
-std::string getModelName() {
-#if defined(HWINFO_X86)
-  std::string model;
-  uint32_t regs[4]{};
-  for (unsigned i = 0x80000002; i < 0x80000005; ++i) {
-    cpuid::cpuid(i, 0, regs);
-    for (auto c : std::string((const char*)&regs[0], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
+std::vector<std::string> x86_flags() {
+  std::vector<std::string> flags;
+  for (const char* name : {"machdep.cpu.features", "machdep.cpu.extfeatures", "machdep.cpu.leaf7_features"}) {
+    const auto features = internal::sysctl_string(name);
+    if (!features) {
+      continue;
     }
-    for (auto c : std::string((const char*)&regs[1], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
+    for (const auto word : internal::words(*features)) {
+      std::string flag = to_lower(word);
+      if (flag == "avx1.0") {
+        flag = "avx";
       }
-    }
-    for (auto c : std::string((const char*)&regs[2], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
-    }
-    for (auto c : std::string((const char*)&regs[3], 4)) {
-      if (std::isalnum(c) || c == '(' || c == ')' || c == '@' || c == ' ' || c == '-' || c == '.') {
-        model += c;
-      }
+      std::ranges::replace(flag, '.', '_');  // "sse4.1" -> "sse4_1"
+      add_flag(flags, std::move(flag));
     }
   }
-#else
-  std::string model = utils::getSysctlString("machdep.cpu.brand_string", "<unknown>");
-  if (model == "<unknown>" && isAppleSilicon()) {
-    model = "Apple Silicon";
-  }
-  if (model == "<unknown>" && isPowerPC()) {
-    int cpusubtype = utils::getSysctlValue<int>("hw.cpusubtype", -1);
-    switch (cpusubtype) {
-      case 100: model = "PowerPC G5 (970)"; break;
-      case 11: model = "PowerPC G4 (7450)"; break;
-      case 10: model = "PowerPC G4 (7400)"; break;
-      case 9: model = "PowerPC G3 (750)"; break;
-      case 1: model = "PowerPC 601"; break;
-      default: model = "PowerPC (unknown subtype: " + std::to_string(cpusubtype) + ")";
-    }
-  }
-#endif
-  return model;
+  return flags;
 }
 
-int getNumLogicalCores();
+std::vector<std::string> arm_flags() {
+  constexpr std::string_view features[]{
+      "AES",         "PMULL",      "SHA1",       "SHA256", "SHA512", "SHA3",  "CRC32",  "LSE",    "LSE2",
+      "FP16",        "FHM",        "DotProd",    "RDM",    "JSCVT",  "FCMA",  "LRCPC",  "LRCPC2", "FRINTTS",
+      "BF16",        "EBF16",      "I8MM",       "SME",    "SME2",   "SB",    "SSBS",   "BTI",    "DPB",
+      "DPB2",        "SME_F64F64", "SME_I16I64", "FlagM",  "FlagM2", "PAuth", "PAuth2", "FPAC",   "ECV",
+      "FPACCOMBINE", "AFP",        "RPRES",      "DIT",    "CSV2",   "CSV3",  "CSSC",   "WFxT",
+  };
+  std::vector<std::string> flags;
+  if (internal::sysctl_number<int>("hw.optional.AdvSIMD") == 1 ||
+      internal::sysctl_number<int>("hw.optional.neon") == 1) {
+    add_flag(flags, "neon");
+  }
+  if (internal::sysctl_number<int>("hw.optional.floatingpoint") == 1) {
+    add_flag(flags, "fp");
+  }
+  if (internal::sysctl_number<int>("hw.optional.armv8_crc32") == 1) {  // macOS 11
+    add_flag(flags, "crc32");
+  }
+  for (const auto feature : features) {
+    const auto name = std::format("hw.optional.arm.FEAT_{}", feature);
+    if (internal::sysctl_number<int>(name.c_str()) == 1) {
+      add_flag(flags, to_lower(feature));
+    }
+  }
+  return flags;
+}
 
-// _____________________________________________________________________________________________________________________
-int getNumPhysicalCores() { return utils::getSysctlValue<int>("hw.physicalcpu", 0); }
+std::vector<std::string> flags() {
+  if (internal::sysctl_string("machdep.cpu.features")) {
+    return x86_flags();
+  }
+  if (is_apple_silicon()) {
+    return arm_flags();
+  }
+  return {};
+}
 
-// _____________________________________________________________________________________________________________________
-int getNumLogicalCores() { return utils::getSysctlValue<int>("hw.logicalcpu", 0); }
+std::optional<Bytes> cache_size(const std::string& name) {
+  const auto size = internal::sysctl_number<std::uint64_t>(name.c_str());
+  return size && *size > 0 ? std::optional<Bytes>(Bytes{*size}) : std::nullopt;
+}
 
-[[maybe_unused]] int64_t getL1CacheSize_Bytes() { return utils::getSysctlValue<int64_t>("hw.l1dcachesize", -1); }
+std::optional<Hertz> frequency(const char* name) {
+  const auto hz = internal::sysctl_number<std::uint64_t>(name);
+  return hz && *hz > 0 ? std::optional<Hertz>(Hertz{*hz}) : std::nullopt;
+}
 
-[[maybe_unused]] int64_t getL2CacheSize_Bytes() { return utils::getSysctlValue<int64_t>("hw.l2cachesize", -1); }
+// Cores of the same type: the performance and efficiency clusters of Apple Silicon, or all cores of an Intel CPU.
+struct CoreGroup {
+  std::uint32_t physical = 0;
+  std::uint32_t logical = 0;
+  Cache cache{};
+};
 
-[[maybe_unused]] int64_t getL3CacheSize_Bytes() { return utils::getSysctlValue<int64_t>("hw.l3cachesize", -1); }
+std::vector<CoreGroup> perf_levels(const Cache& fallback) {
+  const auto count = internal::sysctl_number<std::uint32_t>("hw.nperflevels").value_or(0);
+  std::vector<CoreGroup> groups;
+  // Logical CPU numbers start with the efficiency cores: list the slowest level first.
+  for (std::uint32_t level = count; level-- > 0;) {
+    const auto prefix = std::format("hw.perflevel{}.", level);
+    const auto physical = internal::sysctl_number<std::uint32_t>((prefix + "physicalcpu").c_str());
+    const auto logical = internal::sysctl_number<std::uint32_t>((prefix + "logicalcpu").c_str());
+    if (!physical || !logical || *physical == 0) {
+      return {};
+    }
+    const auto level_cache = [&](std::string_view key, const std::optional<Bytes>& otherwise) {
+      auto size = cache_size(prefix + std::string(key));
+      return size ? size : otherwise;
+    };
+    groups.push_back(CoreGroup{
+        .physical = *physical,
+        .logical = *logical,
+        .cache =
+            Cache{
+                .l1_data = level_cache("l1dcachesize", fallback.l1_data),
+                .l1_instruction = level_cache("l1icachesize", fallback.l1_instruction),
+                .l2 = level_cache("l2cachesize", fallback.l2),
+                .l3 = level_cache("l3cachesize", fallback.l3),
+            },
+    });
+  }
+  return groups;
+}
 
-// _____________________________________________________________________________________________________________________
-std::vector<CPU> getAllCPUs() {
-  std::vector<CPU> cpus;
-  CPU cpu;
+}  // namespace
 
-  cpu._vendor = getVendor();
-  cpu._modelName = getModelName();
-  cpu._numPhysicalCores = getNumPhysicalCores();
-  cpu._numLogicalCores = getNumLogicalCores();
+result<std::vector<Cpu>> cpus() {
+  const auto physical = internal::sysctl_value<std::uint32_t>("hw.physicalcpu");
+  if (!physical) {
+    return std::unexpected(physical.error());
+  }
+  const auto logical = internal::sysctl_value<std::uint32_t>("hw.logicalcpu");
+  if (!logical) {
+    return std::unexpected(logical.error());
+  }
 
-  cpus.push_back(cpu);
+  const auto base_frequency = frequency("hw.cpufrequency");
+  const auto max_frequency = frequency("hw.cpufrequency_max");
+  const Cache cache{
+      .l1_data = cache_size("hw.l1dcachesize"),
+      .l1_instruction = cache_size("hw.l1icachesize"),
+      .l2 = cache_size("hw.l2cachesize"),
+      .l3 = cache_size("hw.l3cachesize"),
+  };
 
-  return cpus;
+  auto groups = perf_levels(cache);
+  if (groups.empty()) {
+    groups.push_back(CoreGroup{.physical = *physical, .logical = *logical, .cache = cache});
+  }
+
+  Cpu cpu{
+      .socket = 0,
+      .vendor = vendor(),
+      .model = model(),
+      .physical_cores = *physical,
+      .logical_cores = *logical,
+      .flags = flags(),
+      .cores = {},
+  };
+  for (const auto& group : groups) {
+    const std::uint32_t threads = std::max(1u, group.logical / std::max(1u, group.physical));
+    for (std::uint32_t i = 0; i < group.physical; ++i) {
+      cpu.cores.push_back(Core{
+          .id = static_cast<std::uint32_t>(cpu.cores.size()),
+          .threads = threads,
+          .cache = group.cache,
+          .base_frequency = base_frequency,
+          .max_frequency = max_frequency,
+      });
+    }
+  }
+  return std::vector<Cpu>{std::move(cpu)};
 }
 
 }  // namespace hwinfo

@@ -10,16 +10,16 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
-          - "macos-13" # x86_64
-          - "macos-15" # arm64
+          - "macos-15-intel" # x86_64
+          - "macos-15"       # arm64
 
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup gitmodules
-        run: git submodule update --init --recursive
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Build and Test
         run: ./scripts/feature-tests.shell

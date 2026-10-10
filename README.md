@@ -14,24 +14,239 @@
 
 # hwinfo
 
-hwinfo provides an easy-to-use and modern C++ API for retrieving hardware information of your systems components such as
-CPU, RAM, GPU, Disks, Mainboard, ...
+hwinfo provides an easy-to-use and modern C++23 API for retrieving hardware information of your system's components such
+as CPU, RAM, GPU, disks, mainboard, battery and network interfaces, and for monitoring their utilization.
+
+```c++
+#include <hwinfo/hwinfo.h>
+
+#include <print>
+
+int main() {
+  auto cpus = hwinfo::cpus();  // hwinfo::result<std::vector<hwinfo::Cpu>>, i.e. std::expected<..., hwinfo::error>
+  if (!cpus) {
+    std::println(stderr, "{}", cpus.error());  // e.g. "cannot read /proc/cpuinfo: No such file or directory"
+    return 1;
+  }
+  for (const auto& cpu : *cpus) {
+    std::println("{} {}: {} cores, L3 {}", cpu.vendor, cpu.model, cpu.physical_cores,
+                 cpu.cores.front().cache.l3.value_or(hwinfo::Bytes{}));
+  }
+  if (auto os = hwinfo::os()) {
+    std::println("{}", *os);  // every type is formattable: "Ubuntu 24.04.1 LTS (x86_64, kernel 6.8.0-45-generic)"
+  }
+}
+```
 
 > **Note**
 >
 > If you face any issues, find bugs or if your platform is not supported yet, do not hesitate
 > to [create an issue](https://github.com/lfreist/hwinfo/issues).
 
+## Contribution Quality Standards
+
+hwinfo encourages you to utilize modern AI *assisted* development. However, there are ground rules that apply when using
+AI for development:
+
+- AI must not replace your own reasoning about an issue. Blindly delegating a problem to an AI and accepting its
+  proposed solution without understanding or critically evaluating it is likely to introduce incorrect assumptions and,
+  consequently, poor code.
+- You are responsible for whatever you commit. This means that you must understand not only the code lines but the
+  architecture and the imlications of your commit to the project.
+
+Those rules generally result in much better code quality. This is a free open source project. It is not about pushing
+features as fast as possible but about developing and maintaining a stable and clean software architecture.
+
+If a contribution demonstrates that its author has not adequately considered the problem, the proposed solution, or its
+implications for the project, I may reject it without further review.
+
+This is not an anti-AI position. It is a commitment to thoughtful engineering, sound architectural decisions, and
+long-term maintainability. I don't have the time to compensate for contributions that lack these qualities, regardless
+of how they were produced.
+
 ## Content
 
 - [hwinfo](#hwinfo)
-  - [Content](#content)
-  - [Supported Components](#supported-components)
-  - [Build `hwinfo`](#build-hwinfo)
-  - [Example](#example)
-  - [include hwinfo to cmake project](#include-hwinfo-to-cmake-project)
-    - [Include installed version](#include-installed-version)
-    - [As git submodule](#as-git-submodule)
+    - [Content](#content)
+    - [Requirements](#requirements)
+    - [Usage](#usage)
+        - [Queries](#queries)
+        - [Error handling](#error-handling)
+        - [Units](#units)
+        - [Monitoring](#monitoring)
+    - [Supported Components](#supported-components)
+    - [Build `hwinfo`](#build-hwinfo)
+    - [Example](#example)
+    - [include hwinfo to cmake project](#include-hwinfo-to-cmake-project)
+        - [Include installed version](#include-installed-version)
+        - [As git submodule](#as-git-submodule)
+    - [Migrating from hwinfo 1.x](#migrating-from-hwinfo-1x)
+
+## Requirements
+
+hwinfo 2 requires C++23 (`std::expected`, `std::format`, ranges). Tested compilers:
+
+- GCC 14 or newer
+- Clang 20 or newer (libstdc++ 14 or libc++ 20)
+- Apple Clang 16 (Xcode 16) or newer
+- MSVC 19.40 (Visual Studio 2022 17.10) or newer
+- MinGW-w64 with GCC 14 or newer
+
+## Usage
+
+### Queries
+
+Every component is a plain aggregate returned by a free function:
+
+| Function                       | Returns                                                      | Header                     |
+|--------------------------------|--------------------------------------------------------------|----------------------------|
+| `hwinfo::computer()`           | `result<Computer>` (vendor, model, chassis)                  | `hwinfo/computer.h`        |
+| `hwinfo::cpus()`               | `result<std::vector<Cpu>>` (one per socket)                  | `hwinfo/cpu.h`             |
+| `hwinfo::memory()`             | `result<Memory>` (total + installed modules)                 | `hwinfo/ram.h`             |
+| `hwinfo::gpus()`               | `result<std::vector<Gpu>>`                                   | `hwinfo/gpu.h`             |
+| `hwinfo::disks()`              | `result<std::vector<Disk>>`                                  | `hwinfo/disk.h`            |
+| `hwinfo::os()`                 | `result<Os>`                                                 | `hwinfo/os.h`              |
+| `hwinfo::virtualization()`     | `result<Virtualization>` (VM, container)                     | `hwinfo/virtualization.h`  |
+| `hwinfo::resource_limits()`    | `result<ResourceLimits>` (CPU quota, memory limit, affinity) | `hwinfo/resource_limits.h` |
+| `hwinfo::mainboard()`          | `result<Mainboard>`                                          | `hwinfo/mainboard.h`       |
+| `hwinfo::batteries()`          | `result<std::vector<Battery>>`                               | `hwinfo/battery.h`         |
+| `hwinfo::network_interfaces()` | `result<std::vector<NetworkInterface>>`                      | `hwinfo/network.h`         |
+
+Values are regular types (copyable, comparable, formattable), which makes them easy to use with ranges:
+
+```c++
+using namespace hwinfo::literals;
+
+auto large_disks = hwinfo::disks().transform([](std::vector<hwinfo::Disk> disks) {
+  return disks | std::views::filter([](const hwinfo::Disk& d) { return d.size > 1_TiB; })
+               | std::ranges::to<std::vector>();
+});
+
+bool avx2 = hwinfo::cpus().transform([](const auto& cpus) { return cpus.front().has_flag("avx2"); }).value_or(false);
+```
+
+Information that the platform does not expose, or that requires elevated privileges, is a `std::optional` (e.g.
+`Disk::serial_number`, `Gpu::driver_version`, `Mainboard::serial_number`) instead of a placeholder string.
+
+`hwinfo::computer()` identifies the machine as a product (e.g. a notebook or prebuilt PC) and gives access to its
+components. Each member function queries on call, so only the components you use need to be linked:
+
+```c++
+if (auto pc = hwinfo::computer()) {
+  std::println("{} ({})", *pc, pc->chassis);  // "LENOVO 21CBCTO1WW (laptop)"
+  auto gpus = pc->gpus();                      // same as hwinfo::gpus()
+}
+```
+
+`hwinfo::virtualization()` reports the VM and the container the process runs in. Both can be present at once (e.g. a
+Docker container on a cloud VM). Detection is heuristic: an empty `vm` or `container` means "nothing detected", and
+`Hypervisor::unknown` / `ContainerRuntime::unknown` are regular results.
+
+Inside a container, `cpus()` and `memory()` still describe the host. `hwinfo::resource_limits()` returns what the
+process may actually use (cgroups on Linux, job objects on Windows), also outside of containers, e.g. in a systemd unit
+or a batch job:
+
+```c++
+if (auto v = hwinfo::virtualization()) {
+  std::println("{}", *v);  // e.g. "Docker container on KVM VM"
+}
+if (auto limits = hwinfo::resource_limits(); limits && limits->cpu_quota) {
+  std::println("CPU quota: {:.1f} cores", *limits->cpu_quota);  // e.g. "CPU quota: 1.5 cores"
+}
+```
+
+### Error handling
+
+All queries return `hwinfo::result<T>`, an alias for `std::expected<T, hwinfo::error>`. A query fails only if its data
+source is unavailable (e.g. `/proc/cpuinfo` cannot be read or the WMI connection fails); attributes that cannot be
+determined individually are `std::nullopt`. An empty vector means that no such device is present.
+
+`hwinfo::error` wraps a `std::error_code` (keeping the original `errno` / Win32 / IOKit code) plus a context string, and
+compares equal to the portable conditions in `hwinfo::errc`:
+
+```c++
+auto board = hwinfo::mainboard();
+if (!board && board.error() == hwinfo::errc::not_supported) {
+  // e.g. no DMI information on this ARM board
+} else if (!board && board.error() == hwinfo::errc::permission_denied) {
+  // ...
+}
+std::println("{}", board.error());                 // "<context>: <message>"
+std::error_code ec = board.error().code();         // the underlying code
+```
+
+### Units
+
+Sizes, frequencies, data rates and energies are strong types: `hwinfo::Bytes`, `hwinfo::Hertz`, `hwinfo::DataRate`
+and `hwinfo::Energy`. They are formatted with automatic scaling, support an explicit unit and precision in the format
+spec, and can be converted to any unit:
+
+```c++
+using namespace hwinfo::literals;
+
+std::println("{}", memory->total);                   // "31.1 GiB"
+std::println("{:.0MiB}", memory->total);             // "31854 MiB"
+std::println("{:>12.3GHz}", *core.max_frequency);    // "   5.400 GHz"
+double gib = memory->total.to(hwinfo::ByteUnit::GiB);
+bool large = memory->total > 16_GiB;
+```
+
+### Monitoring
+
+Dynamic values live in `hwinfo/monitoring.h`:
+
+```c++
+hwinfo::CpuSampler sampler;                          // takes a baseline, no global state
+std::this_thread::sleep_for(500ms);
+auto load = sampler.sample();                        // result<CpuLoad>: total and per-thread utilization in [0, 1]
+
+auto frequencies = hwinfo::cpu_frequencies();        // result<std::vector<Hertz>>
+auto ram = hwinfo::memory_usage();                   // result<MemoryUsage>: total, free, available
+auto space = hwinfo::disk_space("/");                // result<DiskSpace>: capacity, free, available
+auto battery = hwinfo::battery_status(0);            // result<BatteryStatus>: state, charge in [0, 1]
+
+hwinfo::GpuSampler gpu((*hwinfo::gpus())[0]);       // like CpuSampler, for one GPU
+auto status = gpu.sample();                          // result<GpuStatus>: utilization, VRAM used, temperature, power, ...
+
+// periodic updates on a background thread (std::jthread), stopped on destruction
+hwinfo::Monitor monitor{1s, [s = hwinfo::CpuSampler{}]() mutable { return s.sample(); },
+                        [](const hwinfo::result<hwinfo::CpuLoad>& load) {
+                          if (load) std::println("{:.1f}%", load->total * 100);
+                        }};
+```
+
+See [live_monitorMain.cpp](examples/live_monitorMain.cpp) for a complete example.
+
+### GPU vendor libraries
+
+`gpus()` and `GpuSampler` start from what the operating system reports and add details from vendor and compute
+libraries, if installed. They are loaded at runtime (`dlopen` / `LoadLibrary`): hwinfo has no build or link dependency
+on any of them, and a missing library is simply skipped.
+
+| Library                                                | Ships with            | Adds                                                                                                   |
+|--------------------------------------------------------|-----------------------|--------------------------------------------------------------------------------------------------------|
+| NVML (`libnvidia-ml` / `nvml.dll`)                     | NVIDIA driver         | marketing name, UUID, architecture, CUDA cores, clocks, VRAM, bus width, power limit, VBIOS; live data |
+| CUDA driver API (`libcuda` / `nvcuda.dll`)             | NVIDIA driver         | SM count, compute capability, L2 cache                                                                 |
+| Level Zero (`libze_loader` / `ze_loader.dll`)          | Intel compute runtime | Xe-cores, EUs, IP version / architecture, memory, PCIe; live data via Sysman                           |
+| OpenCL (`libOpenCL` / `OpenCL.dll` / OpenCL.framework) | any vendor's driver   | compute units, clocks, memory, cache (fallback for all vendors)                                        |
+
+AMD GPUs on Linux are covered by the amdgpu / KFD sysfs files of the kernel driver (no ROCm needed). Vendor libraries
+take precedence over OpenCL, which takes precedence over the operating system. Devices are matched by PCI address, LUID
+or UUID, never by name.
+
+```c++
+auto all = hwinfo::gpus();                               // OS + every installed library
+auto fast = hwinfo::gpus(hwinfo::GpuQuery::os_only());   // OS only
+auto no_cl = hwinfo::gpus({.opencl = false});
+```
+
+Things to know:
+
+- The first use of CUDA or OpenCL in a process takes ~100 ms each; the libraries stay loaded afterwards.
+- Vendor libraries power up a discrete GPU that is runtime suspended (idle laptop dGPUs). `GpuQuery::os_only()` never
+  does. `GpuSampler` does not wake up a suspended GPU (Linux): it reports `suspended` instead.
+- Live data of Intel integrated GPUs needs access to the i915 / xe perf PMU (`perf_event_paranoid` <= 2 or
+  `CAP_PERFMON`); otherwise utilization stays empty.
 
 ## Supported Components
 
@@ -40,82 +255,93 @@ CPU, RAM, GPU, Disks, Mainboard, ...
 > The listed components that are not yet implemented (indicated with ❌) are in development and will be supported in
 > future releases. **You are welcome to start contributing and help improving this library!**
 
-| Component        | Info               | Linux | Apple | Windows |
-|------------------|:-------------------|:-----:|:-----:|:-------:|
-| CPU              | Vendor             |  ✔️   |  ✔️   |   ✔️    |
-|                  | Model              |  ✔️   |  ✔️   |   ✔️    |
-|                  | Frequency          |  ✔️   |  ❌️   |   ✔️    |
-|                  | Physical Cores     |  ✔️   |  ✔️   |   ✔️    |
-|                  | Logical Cores      |  ✔️   |  ✔️   |   ✔️    |
-|                  | Cache Size         |  ✔️   |  ✔️️  |   ✔️    |
-| GPU              | Vendor             |  ✔️   |  ❌️   |   ✔️    |
-|                  | Model              |  ✔️   |  ❌️   |   ✔️    |
-|                  | Memory Size        |   ❌   |   ❌   |   ✔️    |
-| Memory (RAM)     | Vendor             |   ❌   |   ❌   |   ✔️    |
-|                  | Model              |   ❌   |   ❌   |   ✔️    |
-|                  | Name               |   ❌   |   ❌   |   ✔️    |
-|                  | Serial Number      |   ❌   |   ❌   |   ✔️    |
-|                  | Total Memory Size  |  ✔️   |  ✔️   |   ✔️    |
-|                  | Free Memory Size   |  ✔️   |  ✔️   |   ✔️    |
-| Mainboard        | Vendor             |  ✔️   |  ✔️   |   ✔️    |
-|                  | Model              |  ✔️   |   ❌   |   ✔️    |
-|                  | Version            |  ✔️   |   ❌   |   ✔️    |
-|                  | Serial-Number      |   ❌   |  ✔️   |   ✔️    |
-|                  | Bios               |   ❌   |   ❌   |    ❌    |
-| Disk             | Vendor             |  ✔️   |  ✔️   |   ✔️    |
-|                  | Model              |  ✔️   |  ✔️   |   ✔️    |
-|                  | Serial-Number      |  ✔️   |  ✔️   |   ✔️    |
-|                  | Size               |  ✔️   |  ✔️   |   ✔️    |
-|                  | Free Size          |  ✔️   |  ✔️   |   ✔️    |
-|                  | Volumes            |  ✔️   |  ✔️   |   ✔️    |
-| Operating System | Name               |  ✔️   |  ✔️   |   ✔️    |
-|                  | Short Name         |  ✔️   |  ✔️   |   ✔️    |
-|                  | Version            |  ✔️   |  ✔️   |    ❌    |
-|                  | Kernel             |  ✔️   |  ✔️   |    ❌    |
-|                  | Architecture (Bit) |  ✔️   |  ✔️   |   ✔️    |
-|                  | Endianess          |  ✔️   |  ✔️   |   ✔️    |
-| Battery          | Vendor             |  ✔️   |  ❌️   |    ❌    |
-|                  | Model              |  ✔️   |   ❌   |    ❌    |
-|                  | Serial Number      |  ✔️   |  ✔️   |    ❌    |
-|                  | Technology         |  ✔️   |   ❌   |    ❌    |
-|                  | Capacity           |  ✔️   |  ✔️   |   ️❌    |
-|                  | Charging           |  ✔️   |  ✔️   |    ❌    |
+| Component        | Info                                                                          |        Linux         |                             Apple                             |                   Windows                    |
+|------------------|-------------------------------------------------------------------------------|:--------------------:|:-------------------------------------------------------------:|:--------------------------------------------:|
+| CPU              | Vendor, model                                                                 |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Physical / logical cores                                                      |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Cache sizes                                                                   |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Base / max frequency                                                          |          ✔️          |                          Intel only                           |                      ✔️                      |
+|                  | Feature flags                                                                 |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Utilization (`CpuSampler`)                                                    |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Current frequency                                                             |          ✔️          |                        Intel (nominal)                        |                      ✔️                      |
+| GPU              | Vendor, model, PCI id / address                                               |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Integrated / discrete, unified memory                                         |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Driver version                                                                |          ✔️          |                              ❌                               |                      ✔️                      |
+|                  | Memory size                                                                   |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | UUID, architecture, compute capability, cores, clocks, bus width, power limit |  NVIDIA, Intel, AMD  |                              ❌                               |                NVIDIA, Intel                 |
+|                  | Utilization, VRAM used, temperature, power (`GpuSampler`)                     |  NVIDIA, Intel, AMD  |                      utilization, memory                      | ✔️ (utilization, memory); NVIDIA, Intel: all |
+| Memory (RAM)     | Total                                                                         |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Modules (vendor, model, serial, size, frequency)                              |          ❌          |                              ❌                               |                      ✔️                      |
+|                  | Free / available                                                              |          ✔️          |                              ✔️                               |                      ✔️                      |
+| Computer         | Vendor, model, serial number                                                  |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Family, version, SKU                                                          |          ✔️          |                    family (marketing name)                    |                      ✔️                      |
+|                  | Chassis type                                                                  |          ✔️          |                          from model                           |                      ✔️                      |
+| Mainboard        | Vendor, name                                                                  |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Version                                                                       |          ✔️          |                              ❌                               |                      ✔️                      |
+|                  | Serial number                                                                 |         root         |                              ✔️                               |                      ✔️                      |
+| Disk             | Vendor, model, serial number                                                  |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Size, bus type                                                                |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Mount points, filesystem                                                      |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Free space (`disk_space`)                                                     |          ✔️          |                              ✔️                               |                      ✔️                      |
+| Operating System | Name, version, kernel                                                         |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Family, marketing name                                                        |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Architecture, bits                                                            |          ✔️          |                              ✔️                               |                      ✔️                      |
+| Virtualization   | VM, hypervisor                                                                |          ✔️          | ✔️ (Apple silicon: Apple Virtualization only, others unknown) |                      ✔️                      |
+|                  | Container, runtime                                                            |          ✔️          |                   ➖ (no native containers)                   |       Windows containers (no runtime)        |
+|                  | Kubernetes                                                                    |          ✔️          |                              ➖                               |                      ✔️                      |
+| Resource limits  | CPU quota, memory limit                                                       | ✔️ (cgroups v1 / v2) |                      ➖ (no such limits)                      |               ✔️ (job objects)               |
+|                  | Allowed CPUs (affinity)                                                       |          ✔️          |                           ➖ (all)                            |                      ✔️                      |
+| Battery          | Vendor, model, serial number                                                  |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Technology                                                                    |          ✔️          |                              ❌                               |                      ✔️                      |
+|                  | Capacity                                                                      |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | State, charge                                                                 |          ✔️          |                              ✔️                               |                      ✔️                      |
+| Network          | Name, index, MAC, IPv4 / IPv6, state                                          |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Description                                                                   |          ❌          |                              ❌                               |                      ✔️                      |
 
-All components are available via the `hwinfo::hwinfo` target, or via individual CMake targets, which you can choose and
-link against depending on your needs.
+All components are available via the `lfreist-hwinfo::hwinfo` target, or via individual CMake targets, which you can
+choose and link against depending on your needs.
 
 ```cmake
-target_link_libraries(your_target PRIVATE hwinfo::hwinfo)
+target_link_libraries(your_target PRIVATE lfreist-hwinfo::hwinfo)
 ```
 
 or
 
 ```cmake
 target_link_libraries(
-  your_target
-  PRIVATE hwinfo::cpu
-          hwinfo::gpu
-          hwinfo::ram
-          hwinfo::mainboard
-          hwinfo::disk
-          hwinfo::os
-          hwinfo::battery)
+        your_target
+        PRIVATE lfreist-hwinfo::computer
+        lfreist-hwinfo::cpu
+        lfreist-hwinfo::gpu
+        lfreist-hwinfo::ram
+        lfreist-hwinfo::mainboard
+        lfreist-hwinfo::disk
+        lfreist-hwinfo::os
+        lfreist-hwinfo::battery
+        lfreist-hwinfo::network)
 ```
 
 The CMake options control which components will be built and available in the library:
 
 - `HWINFO_OS` "Enable OS detection" (default to `ON`)
+- `HWINFO_COMPUTER` "Enable computer detection" (default to `ON`)
 - `HWINFO_MAINBOARD` "Enable mainboard detection" (default to `ON`)
 - `HWINFO_CPU` "Enable CPU detection" (default to `ON`)
 - `HWINFO_DISK` "Enable disk detection" (default to `ON`)
 - `HWINFO_RAM` "Enable RAM detection" (default to `ON`)
 - `HWINFO_GPU` "Enable GPU detection" (default to `ON`)
-- `HWINFO_GPU_OPENCL` "Enable usage of OpenCL in GPU information" (default to `OFF`)
+- `HWINFO_GPU_BACKENDS` "Load vendor GPU libraries (NVML, CUDA, Level Zero, OpenCL) at runtime, if installed"
+  (default to `ON`)
 - `HWINFO_BATTERY` "Enable battery detection" (default to `ON`)
+- `HWINFO_NETWORK` "Enable network interface detection" (default to `ON`)
+
+The monitoring functions are part of their component's library: `CpuSampler` and `cpu_frequencies()` of `cpu`,
+`memory_usage()` of `ram`, `battery_status()` of `battery` and `GpuSampler` of `gpu`; `disk_space()` and `Monitor` are
+header-only. `virtualization()` and `resource_limits()` are part of the `os` library.
 
 ## Build `hwinfo`
 
-> Requirements: git, cmake, c++ compiler (gcc, clang, MSVC)
+> Requirements: git, cmake (>= 3.22), a C++23 compiler (see [Requirements](#requirements))
 
 1. Download repository:
     ```
@@ -123,11 +349,14 @@ The CMake options control which components will be built and available in the li
     ```
 2. Build using cmake:
     ```bash
-    mkdir build
-    cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CONFIGURATION_TYPES=Release
+    cmake -B build -DCMAKE_BUILD_TYPE=Release
     cmake --build build --config Release
     ```
-   This builds static and dynamic libraries. Static library cmake targets are named `<target>_static` (e.g. `hwinfo_static`)
+   Shared libraries are built by default; pass `-DHWINFO_STATIC=ON` for static libraries.
+3. Run the tests (GoogleTest is downloaded automatically if it is not installed):
+    ```bash
+    ctest --test-dir build -C Release --output-on-failure
+    ```
 
 ## Example
 
@@ -136,78 +365,134 @@ See [system_infoMain.cpp](examples/system_infoMain.cpp)
 The output should look similar to this one:
 
 ```
-Hardware Report:
-
------------------------------------ CPU -----------------------------------
-Socket 0:
- vendor:            GenuineIntel
- model:             Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz
- physical cores:    8
- logical cores:     16
- max frequency:     3792
- regular frequency: 3792
- min frequency:     -1
- current frequency: 3792
- cache size:        16777216
------------------------------------ OS ------------------------------------
-Operating System:   Microsoft Windows 11 Professional (build 22621)
-short name:         Windows
-version:            <unknown>
-kernel:             <unknown>
-architecture:       64 bit
-endianess:          little endian
------------------------------------ GPU -----------------------------------
-GPU 0:
-  vendor:           NVIDIA
-  model:            NVIDIA GeForce RTX 3070 Ti
-  driverVersion:    31.0.15.2698
-  memory [MiB]:     8190
-  min frequency:    0
-  cur frequency:    0
-  max frequency:    0
------------------------------------ RAM -----------------------------------
-vendor:             Corsair
-model:              CMK32GX4M2Z3600C18
-name:               Physical Memory
-serial-number:      ***
-size [MiB]:         65437
-free [MiB]:         54405
-available [MiB]:    54405
-------------------------------- Main Board --------------------------------
-vendor:             ASUSTeK COMPUTER INC.
-name:               PRIME Z490-A
-version:            Rev 1.xx
-serial-number:      ***
-------------------------------- Batteries ---------------------------------
-No Batteries installed or detected
---------------------------------- Disks -----------------------------------
-Disk 0:
-  vendor:           (Standard disk drives)
-  model:            WD_BLACK SN850 Heatsink 1TB
-  serial-number:    ***.
-  size:             1000202273280
-Disk 1:
-  vendor:           (Standard disk drives)
-  model:            Intenso SSD Sata III
-  serial-number:    ***
-  size:             120031511040
-Disk 2:
-  vendor:           (Standard disk drives)
-  model:            KINGSTON SA400S37240G
-  serial-number:    ***
-  size:             240054796800
-Disk 3:
-  vendor:           (Standard disk drives)
-  model:            WDS500G3X0C-00SJG0
-  serial-number:    ***.
-  size:             500105249280
-Disk 4:
-  vendor:           (Standard disk drives)
-  model:            ST750LM022 HN-M750MBB
-  serial-number:    ***
-  size:             750153761280
----------------------------------------------------------------------------
-
+------------------------------------- CPU --------------------------------------
+Socket 0
+  vendor:               GenuineIntel
+  model:                13th Gen Intel(R) Core(TM) i7-13700H
+  cores:                14 (20 threads)
+  flags:                138 flags
+  core -> logical ids:  0:[0,1], 4:[2,3], 8:[4,5], 12:[6,7], 16:[8,9], 20:[10,11], 24:[12], 25:[13], 26:[14], 27:[15], 28:[16], 29:[17], 30:[18], 31:[19]
+  L1d / L1i:            48.0 KiB / 32.0 KiB
+  L2 / L3:              1.2 MiB / 24.0 MiB
+  base frequency:       2.40 GHz
+  max frequency:        4.80 GHz
+------------------------------- Operating System -------------------------------
+  family:               Linux
+  name:                 Ubuntu
+  marketing name:       Resolute Raccoon
+  version:              26.04.1 LTS (Resolute Raccoon)
+  kernel:               7.0.0-34-generic
+  architecture:         x86_64 (64-bit)
+-------------------------------- Virtualization --------------------------------
+  environment:          none detected
+  cpu quota:            none
+  memory limit:         none
+  allowed cpus:         20
+------------------------------------- GPU --------------------------------------
+GPU 0
+  vendor:               Intel Corporation
+  model:                Intel(R) Iris(R) Xe Graphics
+  type:                 integrated
+  unified memory:       yes
+  uuid:                 ***
+  architecture:         Xe-LP
+  compute capability:   12.3.0
+  compute units:        6
+  cores:                768
+  driver:               i915
+  driver version:       26.05.037020
+  vbios version:        <unknown>
+  memory:               <unknown>
+  memory type:          <unknown>
+  memory bus width:     <unknown>
+  L2 cache:             480.0 KiB
+  max frequency:        1.50 GHz
+  max memory frequency: <unknown>
+  power limit:          <unknown>
+  compute APIs:         Level Zero 1.14, OpenCL 3.0 NEO
+  pci id:               8086:a7a0
+  pci address:          0000:00:02.0
+  pcie link:            <unknown>
+GPU 1
+  vendor:               NVIDIA Corporation
+  model:                NVIDIA GeForce RTX 4070 Laptop GPU
+  type:                 discrete
+  unified memory:       no
+  uuid:                 ***
+  architecture:         Ada Lovelace
+  compute capability:   8.9
+  compute units:        36
+  cores:                4608
+  driver:               nvidia
+  driver version:       595.91.07
+  vbios version:        95.06.17.00.62
+  memory:               8.0 GiB
+  memory type:          <unknown>
+  memory bus width:     128 bit
+  L2 cache:             32.0 MiB
+  max frequency:        3.10 GHz
+  max memory frequency: 8.00 GHz
+  power limit:          60.0 W
+  compute APIs:         CUDA 13.2, OpenCL 3.0 CUDA
+  pci id:               10de:2820
+  pci address:          0000:01:00.0
+  pcie link:            PCIe 4.0 x8
+------------------------------------ Memory ------------------------------------
+  total:                14.9 GiB
+----------------------------------- Computer -----------------------------------
+  vendor:               SchenkerTechnologiesGmbH
+  model:                SCHENKER VISION (M23)
+  family:               <unknown>
+  version:              Standard
+  sku:                  SVS14M23 / SVS16M23
+  serial number:        <unknown>
+  chassis:              laptop
+---------------------------------- Mainboard -----------------------------------
+  vendor:               NB02
+  name:                 PH6PG01_PH6PG71
+  version:              Standard
+  serial number:        <unknown>
+---------------------------------- Batteries -----------------------------------
+Battery 0
+  vendor:               OEM
+  model:                standard
+  serial number:        00001
+  technology:           Li-ion
+  capacity:             60.4 Wh
+  state:                full
+  charge:               100%
+------------------------------------ Disks -------------------------------------
+Disk 0
+  vendor:               <unknown>
+  model:                KINGSTON SFYRS1000G
+  serial number:        ***
+  bus:                  NVMe
+  size:                 931.5 GiB
+  link speed:           <unknown>
+  mount points:         
+Disk 1
+  vendor:               <unknown>
+  model:                SAMSUNG MZVL2512HDJD-00B07
+  serial number:        ***
+  bus:                  NVMe
+  size:                 476.9 GiB
+  link speed:           <unknown>
+  mount points:         / (ext4), /boot/efi (vfat)
+----------------------------------- Network ------------------------------------
+Interface 2
+  name:                 wlo1
+  description:          <unknown>
+  state:                up
+  mac:                  ***
+  ipv4:                 ***
+  ipv6:                 ***
+Interface 4
+  name:                 br-0442e9d65826
+  description:          <unknown>
+  state:                up
+  mac:                  ***
+  ipv4:                 ***
+  ipv6:                 ***
 ```
 
 ## include hwinfo to cmake project
@@ -217,15 +502,14 @@ Disk 4:
 1. Install hwinfo
    ```
    git clone https://github.com/lfreist/hwinfo && cd hwinfo
-   mkdir build
-   cmake -B build && cmake --build build
+   cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
    cmake --install build
    ```
 2. Simply add the following to your `CMakeLists.txt` file:
     ```cmake
     # file: CMakeLists.txt
-    
-    find_package(hwinfo REQUIRED)
+
+    find_package(lfreist-hwinfo 2 REQUIRED)
     ```
 3. Include `hwinfo` into your `.cpp/.h` files:
     ```c++
@@ -233,9 +517,9 @@ Disk 4:
 
     #include <hwinfo/hwinfo.h>
 
-   int main(int argc, char** argv) {
-     // Your code
-   }
+    int main(int argc, char** argv) {
+      // Your code
+    }
     ```
 4. Link it in cmake
     ```cmake
@@ -265,12 +549,32 @@ Disk 4:
 
     #include "hwinfo/hwinfo.h"
 
-   int main(int argc, char** argv) {
-     // Your code
-   }
+    int main(int argc, char** argv) {
+      // Your code
+    }
     ```
 4. Link it in cmake
     ```cmake
     add_executable(your_executable your_executable.cpp)
     target_link_libraries(your_executable PUBLIC lfreist-hwinfo::hwinfo)
     ```
+
+## Migrating from hwinfo 1.x
+
+hwinfo 2 is a breaking release. The most important changes:
+
+| hwinfo 1.x                                                          | hwinfo 2                                                                                                         |
+|---------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| C++17                                                               | C++23                                                                                                            |
+| `getAllCPUs()`, `getAllDisks()`, `getAllGPUs()`, ...                | `cpus()`, `disks()`, `gpus()`, `batteries()`, `network_interfaces()`                                             |
+| `OS os;`, `MainBoard board;`, `Memory memory;` (constructors)       | `os()`, `mainboard()`, `memory()`                                                                                |
+| classes with getters (`cpu.modelName()`)                            | aggregates with public members (`cpu.model`)                                                                     |
+| `"<unknown>"`, `-1`, `0` on failure                                 | `std::expected` for failed queries, `std::optional` for missing values                                           |
+| `uint64_t` bytes / Hz, `unit_prefix_to(...)`                        | `hwinfo::Bytes` / `hwinfo::Hertz`, formattable, `.to(ByteUnit::GiB)`                                             |
+| `operator<<`                                                        | `std::formatter` (`std::format`, `std::print`)                                                                   |
+| `hwinfo::monitor::cpu::*`, `hwinfo::monitoring::{cpu,ram,disk}::*`  | `CpuSampler`, `cpu_frequencies()`, `memory_usage()`, `disk_space()`, `battery_status()` in `hwinfo/monitoring.h` |
+| `Memory::free()` / `available()`, `Battery::capacity()` / `state()` | `memory_usage()`, `battery_status(index)`                                                                        |
+| `OS::isBigEndian()` / `isLittleEndian()`                            | `std::endian::native`                                                                                            |
+| `Disk::Interface::USB3_10GBit`, ...                                 | `DiskBus::usb` + `Disk::link_speed_gbps`                                                                         |
+| `hwinfo/utils/*.h` (string utilities, WMI, sysctl, ...)             | removed from the public API                                                                                      |
+| `find_package(hwinfo)`, `lfreist-hwinfo::hwinfo_cpu`                | `find_package(lfreist-hwinfo)`, `lfreist-hwinfo::cpu`                                                            |

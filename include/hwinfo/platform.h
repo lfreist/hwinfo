@@ -8,7 +8,6 @@
 #endif
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #define HWINFO_WINDOWS
-#define NOMINMAX
 #endif
 
 #if defined(__x86_64__) || defined(__x86_64) || defined(__amd64__) || defined(_M_X64)
@@ -44,14 +43,4 @@
 #endif
 #else
 #define HWINFO_API __attribute__((visibility("default")))
-#endif
-
-#if defined(__has_cpp_attribute)
-#if __has_cpp_attribute(nodiscard)
-#define HWI_NODISCARD [[nodiscard]]
-#endif
-#endif
-
-#ifndef HWI_NODISCARD
-#define HWI_NODISCARD
 #endif

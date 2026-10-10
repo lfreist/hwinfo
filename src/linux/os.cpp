@@ -1,62 +1,70 @@
-// Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
-// This software is part of HWBenchmark
+// Copyright Leon Freist
+// Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include "hwinfo/platform.h"
+#include <hwinfo/platform.h>
 
 #ifdef HWINFO_UNIX
 
-#include <sys/stat.h>
+#include <hwinfo/os.h>
 #include <sys/utsname.h>
 
-#include <fstream>
+#include <cerrno>
 #include <string>
+#include <string_view>
 
-#include "hwinfo/os.h"
-#include "hwinfo/utils/stringutils.h"
+#include "internal/file.h"
+#include "internal/procfs.h"
 
 namespace hwinfo {
 
-// _____________________________________________________________________________________________________________________
-OS::OS() {
-  {  // name and version
-    std::string line;
-    std::ifstream stream("/etc/os-release");
-    if (!stream) {
-      _name = "Linux";
-      _version = "<unknown>";
+namespace {
+
+OsFamily family_of(std::string_view sysname) {
+  if (sysname == "Linux") {
+    return OsFamily::linux_;
+  }
+  if (sysname.ends_with("BSD")) {  // FreeBSD, OpenBSD, NetBSD, DragonFlyBSD
+    return OsFamily::bsd;
+  }
+  return OsFamily::unknown;
+}
+
+}  // namespace
+
+result<Os> os() {
+  utsname info{};
+  if (uname(&info) != 0) {
+    return std::unexpected(error{std::error_code(errno, std::generic_category()), "uname"});
+  }
+  Os os{
+      .family = family_of(info.sysname),
+      .name = info.sysname,
+      .marketing_name = {},
+      .version = {},
+      .kernel = info.release,
+      .architecture = info.machine,
+      .bits = std::string_view(info.machine).contains("64") || std::string_view(info.machine) == "s390x" ? 64u : 32u,
+  };
+
+  auto release = internal::read_file("/etc/os-release");
+  if (!release) {
+    release = internal::read_file("/usr/lib/os-release");
+  }
+  if (release) {
+    const auto values = internal::procfs::parse_os_release(*release);
+    if (const auto it = values.find("NAME"); it != values.end()) {
+      os.name = it->second;
     }
-    while (std::getline(stream, line)) {
-      if (utils::starts_with(line, "PRETTY_NAME")) {
-        line = line.substr(line.find('=') + 1, line.length());
-        // remove \" at begin and end of the substring result
-        _name = {line.begin() + 1, line.end() - 1};
-      }
-      if (utils::starts_with(line, "VERSION=")) {
-        line = line.substr(line.find('=') + 1, line.length());
-        // remove \" at begin and end of the substring result
-        _version = {line.begin() + 1, line.end() - 1};
-      }
+    if (const auto it = values.find("VERSION"); it != values.end()) {
+      os.version = it->second;
+    } else if (const auto id = values.find("VERSION_ID"); id != values.end()) {
+      os.version = id->second;
+    } else if (const auto build = values.find("BUILD_ID"); build != values.end()) {
+      os.version = build->second;  // rolling releases, e.g. Arch Linux
     }
-    stream.close();
+    os.marketing_name = internal::procfs::os_release_codename(values);
   }
-  {  // Kernel
-    static utsname info;
-    if (uname(&info) == 0) {
-      _kernel = info.release;
-    } else {
-      _kernel = "<unknown>";
-    }
-  }
-  {  // architecture
-    struct stat buffer{};
-    _64bit = stat("/lib64/ld-linux-x86-64.so.2", &buffer) == 0;
-    _32bit = !_64bit;
-  }
-  {  // Get endian. This is platform independent...
-    char16_t dummy = 0x0102;
-    _bigEndian = ((char*)&dummy)[0] == 0x01;
-    _littleEndian = ((char*)&dummy)[0] == 0x02;
-  }
+  return os;
 }
 
 }  // namespace hwinfo

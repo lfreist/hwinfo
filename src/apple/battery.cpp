@@ -1,168 +1,110 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include "hwinfo/platform.h"
+#include <hwinfo/platform.h>
 
 #ifdef HWINFO_APPLE
 
 #include <CoreFoundation/CoreFoundation.h>
-#include <IOKit/ps/IOPSKeys.h>
-#include <IOKit/ps/IOPowerSources.h>
+#include <IOKit/IOKitLib.h>
+#include <hwinfo/battery.h>
+#include <hwinfo/monitoring.h>
 
-#include <iostream>
+#include <algorithm>
+#include <cstdint>
+#include <format>
+#include <optional>
+#include <vector>
 
-#include "hwinfo/battery.h"
+#include "internal/apple_cf.h"
 
 namespace hwinfo {
 
-// =====================================================================================================================
-CFDictionaryRef getPowerSource(const int id) {
-  const CFTypeRef powerInfo = IOPSCopyPowerSourcesInfo();
-  if (!powerInfo) {
-    return nullptr;
+namespace {
+
+namespace cf = internal::apple;
+
+result<std::vector<cf::io_ptr>> smart_batteries() { return cf::matching_services("AppleSmartBattery"); }
+
+// mAh * mV = µWh
+std::optional<Energy> energy(std::optional<std::int64_t> mah, std::optional<std::int64_t> mv) {
+  if (!mah || !mv || *mah <= 0 || *mv <= 0) {
+    return std::nullopt;
   }
-
-  const CFArrayRef powerSources = IOPSCopyPowerSourcesList(powerInfo);
-  if (!powerSources) {
-    CFRelease(powerInfo);
-    return nullptr;
-  }
-
-  const CFDictionaryRef powerSource =
-      IOPSGetPowerSourceDescription(powerInfo, CFArrayGetValueAtIndex(powerSources, id));
-
-  if (!powerSource) {
-    CFRelease(powerSources);
-    CFRelease(powerInfo);
-    return nullptr;
-  }
-
-  CFRetain(powerSource);
-
-  CFRelease(powerSources);
-  CFRelease(powerInfo);
-
-  return powerSource;
+  return Energy{static_cast<std::uint64_t>(*mah) * static_cast<std::uint64_t>(*mv)};
 }
 
-// _____________________________________________________________________________________________________________________
-std::string getVendor() { return "<unknown>"; }
-
-// _____________________________________________________________________________________________________________________
-std::string getModel() { return "<unknown>"; }
-
-// _____________________________________________________________________________________________________________________
-std::string getSerialNumber(std::uint32_t id) {
-  const CFDictionaryRef powerSource = getPowerSource(id);
-  if (!powerSource) {
-    return "<unknown>";
+// Full charge capacity in mAh. "MaxCapacity" is given in mAh on Intel Macs but in percent on Apple Silicon.
+std::optional<std::int64_t> full_charge_mah(io_registry_entry_t battery) {
+  if (auto raw = cf::number_property<std::int64_t>(battery, CFSTR("AppleRawMaxCapacity"))) {
+    return raw;
   }
-
-  // this key is recommended. it may be empty
-  const auto serialNumber =
-      static_cast<CFStringRef>(CFDictionaryGetValue(powerSource, CFSTR(kIOPSHardwareSerialNumberKey)));
-
-  if (!serialNumber) {
-    CFRelease(powerSource);
-    return "<unknown>";
+  if (auto nominal = cf::number_property<std::int64_t>(battery, CFSTR("NominalChargeCapacity"))) {
+    return nominal;
   }
-
-  char serialNumberStr[256];
-
-  CFStringGetCString(serialNumber, serialNumberStr, sizeof(serialNumberStr), kCFStringEncodingUTF8);
-  CFRelease(powerSource);
-
-  return serialNumberStr;
+  const auto max = cf::number_property<std::int64_t>(battery, CFSTR("MaxCapacity"));
+  return max && *max > 100 ? max : std::nullopt;
 }
 
-// _____________________________________________________________________________________________________________________
-std::string getTechnology() { return "<unknown>"; }
+}  // namespace
 
-// _____________________________________________________________________________________________________________________
-uint32_t getEnergyFull(std::uint32_t id) {
-  const CFDictionaryRef powerSource = getPowerSource(id);
-  if (!powerSource) {
-    return 0;
-  }
-
-  const auto maxCapacityNum = static_cast<CFNumberRef>(CFDictionaryGetValue(powerSource, CFSTR(kIOPSMaxCapacityKey)));
-  CFRelease(powerSource);
-  if (!maxCapacityNum) {
-    return 0;
-  }
-
-  uint32_t maxCapacity;
-  CFNumberGetValue(maxCapacityNum, kCFNumberIntType, &maxCapacity);
-
-  return maxCapacity;
+result<std::vector<Battery>> batteries() {
+  return smart_batteries().transform([](const std::vector<cf::io_ptr>& services) {
+    std::vector<Battery> result;
+    for (const auto& service : services) {
+      const io_registry_entry_t battery = service.get();
+      const auto voltage = cf::number_property<std::int64_t>(battery, CFSTR("Voltage"));  // mV
+      auto serial = cf::string_property(battery, CFSTR("Serial"));
+      if (!serial) {
+        serial = cf::string_property(battery, CFSTR("BatterySerialNumber"));
+      }
+      result.push_back(Battery{
+          .index = static_cast<std::uint32_t>(result.size()),
+          .vendor = cf::string_property(battery, CFSTR("Manufacturer")),
+          .model = cf::string_property(battery, CFSTR("DeviceName")),
+          .serial_number = std::move(serial),
+          .technology = std::nullopt,
+          .design_capacity = energy(cf::number_property<std::int64_t>(battery, CFSTR("DesignCapacity")), voltage),
+          .full_charge_capacity = energy(full_charge_mah(battery), voltage),
+      });
+    }
+    return result;
+  });
 }
 
-// _____________________________________________________________________________________________________________________
-std::uint32_t Battery::energyNow() const {
-  const CFDictionaryRef powerSource = getPowerSource(_id);
-  if (!powerSource) {
-    return 0;
+result<BatteryStatus> battery_status(std::uint32_t index) {
+  const auto services = smart_batteries();
+  if (!services) {
+    return std::unexpected(services.error());
+  }
+  if (index >= services->size()) {
+    return std::unexpected(error{errc::not_found, std::format("battery {}", index)});
+  }
+  const io_registry_entry_t battery = (*services)[index].get();
+
+  BatteryStatus status;
+  const auto fully_charged = cf::bool_property(battery, CFSTR("FullyCharged"));
+  const auto charging = cf::bool_property(battery, CFSTR("IsCharging"));
+  const auto external = cf::bool_property(battery, CFSTR("ExternalConnected"));
+  if (fully_charged == true) {
+    status.state = BatteryState::full;
+  } else if (charging == true) {
+    status.state = BatteryState::charging;
+  } else if (external == true) {
+    status.state = BatteryState::not_charging;  // on AC, but charging is paused (e.g. optimized charging)
+  } else if (external == false) {
+    status.state = BatteryState::discharging;
   }
 
-  const auto currentCapacityNum =
-      static_cast<CFNumberRef>(CFDictionaryGetValue(powerSource, CFSTR(kIOPSCurrentCapacityKey)));
-  CFRelease(powerSource);
-  if (!currentCapacityNum) {
-    return 0;
+  // Both in percent (Apple Silicon) or both in mAh (Intel).
+  const auto current = cf::number_property<std::int64_t>(battery, CFSTR("CurrentCapacity"));
+  const auto max = cf::number_property<std::int64_t>(battery, CFSTR("MaxCapacity"));
+  if (current && max && *max > 0) {
+    status.charge = std::clamp(static_cast<double>(*current) / static_cast<double>(*max), 0.0, 1.0);
   }
-
-  uint32_t currentCapacity;
-  CFNumberGetValue(currentCapacityNum, kCFNumberIntType, &currentCapacity);
-
-  return currentCapacity;
-}
-
-// _____________________________________________________________________________________________________________________
-Battery::State Battery::state() const {
-  const CFDictionaryRef powerSource = getPowerSource(_id);
-  if (!powerSource) {
-    return State::UNKNOWN;
-  }
-
-  const auto isCharging = static_cast<CFBooleanRef>(CFDictionaryGetValue(powerSource, CFSTR(kIOPSIsChargingKey)));
-
-  return isCharging == kCFBooleanTrue ? State::CHARGING : State::DISCHARGING;
-}
-
-// =====================================================================================================================
-// _____________________________________________________________________________________________________________________
-std::vector<Battery> getAllBatteries() {
-  std::vector<Battery> batteries;
-
-  const CFTypeRef powerInfo = IOPSCopyPowerSourcesInfo();
-  if (!powerInfo) {
-    return batteries;
-  }
-
-  const CFArrayRef powerSources = IOPSCopyPowerSourcesList(powerInfo);
-  if (!powerSources) {
-    CFRelease(powerInfo);
-    return batteries;
-  }
-
-  const auto numSources = static_cast<std::uint32_t>(CFArrayGetCount(powerSources));
-
-  CFRelease(powerSources);
-  CFRelease(powerInfo);
-
-  for (std::uint32_t i = 0; i < numSources; ++i) {
-    batteries.emplace_back(i);
-    auto& battery = batteries.back();
-    battery._vendor = getVendor();
-    battery._model = getModel();
-    battery._energyFull = getEnergyFull(i);
-    battery._technology = getTechnology();
-    battery._serial_number = getSerialNumber(i);
-  }
-
-  return batteries;
+  return status;
 }
 
 }  // namespace hwinfo
 
-#endif
+#endif  // HWINFO_APPLE

@@ -3,56 +3,41 @@
 
 #pragma once
 
+#include <hwinfo/detail/formatter.h>
+#include <hwinfo/error.h>
 #include <hwinfo/platform.h>
+#include <hwinfo/units.h>
 
 #include <cstdint>
-#include <limits>
+#include <format>
+#include <optional>
 #include <string>
 #include <vector>
 
 namespace hwinfo {
 
-class HWINFO_API Battery {
-  friend HWINFO_API std::vector<Battery> getAllBatteries();
-  friend HWINFO_API std::ostream& operator<<(std::ostream& os, const Battery& battery);
+// Static battery information. See hwinfo/monitoring.h for charge and state.
+struct Battery {
+  std::uint32_t index = 0;  // position in batteries(); used by battery_status()
+  std::optional<std::string> vendor{};
+  std::optional<std::string> model{};
+  std::optional<std::string> serial_number{};
+  std::optional<std::string> technology{};
+  std::optional<Energy> design_capacity{};
+  std::optional<Energy> full_charge_capacity{};
 
- public:
-  static constexpr std::uint32_t invalid_id = std::numeric_limits<std::uint32_t>::max();
-
- public:
-  enum class State { CHARGING, DISCHARGING, UNKNOWN };
-
- public:
-  explicit Battery(std::uint32_t = 0);
-  ~Battery() = default;
-
-  HWI_NODISCARD const std::string& vendor() const;
-  HWI_NODISCARD const std::string& model() const;
-  HWI_NODISCARD const std::string& serialNumber() const;
-  HWI_NODISCARD const std::string& technology() const;
-  HWI_NODISCARD uint32_t energyFull() const;
-
-  double capacity() const;
-
-  HWI_NODISCARD std::uint32_t id() const;
-
-  HWI_NODISCARD uint32_t energyNow() const;
-  HWI_NODISCARD bool charging() const;
-  HWI_NODISCARD bool discharging() const;
-  HWI_NODISCARD State state() const;
-
- private:
-  std::uint32_t _id = invalid_id;
-  std::string _vendor = "<unknown>";
-  std::string _model = "<unknown>";
-  std::string _serial_number = "<unknown>";
-  std::string _technology = "<unknown>";
-  uint32_t _energyFull = 0;
+  friend bool operator==(const Battery&, const Battery&) = default;
 };
 
-HWINFO_API std::vector<Battery> getAllBatteries();
+// All batteries of the system.
+// An empty vector means no battery is installed.
+[[nodiscard]] HWINFO_API result<std::vector<Battery>> batteries();
 
-HWINFO_API std::ostream& operator<<(std::ostream& os, const Battery::State& state);
-HWINFO_API std::ostream& operator<<(std::ostream& os, const Battery& battery);
+inline std::string to_string(const Battery& battery) {
+  return std::format("{} {}", battery.vendor.value_or("unknown vendor"), battery.model.value_or("unknown battery"));
+}
 
 }  // namespace hwinfo
+
+template <>
+struct std::formatter<hwinfo::Battery> : hwinfo::detail::to_string_formatter<hwinfo::Battery> {};

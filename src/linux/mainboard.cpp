@@ -1,41 +1,29 @@
-// Copyright (c) Leon Freist <freist@informatik.uni-freiburg.de>
-// This software is part of HWBenchmark
+// Copyright Leon Freist
+// Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-#include "hwinfo/platform.h"
+#include <hwinfo/platform.h>
 
 #ifdef HWINFO_UNIX
 
-#include <fstream>
-#include <vector>
+#include <hwinfo/mainboard.h>
 
-#include "hwinfo/mainboard.h"
+#include "internal/dmi.h"
+#include "internal/file.h"
 
 namespace hwinfo {
 
-std::string get_dmi_by_name(const std::string& name) {
-  std::string value;
-  std::vector<std::string> candidates = {"/sys/devices/virtual/dmi/", "/sys/class/dmi/"};
-  for (const auto& path : candidates) {
-    std::string full_path(path);
-    full_path.append("id/");
-    full_path.append(name);
-    std::ifstream f(full_path);
-    if (f) {
-      getline(f, value);
-      if (!value.empty()) {
-        return value;
-      }
-    }
+result<Mainboard> mainboard() {
+  const auto dmi = internal::dmi_directory();
+  if (!dmi) {
+    return std::unexpected(error{errc::not_supported, "no DMI information available"});
   }
-  return "<unknown>";
-}
-
-// _____________________________________________________________________________________________________________________
-MainBoard::MainBoard() {
-  _vendor = get_dmi_by_name("board_vendor");
-  _name = get_dmi_by_name("board_name");
-  _version = get_dmi_by_name("board_version");
-  _serial_number = get_dmi_by_name("board_serial");
+  const auto read = [&](std::string_view name) { return internal::dmi_string(internal::read_attribute(*dmi / name)); };
+  return Mainboard{
+      .vendor = read("board_vendor"),
+      .name = read("board_name"),
+      .version = read("board_version"),
+      .serial_number = read("board_serial"),
+  };
 }
 
 }  // namespace hwinfo

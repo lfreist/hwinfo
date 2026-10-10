@@ -1,0 +1,239 @@
+// Copyright Leon Freist
+// Author Leon Freist <freist@informatik.uni-freiburg.de>
+
+// Dynamic system state (utilization, free memory, battery charge, ...) and a periodic Monitor.
+//
+// Each function is implemented by the library of its component (CpuSampler / cpu_frequencies: hwinfo_cpu,
+// memory_usage: hwinfo_ram, battery_status: hwinfo_battery, GpuSampler: hwinfo_gpu).
+
+#pragma once
+
+#include <hwinfo/detail/formatter.h>
+#include <hwinfo/error.h>
+#include <hwinfo/gpu.h>
+#include <hwinfo/platform.h>
+#include <hwinfo/units.h>
+
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <filesystem>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <string_view>
+#include <thread>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+namespace hwinfo {
+
+// ----- CPU ----------------------------------------------------------------------------------------------------------
+
+struct CpuLoad {
+  double total = 0;  // average over all logical cores, [0, 1]
+  // per logical core, [0, 1], indexed by OS CPU number (see Core::logical_ids). Offline cores report 0.
+  std::vector<double> per_thread{};
+};
+
+namespace detail {
+struct CpuTicks {
+  std::uint64_t busy = 0;
+  std::uint64_t total = 0;
+};
+}  // namespace detail
+
+/**
+ * Measures CPU utilization between two points in time.
+ *
+ *   hwinfo::CpuSampler sampler;               // takes the baseline
+ *   std::this_thread::sleep_for(500ms);
+ *   auto load = sampler.sample();             // utilization of the last 500 ms; new baseline
+ *
+ * A sampler holds no global state: independent samplers can be used concurrently.
+ */
+class HWINFO_API CpuSampler {
+ public:
+  CpuSampler();
+
+  // Utilization since construction or the previous call to sample().
+  [[nodiscard]] result<CpuLoad> sample();
+
+ private:
+  std::vector<detail::CpuTicks> _last;  // [0]: all cores, [1 + i]: logical core i
+};
+
+// Current clock rate per logical core, indexed by OS CPU number (see Core::logical_ids). Offline cores report 0 Hz.
+[[nodiscard]] HWINFO_API result<std::vector<Hertz>> cpu_frequencies();
+
+// ----- Memory -------------------------------------------------------------------------------------------------------
+
+struct MemoryUsage {
+  Bytes total{};
+  Bytes free{};       // not used at all
+  Bytes available{};  // available for new allocations without swapping (includes reclaimable caches)
+};
+
+[[nodiscard]] HWINFO_API result<MemoryUsage> memory_usage();
+
+// ----- Disk ---------------------------------------------------------------------------------------------------------
+
+struct DiskSpace {
+  Bytes capacity{};
+  Bytes free{};
+  Bytes available{};  // free space available to the calling user
+};
+
+// Space of the filesystem containing `path` (e.g. one of Disk::mount_points).
+[[nodiscard]] inline result<DiskSpace> disk_space(const std::filesystem::path& path) {
+  std::error_code ec;
+  const auto info = std::filesystem::space(path, ec);
+  if (ec) {
+    return std::unexpected(error{ec, path.string()});
+  }
+  return DiskSpace{{info.capacity}, {info.free}, {info.available}};
+}
+
+// ----- Battery ------------------------------------------------------------------------------------------------------
+
+enum class BatteryState { unknown, charging, discharging, full, not_charging };
+
+struct BatteryStatus {
+  BatteryState state = BatteryState::unknown;
+  std::optional<double> charge{};  // [0, 1]
+};
+
+// Status of the battery with the given Battery::index.
+[[nodiscard]] HWINFO_API result<BatteryStatus> battery_status(std::uint32_t index);
+
+constexpr std::string_view to_string(BatteryState state) noexcept {
+  switch (state) {
+    case BatteryState::charging:
+      return "charging";
+    case BatteryState::discharging:
+      return "discharging";
+    case BatteryState::full:
+      return "full";
+    case BatteryState::not_charging:
+      return "not charging";
+    case BatteryState::unknown:
+      break;
+  }
+  return "unknown";
+}
+
+// ----- GPU ----------------------------------------------------------------------------------------------------------
+
+struct GpuStatus {
+  bool suspended = false;
+  std::optional<double> utilization{};         // [0, 1], graphics / compute engines busy
+  std::optional<double> memory_utilization{};  // [0, 1], memory controller busy
+  std::optional<double> video_utilization{};   // [0, 1], video encode / decode engines busy
+  std::optional<Bytes> memory_used{};          // dedicated memory (VRAM) in use
+  std::optional<Bytes> memory_total{};
+  std::optional<double> temperature{};      // degrees Celsius, GPU die
+  std::optional<Power> power{};             // current power draw of the board (or GPU package)
+  std::optional<Hertz> frequency{};         // current graphics / shader clock
+  std::optional<Hertz> memory_frequency{};  // current memory clock
+  std::optional<double> fan_speed{};        // [0, 1] of the maximum fan speed
+  std::optional<PcieLink> pcie_link{};      // current link; idle GPUs train down to save power
+};
+
+/**
+ * Measures the live state of one GPU. Rates (utilization, power) are averaged since the previous sample where the
+ * source provides counters, otherwise they are the driver's latest reading.
+ *
+ *   const auto gpus = hwinfo::gpus();
+ *   hwinfo::GpuSampler sampler((*gpus)[0]);
+ *   std::this_thread::sleep_for(500ms);
+ *   auto status = sampler.sample();
+ *
+ * Sources, by priority: NVML (NVIDIA), Level Zero Sysman (Intel), the operating system (Linux: amdgpu / hwmon sysfs,
+ * Windows: performance counters, macOS: IOKit performance statistics). `query` selects the vendor libraries as for
+ * gpus(). Fields no source provides stay empty; sample() fails with errc::not_supported if there is no source at all.
+ */
+class HWINFO_API GpuSampler {
+ public:
+  explicit GpuSampler(const Gpu& gpu, const GpuQuery& query = {});
+  GpuSampler(GpuSampler&&) noexcept;
+  GpuSampler& operator=(GpuSampler&&) noexcept;
+  ~GpuSampler();
+
+  [[nodiscard]] result<GpuStatus> sample();
+
+ private:
+  struct State;
+  std::unique_ptr<State> _state;
+};
+
+// ----- Monitor ------------------------------------------------------------------------------------------------------
+
+/**
+ * Calls `fetch` every `interval` on a background thread and passes the result to `on_data`.
+ * Starts on construction; stops when stop() is called or the Monitor is destroyed.
+ *
+ *   hwinfo::Monitor monitor{1s, [s = hwinfo::CpuSampler{}]() mutable { return s.sample(); },
+ *                           [](const hwinfo::result<hwinfo::CpuLoad>& load) { ... }};
+ */
+template <typename T>
+class Monitor {
+ public:
+  using Fetch = std::function<T()>;
+  using Callback = std::function<void(const T&)>;
+
+  Monitor(std::chrono::milliseconds interval, Fetch fetch, Callback on_data)
+      : _interval(interval), _fetch(std::move(fetch)), _on_data(std::move(on_data)) {
+    _thread = std::thread([this] { run(); });
+  }
+
+  Monitor(const Monitor&) = delete;
+  Monitor& operator=(const Monitor&) = delete;
+  Monitor(Monitor&&) = delete;
+  Monitor& operator=(Monitor&&) = delete;
+
+  ~Monitor() { stop(); }
+
+  // Stops the monitor and waits for a running callback to finish. When called from the callback itself, the monitor
+  // stops after the callback returns.
+  void stop() {
+    {
+      std::lock_guard lock(_mutex);
+      _stop_requested = true;
+    }
+    _cv.notify_all();
+    if (_thread.joinable() && _thread.get_id() != std::this_thread::get_id()) {
+      _thread.join();
+    }
+  }
+
+  [[nodiscard]] bool running() const noexcept { return _thread.joinable(); }
+
+ private:
+  void run() {
+    std::unique_lock lock(_mutex);
+    while (!_stop_requested) {
+      lock.unlock();
+      _on_data(_fetch());
+      lock.lock();
+      _cv.wait_for(lock, _interval, [this] { return _stop_requested; });
+    }
+  }
+
+  std::chrono::milliseconds _interval;
+  Fetch _fetch;
+  Callback _on_data;
+  std::mutex _mutex;
+  std::condition_variable _cv;
+  bool _stop_requested = false;  // guarded by _mutex
+  std::thread _thread;
+};
+
+template <typename F, typename C>
+Monitor(std::chrono::milliseconds, F, C) -> Monitor<std::invoke_result_t<F&>>;
+
+}  // namespace hwinfo
+
+template <>
+struct std::formatter<hwinfo::BatteryState> : hwinfo::detail::to_string_formatter<hwinfo::BatteryState> {};
