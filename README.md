@@ -281,7 +281,7 @@ Things to know:
 |                  | Serial number                                                                 |         root         |                              ✔️                               |                      ✔️                      |
 | Disk             | Vendor, model, serial number                                                  |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Size, bus type                                                                |          ✔️          |                              ✔️                               |                      ✔️                      |
-|                  | Mount points                                                                  |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Mount points, filesystem                                                      |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Free space (`disk_space`)                                                     |          ✔️          |                              ✔️                               |                      ✔️                      |
 | Operating System | Name, version, kernel                                                         |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Family, marketing name                                                        |          ✔️          |                              ✔️                               |                      ✔️                      |
@@ -477,7 +477,7 @@ Disk 1
   bus:                  NVMe
   size:                 476.9 GiB
   link speed:           <unknown>
-  mount points:         /, /boot/efi
+  mount points:         / (ext4), /boot/efi (vfat)
 ----------------------------------- Network ------------------------------------
 Interface 2
   name:                 wlo1

@@ -147,7 +147,7 @@ TEST(Smoke, Disks) {
   expect_value_or_error(disks);
   for (const auto& disk : disks.value_or(std::vector<hwinfo::Disk>{})) {
     for (const auto& mount_point : disk.mount_points) {
-      expect_value_or_error(hwinfo::disk_space(mount_point));
+      expect_value_or_error(hwinfo::disk_space(mount_point.path));
     }
   }
 }

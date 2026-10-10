@@ -301,6 +301,7 @@ inline std::string os_release_codename(const std::map<std::string, std::string, 
 struct Mount {
   std::string device;
   std::string mount_point;
+  std::string fs_type;
 };
 
 // Decodes the octal escapes (\040 for space, ...) used in /proc/self/mounts.
@@ -332,7 +333,9 @@ inline std::vector<Mount> parse_mounts(std::string_view content) {
     if (++it == fields.end()) {
       continue;
     }
-    mounts.push_back({unescape_mount_path(device), unescape_mount_path(*it)});
+    const std::string_view mount_point = *it;
+    const std::string_view fs_type = ++it == fields.end() ? std::string_view{} : *it;
+    mounts.push_back({unescape_mount_path(device), unescape_mount_path(mount_point), std::string(fs_type)});
   }
   return mounts;
 }
