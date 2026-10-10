@@ -116,6 +116,13 @@ TEST(Smoke, Os) {
   ASSERT_TRUE(os) << os.error().message();
   EXPECT_FALSE(os->name.empty());
   EXPECT_TRUE(os->bits == 32 || os->bits == 64);
+#if defined(HWINFO_WINDOWS)
+  EXPECT_EQ(os->family, hwinfo::OsFamily::windows);
+#elif defined(HWINFO_APPLE)
+  EXPECT_EQ(os->family, hwinfo::OsFamily::macos);
+#elif defined(__linux__)
+  EXPECT_EQ(os->family, hwinfo::OsFamily::linux_);
+#endif
 }
 #endif
 

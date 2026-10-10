@@ -10,11 +10,26 @@
 
 #include <cerrno>
 #include <string>
+#include <string_view>
 
 #include "internal/file.h"
 #include "internal/procfs.h"
 
 namespace hwinfo {
+
+namespace {
+
+OsFamily family_of(std::string_view sysname) {
+  if (sysname == "Linux") {
+    return OsFamily::linux_;
+  }
+  if (sysname.ends_with("BSD")) {  // FreeBSD, OpenBSD, NetBSD, DragonFlyBSD
+    return OsFamily::bsd;
+  }
+  return OsFamily::unknown;
+}
+
+}  // namespace
 
 result<Os> os() {
   utsname info{};
@@ -22,7 +37,9 @@ result<Os> os() {
     return std::unexpected(error{std::error_code(errno, std::generic_category()), "uname"});
   }
   Os os{
+      .family = family_of(info.sysname),
       .name = info.sysname,
+      .marketing_name = {},
       .version = {},
       .kernel = info.release,
       .architecture = info.machine,
@@ -45,6 +62,7 @@ result<Os> os() {
     } else if (const auto build = values.find("BUILD_ID"); build != values.end()) {
       os.version = build->second;  // rolling releases, e.g. Arch Linux
     }
+    os.marketing_name = internal::procfs::os_release_codename(values);
   }
   return os;
 }

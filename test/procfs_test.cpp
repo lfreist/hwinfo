@@ -144,6 +144,25 @@ TEST(OsRelease, UnquotesValuesAndSkipsComments) {
   EXPECT_FALSE(values.contains("# comment"));
 }
 
+TEST(OsRelease, Codename) {
+  using Values = std::map<std::string, std::string, std::less<>>;
+  // display form from VERSION
+  EXPECT_EQ(
+      procfs::os_release_codename(Values{{"VERSION", "24.04.1 LTS (Noble Numbat)"}, {"VERSION_CODENAME", "noble"}}),
+      "Noble Numbat");
+  EXPECT_EQ(procfs::os_release_codename(Values{{"VERSION", "12 (bookworm)"}, {"VERSION_CODENAME", "bookworm"}}),
+            "bookworm");
+  EXPECT_EQ(
+      procfs::os_release_codename(Values{{"VERSION", "16.04.7 LTS (Xenial Xerus)"}, {"UBUNTU_CODENAME", "xenial"}}),
+      "Xenial Xerus");
+  // parentheses not matching the codename
+  EXPECT_EQ(procfs::os_release_codename(Values{{"VERSION", "41 (Workstation Edition)"}}), "");
+  EXPECT_EQ(procfs::os_release_codename(Values{{"VERSION", "9.4 (Plow)"}, {"VERSION_CODENAME", "other"}}), "other");
+  // no VERSION
+  EXPECT_EQ(procfs::os_release_codename(Values{{"VERSION_CODENAME", "trixie"}}), "trixie");
+  EXPECT_EQ(procfs::os_release_codename(Values{}), "");
+}
+
 TEST(Mounts, ParsesAndUnescapes) {
   const auto mounts = procfs::parse_mounts(
       "/dev/nvme0n1p2 / ext4 rw,relatime 0 0\n"

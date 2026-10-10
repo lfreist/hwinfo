@@ -75,7 +75,9 @@ int main() {
 
   section("Operating System");
   if (const auto os = hwinfo::os(); check(os)) {
+    field("family:", os->family);
     field("name:", os->name);
+    field("marketing name:", os->marketing_name);
     field("version:", os->version);
     field("kernel:", os->kernel);
     field("architecture:", std::format("{} ({}-bit)", os->architecture, os->bits));

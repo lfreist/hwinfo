@@ -272,6 +272,30 @@ inline std::map<std::string, std::string, std::less<>> parse_os_release(std::str
   return values;
 }
 
+// Release name of parsed os-release values, e.g. "Noble Numbat" (Ubuntu), "bookworm" (Debian), "Virginia" (Mint).
+inline std::string os_release_codename(const std::map<std::string, std::string, std::less<>>& values) {
+  auto codename = values.find("VERSION_CODENAME");
+  if (codename == values.end() || codename->second.empty()) {
+    codename = values.find("UBUNTU_CODENAME");  // older Ubuntu releases and derivatives
+  }
+  if (codename == values.end() || codename->second.empty()) {
+    return {};
+  }
+  if (const auto version = values.find("VERSION"); version != values.end()) {
+    const std::string_view v = version->second;
+    const auto open = v.rfind('(');
+    const auto close = v.rfind(')');
+    if (open != std::string_view::npos && close != std::string_view::npos && open < close) {
+      const auto display = trim(v.substr(open + 1, close - open - 1));
+      if (display.size() >= codename->second.size() &&
+          equals_ignore_case(display.substr(0, codename->second.size()), codename->second)) {
+        return std::string(display);
+      }
+    }
+  }
+  return codename->second;
+}
+
 // ----- /proc/self/mounts --------------------------------------------------------------------------------------------
 
 struct Mount {

@@ -99,17 +99,17 @@ result<Os> os() {
     return std::unexpected(error{std::error_code(errno, std::generic_category()), "uname"});
   }
 
-  // e.g. "15.1 Sequoia (24B83)"
+  // e.g. "15.1 (24B83)"
   std::string version = product_version().value_or(std::string{});
-  if (const auto name = marketing_name(version); !name.empty()) {
-    version += std::format(" {}", name);
-  }
+  std::string name{marketing_name(version)};
   if (const auto build = internal::sysctl_attribute("kern.osversion")) {
     version += version.empty() ? *build : std::format(" ({})", *build);
   }
 
   return Os{
+      .family = OsFamily::macos,
       .name = "macOS",
+      .marketing_name = std::move(name),
       .version = std::move(version),
       .kernel = std::format("{} {}", std::string_view(info.sysname), std::string_view(info.release)),
       .architecture = info.machine,  // "arm64", "x86_64"
