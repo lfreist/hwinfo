@@ -2,6 +2,7 @@ include(FetchContent)
 find_package(GTest QUIET)
 if (NOT GTest_FOUND)
     set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS OFF)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_Declare(
             googletest
