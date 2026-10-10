@@ -43,6 +43,22 @@ int main() {
 > If you face any issues, find bugs or if your platform is not supported yet, do not hesitate
 > to [create an issue](https://github.com/lfreist/hwinfo/issues).
 
+## Contribution Quality Standards
+hwinfo encourages you to utilize modern AI *assisted* development.
+However, there are ground rules that apply when using AI for development:
+- AI must not replace your own reasoning about an issue. Blindly delegating a problem to an AI and accepting its proposed solution without understanding or critically evaluating it is likely to introduce incorrect assumptions and, consequently, poor code.
+- You are responsible for whatever you commit. This means that you must understand not only the code lines but the architecture and the imlications of your commit to the project.
+
+Those rules generally result in much better code quality.
+This is a free open source project.
+It is not about pushing features as fast as possible but about developing and maintaining a stable and clean software architecture.
+
+If a contribution demonstrates that its author has not adequately considered the problem, the proposed solution, or its implications for the project, I may reject it without further review.
+
+This is not an anti-AI position.
+It is a commitment to thoughtful engineering, sound architectural decisions, and long-term maintainability.
+I don't have the time to compensate for contributions that lack these qualities, regardless of how they were produced.
+
 ## Content
 
 - [hwinfo](#hwinfo)
