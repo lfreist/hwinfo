@@ -28,6 +28,7 @@ add_executable(hwinfo_tests
         pci_test.cpp
         monitor_test.cpp
         smoke_test.cpp
+        virtualization_test.cpp
 )
 target_include_directories(hwinfo_tests PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(hwinfo_tests PRIVATE lfreist-hwinfo::hwinfo GTest::gtest_main)

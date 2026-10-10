@@ -14,4 +14,6 @@
 #include <hwinfo/network.h>
 #include <hwinfo/os.h>
 #include <hwinfo/ram.h>
+#include <hwinfo/resource_limits.h>
 #include <hwinfo/units.h>
+#include <hwinfo/virtualization.h>

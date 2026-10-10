@@ -83,6 +83,24 @@ int main() {
     field("architecture:", std::format("{} ({}-bit)", os->architecture, os->bits));
   }
 
+  section("Virtualization");
+  if (const auto virtualization = hwinfo::virtualization(); check(virtualization)) {
+    field("environment:", *virtualization);
+    if (const auto& vm = virtualization->vm) {
+      field("hypervisor:", vm->hypervisor);
+      field("vendor id:", vm->vendor_id);
+    }
+    if (const auto& container = virtualization->container) {
+      field("container runtime:", container->runtime);
+      field("kubernetes:", container->kubernetes ? "yes" : "no");
+    }
+  }
+  if (const auto limits = hwinfo::resource_limits(); check(limits)) {
+    field("cpu quota:", limits->cpu_quota ? std::format("{:.2f} cores", *limits->cpu_quota) : "none");
+    field("memory limit:", limits->memory ? std::format("{}", *limits->memory) : "none");
+    field("allowed cpus:", limits->allowed_cpus.size());
+  }
+
   section("GPU");
   if (const auto gpus = hwinfo::gpus(); check(gpus)) {
     for (const auto& gpu : *gpus) {

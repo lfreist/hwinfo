@@ -14,6 +14,8 @@
 #include <hwinfo/os.h>
 #include <hwinfo/platform.h>
 #include <hwinfo/ram.h>
+#include <hwinfo/resource_limits.h>
+#include <hwinfo/virtualization.h>
 
 #include <format>
 #include <optional>
@@ -38,6 +40,8 @@ struct Computer {
   ChassisType chassis = ChassisType::unknown;
 
   static result<Os> os() { return hwinfo::os(); }
+  static result<Virtualization> virtualization() { return hwinfo::virtualization(); }
+  static result<ResourceLimits> resource_limits() { return hwinfo::resource_limits(); }
   static result<Mainboard> mainboard() { return hwinfo::mainboard(); }
   static result<std::vector<Cpu>> cpus() { return hwinfo::cpus(); }
   static result<Memory> memory() { return hwinfo::memory(); }

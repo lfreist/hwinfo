@@ -69,5 +69,15 @@ TEST(Strings, EqualsIgnoreCase) {
   static_assert(internal::equals_ignore_case("Default String", "default string"));
   static_assert(!internal::equals_ignore_case("abc", "abd"));
   static_assert(!internal::equals_ignore_case("abc", "ab"));
+
+  static_assert(internal::starts_with_ignore_case("Parallels International GmbH.", "parallels"));
+  static_assert(internal::starts_with_ignore_case("abc", ""));
+  static_assert(!internal::starts_with_ignore_case("ab", "abc"));
+
+  static_assert(internal::contains_ignore_case("6.6.87.2-microsoft-standard-WSL2", "Microsoft"));
+  static_assert(internal::contains_ignore_case("abc", "ABC"));
+  static_assert(internal::contains_ignore_case("abc", ""));
+  static_assert(!internal::contains_ignore_case("abc", "bd"));
+  static_assert(!internal::contains_ignore_case("", "a"));
   static_assert(internal::to_lower('Q') == 'q' && internal::to_lower('1') == '1');
 }

@@ -29,6 +29,8 @@ set(HWINFO_PUBLIC_HEADERS
         ${HWINFO_INCLUDE_DIR}/hwinfo/network.h
         ${HWINFO_INCLUDE_DIR}/hwinfo/os.h
         ${HWINFO_INCLUDE_DIR}/hwinfo/ram.h
+        ${HWINFO_INCLUDE_DIR}/hwinfo/resource_limits.h
+        ${HWINFO_INCLUDE_DIR}/hwinfo/virtualization.h
 )
 
 # hwinfo_add_component(<name> SOURCES <files...> [PUBLIC_LINK <libs...>] [PRIVATE_LINK <libs...>])
@@ -117,7 +119,8 @@ if (HWINFO_MAINBOARD)
 endif ()
 
 if (HWINFO_OS)
-    hwinfo_add_component(os SOURCES ${HWINFO_WMI_SOURCES})
+    hwinfo_add_component(os
+            SOURCES ${HWINFO_PLATFORM}/virtualization.cpp ${HWINFO_PLATFORM}/resource_limits.cpp ${HWINFO_WMI_SOURCES})
 endif ()
 
 if (HWINFO_RAM)
