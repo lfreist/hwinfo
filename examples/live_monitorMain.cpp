@@ -13,7 +13,6 @@
 #include <format>
 #include <iostream>
 #include <optional>
-#include <print>
 #include <ranges>
 #include <string>
 #include <string_view>
@@ -98,24 +97,24 @@ int main() {
   const auto memory = hwinfo::memory();
   const auto gpus = hwinfo::gpus();
 
-  std::println("=== hwinfo live monitor  (Ctrl+C to quit) ===\n");
+  std::cout << "=== hwinfo live monitor  (Ctrl+C to quit) ===\n\n";
   for (const auto& cpu : cpus.value_or(std::vector<hwinfo::Cpu>{})) {
-    std::println("CPU : {}", cpu);
+    std::cout << std::format("CPU : {}", cpu) << '\n';
   }
   if (memory) {
-    std::println("RAM : {} total", memory->total);
+    std::cout << std::format("RAM : {} total", memory->total) << '\n';
   }
   std::vector<std::filesystem::path> mount_points;
   for (const auto& disk : disks.value_or(std::vector<hwinfo::Disk>{})) {
-    std::println("Disk: [{}] {}", disk.index, disk);
+    std::cout << std::format("Disk: [{}] {}", disk.index, disk) << '\n';
     mount_points.append_range(disk.mount_points);
   }
   std::vector<hwinfo::GpuSampler> gpu_samplers;
   for (const auto& gpu : gpus.value_or(std::vector<hwinfo::Gpu>{})) {
-    std::println("GPU : [{}] {}", gpu.index, gpu);
+    std::cout << std::format("GPU : [{}] {}", gpu.index, gpu) << '\n';
     gpu_samplers.emplace_back(gpu);
   }
-  std::println();
+  std::cout << '\n';
 
   int previous_lines = 0;
   const auto render = [&](const Snapshot& s) {
@@ -157,9 +156,9 @@ int main() {
     }
 
     if (previous_lines > 0) {
-      std::print("\033[{}A", previous_lines);  // move cursor up to overwrite the previous output
+      std::cout << std::format("\033[{}A", previous_lines);  // move cursor up to overwrite the previous output
     }
-    std::print("{}", out);
+    std::cout << out;
     std::cout.flush();
     previous_lines = lines;
   };
@@ -184,6 +183,6 @@ int main() {
     std::this_thread::sleep_for(100ms);
   }
   monitor.stop();
-  std::println();
+  std::cout << '\n';
   return 0;
 }
