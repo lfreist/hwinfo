@@ -6,8 +6,8 @@
 // Apple Silicon Macs report their marketing name in the I/O Registry ("product-name"), Intel Macs do not. This table
 // covers all model identifiers of the old "<Product><major>,<minor>" scheme, which is closed: Macs released since 2022
 // use "Mac<major>,<minor>" identifiers and are all Apple Silicon.
-// Source: Apple's "Identify your Mac model" support articles. Identifiers shared by several models (distinguishable
-// only by serial number) get a combined name.
+// Source: Apple's "Identify your Mac model" support articles. Identifiers shared by several models get a combined
+// name; mac_model_variants tells them apart by their processor where the model years shipped different ones.
 
 #pragma once
 
@@ -124,12 +124,43 @@ inline constexpr std::array<std::pair<std::string_view, std::string_view>, 99> m
 
 static_assert(std::ranges::is_sorted(mac_marketing_names, {}, &std::pair<std::string_view, std::string_view>::first));
 
+struct MacModelVariant {
+  std::string_view identifier;
+  std::string_view cpu;
+  std::string_view name;
+};
+
+// Models sharing an identifier, by the processors only one of them was sold with (Apple tech specs). Processors
+// offered in several model years (the i7-5650U of the MacBook Air 2015 / 2017) are left out: the combined name stays.
+inline constexpr std::array<MacModelVariant, 12> mac_model_variants{{
+    {"MacBookAir7,2", "i5-5250U", "MacBook Air (13-inch, Early 2015)"},
+    {"MacBookAir7,2", "i5-5350U", "MacBook Air (13-inch, 2017)"},
+    {"MacBookPro15,1", "i7-8750H", "MacBook Pro (15-inch, 2018)"},
+    {"MacBookPro15,1", "i7-8850H", "MacBook Pro (15-inch, 2018)"},
+    {"MacBookPro15,1", "i9-8950HK", "MacBook Pro (15-inch, 2018)"},
+    {"MacBookPro15,1", "i7-9750H", "MacBook Pro (15-inch, 2019)"},
+    {"MacBookPro15,1", "i9-9880H", "MacBook Pro (15-inch, 2019)"},
+    {"MacBookPro15,1", "i9-9980HK", "MacBook Pro (15-inch, 2019)"},
+    {"MacBookPro15,2", "i5-8259U", "MacBook Pro (13-inch, 2018, Four Thunderbolt 3 ports)"},
+    {"MacBookPro15,2", "i7-8559U", "MacBook Pro (13-inch, 2018, Four Thunderbolt 3 ports)"},
+    {"MacBookPro15,2", "i5-8279U", "MacBook Pro (13-inch, 2019, Four Thunderbolt 3 ports)"},
+    {"MacBookPro15,2", "i7-8569U", "MacBook Pro (13-inch, 2019, Four Thunderbolt 3 ports)"},
+}};
+
 // Marketing name for a model identifier (e.g. "MacBookPro16,1" -> "MacBook Pro (16-inch, 2019)").
-constexpr std::optional<std::string_view> mac_marketing_name(std::string_view identifier) noexcept {
+// `cpu_brand` (sysctl machdep.cpu.brand_string, e.g. "Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz") distinguishes models
+// that share an identifier; without it, or for an ambiguous processor, they get a combined name ("2018 or 2019").
+constexpr std::optional<std::string_view> mac_marketing_name(std::string_view identifier,
+                                                             std::string_view cpu_brand = {}) noexcept {
   const auto it = std::ranges::lower_bound(mac_marketing_names, identifier, {},
                                            &std::pair<std::string_view, std::string_view>::first);
   if (it == mac_marketing_names.end() || it->first != identifier) {
     return std::nullopt;
+  }
+  for (const auto& variant : mac_model_variants) {
+    if (variant.identifier == identifier && cpu_brand.contains(variant.cpu)) {
+      return variant.name;
+    }
   }
   return it->second;
 }

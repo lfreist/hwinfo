@@ -37,14 +37,14 @@ struct Computer {
   std::optional<std::string> serial_number{};  // usually requires elevated privileges on Linux
   ChassisType chassis = ChassisType::unknown;
 
-  [[nodiscard]] result<Os> os() const { return hwinfo::os(); }
-  [[nodiscard]] result<Mainboard> mainboard() const { return hwinfo::mainboard(); }
-  [[nodiscard]] result<std::vector<Cpu>> cpus() const { return hwinfo::cpus(); }
-  [[nodiscard]] result<Memory> memory() const { return hwinfo::memory(); }
-  [[nodiscard]] result<std::vector<Gpu>> gpus() const { return hwinfo::gpus(); }
-  [[nodiscard]] result<std::vector<Disk>> disks() const { return hwinfo::disks(); }
-  [[nodiscard]] result<std::vector<Battery>> batteries() const { return hwinfo::batteries(); }
-  [[nodiscard]] result<std::vector<NetworkInterface>> network_interfaces() const {
+  static result<Os> os() { return hwinfo::os(); }
+  static result<Mainboard> mainboard() { return hwinfo::mainboard(); }
+  static result<std::vector<Cpu>> cpus() { return hwinfo::cpus(); }
+  static result<Memory> memory() { return hwinfo::memory(); }
+  static result<std::vector<Gpu>> gpus(const GpuQuery& query = {}) { return hwinfo::gpus(query); }
+  static result<std::vector<Disk>> disks() { return hwinfo::disks(); }
+  static result<std::vector<Battery>> batteries() { return hwinfo::batteries(); }
+  static result<std::vector<NetworkInterface>> network_interfaces() {
     return hwinfo::network_interfaces();
   }
 

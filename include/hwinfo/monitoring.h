@@ -4,12 +4,13 @@
 // Dynamic system state (utilization, free memory, battery charge, ...) and a periodic Monitor.
 //
 // Each function is implemented by the library of its component (CpuSampler / cpu_frequencies: hwinfo_cpu,
-// memory_usage: hwinfo_ram, battery_status: hwinfo_battery).
+// memory_usage: hwinfo_ram, battery_status: hwinfo_battery, GpuSampler: hwinfo_gpu).
 
 #pragma once
 
 #include <hwinfo/detail/formatter.h>
 #include <hwinfo/error.h>
+#include <hwinfo/gpu.h>
 #include <hwinfo/platform.h>
 #include <hwinfo/units.h>
 
@@ -18,6 +19,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <stop_token>
@@ -122,6 +124,50 @@ constexpr std::string_view to_string(BatteryState state) noexcept {
   }
   return "unknown";
 }
+
+// ----- GPU ----------------------------------------------------------------------------------------------------------
+
+struct GpuStatus {
+  bool suspended = false;
+  std::optional<double> utilization{};         // [0, 1], graphics / compute engines busy
+  std::optional<double> memory_utilization{};  // [0, 1], memory controller busy
+  std::optional<double> video_utilization{};   // [0, 1], video encode / decode engines busy
+  std::optional<Bytes> memory_used{};          // dedicated memory (VRAM) in use
+  std::optional<Bytes> memory_total{};
+  std::optional<double> temperature{};      // degrees Celsius, GPU die
+  std::optional<Power> power{};             // current power draw of the board (or GPU package)
+  std::optional<Hertz> frequency{};         // current graphics / shader clock
+  std::optional<Hertz> memory_frequency{};  // current memory clock
+  std::optional<double> fan_speed{};        // [0, 1] of the maximum fan speed
+  std::optional<PcieLink> pcie_link{};      // current link; idle GPUs train down to save power
+};
+
+/**
+ * Measures the live state of one GPU. Rates (utilization, power) are averaged since the previous sample where the
+ * source provides counters, otherwise they are the driver's latest reading.
+ *
+ *   const auto gpus = hwinfo::gpus();
+ *   hwinfo::GpuSampler sampler((*gpus)[0]);
+ *   std::this_thread::sleep_for(500ms);
+ *   auto status = sampler.sample();
+ *
+ * Sources, by priority: NVML (NVIDIA), Level Zero Sysman (Intel), the operating system (Linux: amdgpu / hwmon sysfs,
+ * Windows: performance counters, macOS: IOKit performance statistics). `query` selects the vendor libraries as for
+ * gpus(). Fields no source provides stay empty; sample() fails with errc::not_supported if there is no source at all.
+ */
+class HWINFO_API GpuSampler {
+ public:
+  explicit GpuSampler(const Gpu& gpu, const GpuQuery& query = {});
+  GpuSampler(GpuSampler&&) noexcept;
+  GpuSampler& operator=(GpuSampler&&) noexcept;
+  ~GpuSampler();
+
+  [[nodiscard]] result<GpuStatus> sample();
+
+ private:
+  struct State;
+  std::unique_ptr<State> _state;
+};
 
 // ----- Monitor ------------------------------------------------------------------------------------------------------
 

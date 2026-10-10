@@ -88,16 +88,28 @@ if (HWINFO_DISK)
 endif ()
 
 if (HWINFO_GPU)
+    set(HWINFO_GPU_SOURCES
+            common/gpu/backends.cpp
+            common/gpu/merge.cpp
+            common/gpu/sampler.cpp
+            ${HWINFO_PLATFORM}/monitoring/gpu.cpp)
+    if (HWINFO_GPU_BACKENDS)
+        list(APPEND HWINFO_GPU_SOURCES
+                common/gpu/cuda.cpp
+                common/gpu/intel.cpp
+                common/gpu/level_zero.cpp
+                common/gpu/nvidia.cpp
+                common/gpu/nvml.cpp
+                common/gpu/opencl.cpp)
+    endif ()
     hwinfo_add_component(gpu
-            SOURCES ${HWINFO_WMI_SOURCES}
-            PRIVATE_LINK $<$<BOOL:${WIN32}>:dxgi>)
+            SOURCES ${HWINFO_GPU_SOURCES} ${HWINFO_WMI_SOURCES}
+            PRIVATE_LINK $<$<BOOL:${WIN32}>:dxgi> $<$<BOOL:${WIN32}>:pdh> ${CMAKE_DL_LIBS})
+    if (NOT HWINFO_GPU_BACKENDS)
+        target_compile_definitions(hwinfo_gpu PRIVATE HWINFO_GPU_NO_BACKENDS)
+    endif ()
     target_include_directories(hwinfo_gpu PRIVATE ${HWINFO_CMAKE_BINARY_DIR}/generated)
     add_dependencies(hwinfo_gpu generate_pci_ids_header)
-    if (HWINFO_GPU_OPENCL)
-        add_subdirectory(opencl)
-        target_compile_definitions(hwinfo_gpu PRIVATE USE_OCL)
-        target_link_libraries(hwinfo_gpu PRIVATE opencl_device)
-    endif ()
 endif ()
 
 if (HWINFO_MAINBOARD)

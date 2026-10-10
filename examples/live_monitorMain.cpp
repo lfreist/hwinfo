@@ -2,6 +2,7 @@
 
 #include <hwinfo/cpu.h>
 #include <hwinfo/disk.h>
+#include <hwinfo/gpu.h>
 #include <hwinfo/monitoring.h>
 #include <hwinfo/ram.h>
 
@@ -11,9 +12,11 @@
 #include <csignal>
 #include <format>
 #include <iostream>
+#include <optional>
 #include <print>
 #include <ranges>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <vector>
 
@@ -59,7 +62,25 @@ struct Snapshot {
   hwinfo::result<std::vector<hwinfo::Hertz>> frequencies;
   hwinfo::result<hwinfo::MemoryUsage> memory;
   std::vector<std::pair<std::filesystem::path, hwinfo::result<hwinfo::DiskSpace>>> disks;
+  std::vector<hwinfo::result<hwinfo::GpuStatus>> gpus;
 };
+
+template <typename T>
+std::string or_dash(const std::optional<T>& value, std::string_view spec = "{}") {
+  return value ? std::vformat(spec, std::make_format_args(*value)) : std::string("-");
+}
+
+std::string gpu_line(const hwinfo::GpuStatus& s) {
+  if (s.suspended) {
+    return "suspended (powered down)";
+  }
+  const std::string utilization =
+      s.utilization ? std::format("{} {:5.1f}%", bar(*s.utilization, 14), *s.utilization * 100.0) : "n/a";
+  return std::format("{:<23}  mem {:>9} {}  {:>6}  {:>7}", utilization, or_dash(s.memory_used, "{:.2GiB}"),
+                     s.memory_total ? std::format("of {:.1GiB}", *s.memory_total) : std::string{},
+                     s.temperature ? std::format("{:.0f}°C", *s.temperature) : std::string("-"),
+                     or_dash(s.power, "{:.1W}"));
+}
 
 }  // namespace
 
@@ -75,6 +96,7 @@ int main() {
   const auto cpus = hwinfo::cpus();
   const auto disks = hwinfo::disks();
   const auto memory = hwinfo::memory();
+  const auto gpus = hwinfo::gpus();
 
   std::println("=== hwinfo live monitor  (Ctrl+C to quit) ===\n");
   for (const auto& cpu : cpus.value_or(std::vector<hwinfo::Cpu>{})) {
@@ -87,6 +109,11 @@ int main() {
   for (const auto& disk : disks.value_or(std::vector<hwinfo::Disk>{})) {
     std::println("Disk: [{}] {}", disk.index, disk);
     mount_points.append_range(disk.mount_points);
+  }
+  std::vector<hwinfo::GpuSampler> gpu_samplers;
+  for (const auto& gpu : gpus.value_or(std::vector<hwinfo::Gpu>{})) {
+    std::println("GPU : [{}] {}", gpu.index, gpu);
+    gpu_samplers.emplace_back(gpu);
   }
   std::println();
 
@@ -121,6 +148,14 @@ int main() {
       }
     }
 
+    for (std::size_t i = 0; i < s.gpus.size(); ++i) {
+      if (s.gpus[i]) {
+        line("GPU [{}]  : {}", i, gpu_line(*s.gpus[i]));
+      } else {
+        line("GPU [{}]  : {}", i, s.gpus[i].error());
+      }
+    }
+
     if (previous_lines > 0) {
       std::print("\033[{}A", previous_lines);  // move cursor up to overwrite the previous output
     }
@@ -130,7 +165,7 @@ int main() {
   };
 
   hwinfo::Monitor monitor{1s,
-                          [&mount_points, sampler = hwinfo::CpuSampler{}]() mutable {
+                          [&mount_points, &gpu_samplers, sampler = hwinfo::CpuSampler{}]() mutable {
                             return Snapshot{
                                 .cpu = sampler.sample(),
                                 .frequencies = hwinfo::cpu_frequencies(),
@@ -139,6 +174,8 @@ int main() {
                                            return std::pair{path, hwinfo::disk_space(path)};
                                          }) |
                                          std::ranges::to<std::vector>(),
+                                .gpus = gpu_samplers | std::views::transform([](auto& gpu) { return gpu.sample(); }) |
+                                        std::ranges::to<std::vector>(),
                             };
                           },
                           render};
