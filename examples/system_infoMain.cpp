@@ -197,7 +197,8 @@ int main() {
       field("bus:", disk.bus);
       field("size:", disk.size);
       field("link speed:", disk.link_speed);
-      field("mount points:", join(disk.mount_points | std::views::transform([](const auto& p) { return p.string(); })));
+      field("mount points:",
+            join(disk.mount_points | std::views::transform([](const auto& m) { return to_string(m); })));
     }
   }
 

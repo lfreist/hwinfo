@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "internal/apple_cf.h"
+#include "internal/strings.h"
 
 namespace hwinfo {
 
@@ -31,7 +32,7 @@ namespace cf = internal::apple;
 namespace fs = std::filesystem;
 
 // BSD name ("disk3s1s1") -> mount points
-using MountMap = std::unordered_map<std::string, std::vector<fs::path>>;
+using MountMap = std::unordered_map<std::string, std::vector<MountPoint>>;
 
 MountMap mounted_devices() {
   MountMap mounts;
@@ -48,15 +49,15 @@ MountMap mounted_devices() {
       continue;
     }
     device.remove_prefix(5);
-    mounts[std::string(device)].emplace_back(entry.f_mntonname);
+    mounts[std::string(device)].push_back({entry.f_mntonname, internal::non_empty(entry.f_fstypename)});
   }
   return mounts;
 }
 
 // Mount points of the disk, its partitions and the volumes of APFS containers on it.
 // These are all IOMedia descendants of the disk in the service plane.
-std::vector<fs::path> mount_points(io_registry_entry_t disk, const MountMap& mounts) {
-  std::vector<fs::path> result;
+std::vector<MountPoint> mount_points(io_registry_entry_t disk, const MountMap& mounts) {
+  std::vector<MountPoint> result;
   const auto add = [&](io_registry_entry_t media) {
     const auto bsd_name = cf::string_property(media, CFSTR(kIOBSDNameKey));
     if (!bsd_name) {
@@ -76,8 +77,8 @@ std::vector<fs::path> mount_points(io_registry_entry_t disk, const MountMap& mou
       }
     }
   }
-  std::ranges::sort(result);
-  const auto duplicates = std::ranges::unique(result);
+  std::ranges::sort(result, {}, &MountPoint::path);
+  const auto duplicates = std::ranges::unique(result, {}, &MountPoint::path);
   result.erase(duplicates.begin(), duplicates.end());
   return result;
 }

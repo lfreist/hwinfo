@@ -20,6 +20,14 @@ namespace hwinfo {
 
 enum class DiskBus { unknown, nvme, sata, scsi, usb, mmc, virtio };
 
+// A mounted filesystem on a disk (or one of its partitions / volumes).
+struct MountPoint {
+  std::filesystem::path path{};
+  std::optional<std::string> filesystem{};  // as named by the OS, e.g. "ext4", "apfs", "NTFS"
+
+  friend bool operator==(const MountPoint&, const MountPoint&) = default;
+};
+
 // A physical (or virtual) block device.
 struct Disk {
   std::uint32_t index = 0;
@@ -29,7 +37,7 @@ struct Disk {
   Bytes size{};
   DiskBus bus = DiskBus::unknown;
   std::optional<DataRate> link_speed{};  // negotiated link speed (currently USB only)
-  std::vector<std::filesystem::path> mount_points{};
+  std::vector<MountPoint> mount_points{};
 
   friend bool operator==(const Disk&, const Disk&) = default;
 };
@@ -58,6 +66,10 @@ constexpr std::string_view to_string(DiskBus bus) noexcept {
   return "unknown";
 }
 
+inline std::string to_string(const MountPoint& mount_point) {
+  return std::format("{} ({})", mount_point.path.string(), mount_point.filesystem.value_or("unknown"));
+}
+
 inline std::string to_string(const Disk& disk) {
   return std::format("{} ({}, {})", disk.model.value_or("unknown disk"), disk.size, to_string(disk.bus));
 }
@@ -66,6 +78,9 @@ inline std::string to_string(const Disk& disk) {
 
 template <>
 struct std::formatter<hwinfo::DiskBus> : hwinfo::detail::to_string_formatter<hwinfo::DiskBus> {};
+
+template <>
+struct std::formatter<hwinfo::MountPoint> : hwinfo::detail::to_string_formatter<hwinfo::MountPoint> {};
 
 template <>
 struct std::formatter<hwinfo::Disk> : hwinfo::detail::to_string_formatter<hwinfo::Disk> {};

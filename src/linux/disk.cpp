@@ -16,6 +16,7 @@
 
 #include "internal/file.h"
 #include "internal/procfs.h"
+#include "internal/strings.h"
 
 namespace hwinfo {
 
@@ -117,7 +118,7 @@ result<std::vector<Disk>> disks() {
     }
     for (const auto& mount : mounts) {
       if (devices.contains(mount.device)) {
-        disk.mount_points.emplace_back(mount.mount_point);
+        disk.mount_points.push_back({mount.mount_point, internal::non_empty(mount.fs_type)});
       }
     }
     result.push_back(std::move(disk));

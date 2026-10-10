@@ -107,7 +107,9 @@ int main() {
   std::vector<std::filesystem::path> mount_points;
   for (const auto& disk : disks.value_or(std::vector<hwinfo::Disk>{})) {
     std::cout << std::format("Disk: [{}] {}", disk.index, disk) << '\n';
-    mount_points.insert(mount_points.end(), disk.mount_points.begin(), disk.mount_points.end());
+    for (const auto& mount_point : disk.mount_points) {
+      mount_points.push_back(mount_point.path);
+    }
   }
   std::vector<hwinfo::GpuSampler> gpu_samplers;
   for (const auto& gpu : gpus.value_or(std::vector<hwinfo::Gpu>{})) {

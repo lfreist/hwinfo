@@ -172,7 +172,9 @@ TEST(Mounts, ParsesAndUnescapes) {
   ASSERT_EQ(mounts.size(), 3u);
   EXPECT_EQ(mounts[0].device, "/dev/nvme0n1p2");
   EXPECT_EQ(mounts[0].mount_point, "/");
+  EXPECT_EQ(mounts[0].fs_type, "ext4");
   EXPECT_EQ(mounts[1].mount_point, "/media/My Disk");
+  EXPECT_EQ(mounts[1].fs_type, "vfat");
   EXPECT_EQ(mounts[2].device, "proc");
 }
 

@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "internal/strings.h"
+#include "internal/windows_strings.h"
 
 namespace hwinfo {
 
@@ -104,9 +105,19 @@ std::optional<std::string> vendor_from_model(std::string_view model) {
   return std::nullopt;
 }
 
+// Filesystem of the volume mounted at `root` ("C:\"), e.g. "NTFS", "FAT32", "exFAT", "ReFS".
+std::optional<std::string> filesystem_name(const wchar_t* root) {
+  std::array<wchar_t, MAX_PATH + 1> name{};
+  if (!GetVolumeInformationW(root, nullptr, 0, nullptr, nullptr, nullptr, name.data(),
+                             static_cast<DWORD>(name.size()))) {
+    return std::nullopt;
+  }
+  return internal::non_empty(internal::to_utf8(name.data()));
+}
+
 // Device number -> drive letters ("C:\") of the volumes on that disk.
-std::map<DWORD, std::vector<std::filesystem::path>> drive_letters() {
-  std::map<DWORD, std::vector<std::filesystem::path>> mapping;
+std::map<DWORD, std::vector<MountPoint>> drive_letters() {
+  std::map<DWORD, std::vector<MountPoint>> mapping;
   std::array<wchar_t, 512> drives{};
   const DWORD length = GetLogicalDriveStringsW(static_cast<DWORD>(drives.size()), drives.data());
   if (length == 0 || length > drives.size()) {
@@ -122,7 +133,7 @@ std::map<DWORD, std::vector<std::filesystem::path>> drive_letters() {
     DWORD returned = 0;
     if (volume.valid() && DeviceIoControl(volume.get(), IOCTL_STORAGE_GET_DEVICE_NUMBER, nullptr, 0, &number,
                                           sizeof(number), &returned, nullptr)) {
-      mapping[number.DeviceNumber].emplace_back(root);
+      mapping[number.DeviceNumber].push_back({root, filesystem_name(root)});
     }
   }
   return mapping;
