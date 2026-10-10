@@ -126,7 +126,7 @@ std::optional<std::string> pci_address(const LUID& luid) {
   const LONG status = query(&info);
   const d3dkmt::CloseAdapter close_info{.adapter = adapter.adapter};
   close(&close_info);
-  if (status != 0) {
+  if (status != 0 || address.bus > 0xff || address.device > 0x1f || address.function > 0x7) {
     return std::nullopt;
   }
   return internal::format_pci_address(0, address.bus, address.device, address.function);
