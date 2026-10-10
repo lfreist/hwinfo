@@ -5,9 +5,10 @@
 
 #ifdef HWINFO_WINDOWS
 
+// clang-format off
 #include <windows.h>
-
 #include <oleauto.h>
+// clang-format on
 
 #include <format>
 #include <optional>
