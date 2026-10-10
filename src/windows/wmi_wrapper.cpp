@@ -5,6 +5,8 @@
 
 #ifdef HWINFO_WINDOWS
 
+#include <windows.h>
+
 #include <oleauto.h>
 
 #include <format>
