@@ -124,6 +124,21 @@ TEST(Smoke, Os) {
   EXPECT_EQ(os->family, hwinfo::OsFamily::linux_);
 #endif
 }
+
+TEST(Smoke, Virtualization) {
+  const auto virtualization = hwinfo::virtualization();
+  ASSERT_TRUE(virtualization) << virtualization.error().message();
+}
+
+TEST(Smoke, ResourceLimits) {
+  const auto limits = hwinfo::resource_limits();
+  ASSERT_TRUE(limits) << limits.error().message();
+  EXPECT_FALSE(limits->allowed_cpus.empty());
+  EXPECT_TRUE(std::ranges::is_sorted(limits->allowed_cpus));
+  if (limits->cpu_quota) {
+    EXPECT_GT(*limits->cpu_quota, 0.0);
+  }
+}
 #endif
 
 #ifdef HWINFO_HAS_DISK

@@ -337,4 +337,100 @@ inline std::vector<Mount> parse_mounts(std::string_view content) {
   return mounts;
 }
 
+// ----- /proc/self/mountinfo -----------------------------------------------------------------------------------------
+
+struct MountInfo {
+  std::string root;
+  std::string mount_point;
+  std::string fs_type;
+  std::string super_options;
+};
+
+// Format: "<id> <parent> <major:minor> <root> <mount point> <options> [optional fields...] - <type> <source> <super
+// options>"
+inline std::vector<MountInfo> parse_mountinfo(std::string_view content) {
+  std::vector<MountInfo> mounts;
+  for (const auto line : lines(content)) {
+    const auto fields = std::ranges::to<std::vector<std::string_view>>(words(line));
+    const auto separator = std::ranges::find(fields, "-");
+    const auto index = static_cast<std::size_t>(separator - fields.begin());
+    if (index < 6 || fields.size() < index + 2) {
+      continue;
+    }
+    mounts.push_back({
+        .root = unescape_mount_path(fields[3]),
+        .mount_point = unescape_mount_path(fields[4]),
+        .fs_type = std::string(fields[index + 1]),
+        .super_options = fields.size() > index + 3 ? std::string(fields[index + 3]) : std::string{},
+    });
+  }
+  return mounts;
+}
+
+// ----- cgroups ------------------------------------------------------------------------------------------------------
+
+struct CgroupMembership {
+  std::optional<std::string> unified{};
+  std::map<std::string, std::string, std::less<>> controllers{};
+};
+
+// /proc/self/cgroup, e.g. "0::/user.slice" (v2) or "4:cpu,cpuacct:/docker/<id>" (v1)
+inline CgroupMembership parse_cgroup(std::string_view content) {
+  CgroupMembership membership;
+  for (const auto line : lines(content)) {
+    const auto first = line.find(':');
+    const auto second = first == std::string_view::npos ? first : line.find(':', first + 1);
+    if (second == std::string_view::npos) {
+      continue;
+    }
+    const auto controllers = line.substr(first + 1, second - first - 1);
+    const std::string path(line.substr(second + 1));
+    if (controllers.empty()) {
+      membership.unified = path;
+    } else {
+      for (const auto controller : split(controllers, ',')) {
+        membership.controllers.emplace(controller, path);
+      }
+    }
+  }
+  return membership;
+}
+
+// cgroup v2 cpu.max: "<quota> <period>" in microseconds, quota "max" if unlimited. Returns the quota in cores.
+inline std::optional<double> parse_cgroup_cpu_max(std::string_view content) {
+  const auto fields = std::ranges::to<std::vector<std::string_view>>(words(content));
+  if (fields.empty() || fields[0] == "max") {
+    return std::nullopt;
+  }
+  const auto quota = parse<std::uint64_t>(fields[0]);
+  const auto period = parse<std::uint64_t>(fields.size() > 1 ? fields[1] : std::string_view("100000"));
+  if (!quota || !period || *period == 0) {
+    return std::nullopt;
+  }
+  return static_cast<double>(*quota) / static_cast<double>(*period);
+}
+
+// cgroup v1 cpu.cfs_quota_us / cpu.cfs_period_us: quota -1 if unlimited.
+inline std::optional<double> parse_cgroup_cfs_quota(std::string_view quota, std::string_view period) {
+  const auto q = parse<std::int64_t>(trim(quota));
+  const auto p = parse<std::int64_t>(trim(period));
+  if (!q || !p || *q <= 0 || *p <= 0) {
+    return std::nullopt;
+  }
+  return static_cast<double>(*q) / static_cast<double>(*p);
+}
+
+// cgroup v2 memory.max ("max" if unlimited) or v1 memory.limit_in_bytes (close to INT64_MAX if unlimited).
+inline std::optional<Bytes> parse_cgroup_memory_limit(std::string_view content) {
+  content = trim(content);
+  if (content == "max") {
+    return std::nullopt;
+  }
+  const auto value = parse<std::uint64_t>(content);
+  if (!value || *value >= (std::uint64_t{1} << 62)) {
+    return std::nullopt;
+  }
+  return Bytes{*value};
+}
+
 }  // namespace hwinfo::internal::procfs

@@ -105,6 +105,19 @@ constexpr bool equals_ignore_case(std::string_view a, std::string_view b) noexce
   return std::ranges::equal(a, b, [](char x, char y) { return to_lower(x) == to_lower(y); });
 }
 
+constexpr bool starts_with_ignore_case(std::string_view s, std::string_view prefix) noexcept {
+  return s.size() >= prefix.size() && equals_ignore_case(s.substr(0, prefix.size()), prefix);
+}
+
+constexpr bool contains_ignore_case(std::string_view s, std::string_view needle) noexcept {
+  for (std::size_t i = 0; i + needle.size() <= s.size(); ++i) {
+    if (equals_ignore_case(s.substr(i, needle.size()), needle)) {
+      return true;
+    }
+  }
+  return needle.empty();
+}
+
 // Converts an empty or whitespace-only string to std::nullopt.
 inline std::optional<std::string> non_empty(std::string_view s) {
   s = trim(s);
