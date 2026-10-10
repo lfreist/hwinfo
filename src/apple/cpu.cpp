@@ -28,7 +28,7 @@ bool isAppleSilicon() {
 
 bool isPowerPC() {
   int cputype = utils::getSysctlValue<int>("hw.cputype", -1);
-  return cputype == 18; // 18 is CPU_TYPE_POWERPC
+  return cputype == 18;  // 18 is CPU_TYPE_POWERPC
 }
 
 // Get the number of physical CPU cores
@@ -271,12 +271,23 @@ std::string getModelName() {
   if (model == "<unknown>" && isPowerPC()) {
     int cpusubtype = utils::getSysctlValue<int>("hw.cpusubtype", -1);
     switch (cpusubtype) {
-      case 100: model = "PowerPC G5 (970)"; break;
-      case 11: model = "PowerPC G4 (7450)"; break;
-      case 10: model = "PowerPC G4 (7400)"; break;
-      case 9: model = "PowerPC G3 (750)"; break;
-      case 1: model = "PowerPC 601"; break;
-      default: model = "PowerPC (unknown subtype: " + std::to_string(cpusubtype) + ")";
+      case 100:
+        model = "PowerPC G5 (970)";
+        break;
+      case 11:
+        model = "PowerPC G4 (7450)";
+        break;
+      case 10:
+        model = "PowerPC G4 (7400)";
+        break;
+      case 9:
+        model = "PowerPC G3 (750)";
+        break;
+      case 1:
+        model = "PowerPC 601";
+        break;
+      default:
+        model = "PowerPC (unknown subtype: " + std::to_string(cpusubtype) + ")";
     }
   }
 #endif
