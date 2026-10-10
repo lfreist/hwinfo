@@ -3,16 +3,17 @@
 
 #include <hwinfo/hwinfo.h>
 
-#include <print>
+#include <format>
+#include <iostream>
 #include <ranges>
 #include <string>
 #include <string_view>
 
 namespace {
 
-void section(std::string_view title) { std::println("{:-^80}", std::format(" {} ", title)); }
+void section(std::string_view title) { std::cout << std::format("{:-^80}", std::format(" {} ", title)) << '\n'; }
 
-void field(std::string_view name, const auto& value) { std::println("  {:<22}{}", name, value); }
+void field(std::string_view name, const auto& value) { std::cout << std::format("  {:<22}{}", name, value) << '\n'; }
 
 template <typename T>
 void field(std::string_view name, const std::optional<T>& value) {
@@ -27,7 +28,7 @@ void field(std::string_view name, const std::optional<T>& value) {
 template <typename T>
 bool check(const hwinfo::result<T>& r) {
   if (!r) {
-    std::println("  error: {}", r.error());
+    std::cout << std::format("  error: {}", r.error()) << '\n';
   }
   return r.has_value();
 }
@@ -43,15 +44,15 @@ std::string join(const auto& range, std::string_view separator = ", ") {
 }  // namespace
 
 int main() {
-  std::println(
-      "hwinfo is an open source, MIT licensed project that implements a platform independent hardware and system "
-      "information gathering API for C++.\n\nIf you face any issues, find bugs or if your platform is not supported "
-      "yet, do not hesitate to create a ticket at https://github.com/lfreist/hwinfo/issues.\n");
+  std::cout
+      << "hwinfo is an open source, MIT licensed project that implements a platform independent hardware and system "
+         "information gathering API for C++.\n\nIf you face any issues, find bugs or if your platform is not supported "
+         "yet, do not hesitate to create a ticket at https://github.com/lfreist/hwinfo/issues.\n\n";
 
   section("CPU");
   if (const auto cpus = hwinfo::cpus(); check(cpus)) {
     for (const auto& cpu : *cpus) {
-      std::println("Socket {}", cpu.socket);
+      std::cout << std::format("Socket {}", cpu.socket) << '\n';
       field("vendor:", cpu.vendor);
       field("model:", cpu.model);
       field("cores:", std::format("{} ({} threads)", cpu.physical_cores, cpu.logical_cores));
@@ -83,7 +84,7 @@ int main() {
   section("GPU");
   if (const auto gpus = hwinfo::gpus(); check(gpus)) {
     for (const auto& gpu : *gpus) {
-      std::println("GPU {}", gpu.index);
+      std::cout << std::format("GPU {}", gpu.index) << '\n';
       field("vendor:", gpu.vendor);
       field("model:", gpu.name);
       field("type:", gpu.type);
@@ -119,7 +120,7 @@ int main() {
   if (const auto memory = hwinfo::memory(); check(memory)) {
     field("total:", memory->total);
     for (const auto& module : memory->modules) {
-      std::println("Module {}", module.index);
+      std::cout << std::format("Module {}", module.index) << '\n';
       field("vendor:", module.vendor);
       field("model:", module.model);
       field("serial number:", module.serial_number);
@@ -150,10 +151,10 @@ int main() {
   section("Batteries");
   if (const auto batteries = hwinfo::batteries(); check(batteries)) {
     if (batteries->empty()) {
-      std::println("No batteries installed or detected");
+      std::cout << "No batteries installed or detected\n";
     }
     for (const auto& battery : *batteries) {
-      std::println("Battery {}", battery.index);
+      std::cout << std::format("Battery {}", battery.index) << '\n';
       field("vendor:", battery.vendor);
       field("model:", battery.model);
       field("serial number:", battery.serial_number);
@@ -169,7 +170,7 @@ int main() {
   section("Disks");
   if (const auto disks = hwinfo::disks(); check(disks)) {
     for (const auto& disk : *disks) {
-      std::println("Disk {}", disk.index);
+      std::cout << std::format("Disk {}", disk.index) << '\n';
       field("vendor:", disk.vendor);
       field("model:", disk.model);
       field("serial number:", disk.serial_number);
@@ -183,7 +184,7 @@ int main() {
   section("Network");
   if (const auto nics = hwinfo::network_interfaces(); check(nics)) {
     for (const auto& nic : *nics | std::views::filter([](const auto& n) { return !n.is_loopback; })) {
-      std::println("Interface {}", nic.index);
+      std::cout << std::format("Interface {}", nic.index) << '\n';
       field("name:", nic.name);
       field("description:", nic.description);
       field("state:", nic.is_up ? "up" : "down");
