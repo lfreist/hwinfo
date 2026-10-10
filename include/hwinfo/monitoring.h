@@ -22,7 +22,6 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <stop_token>
 #include <string_view>
 #include <thread>
 #include <type_traits>
@@ -186,7 +185,7 @@ class Monitor {
 
   Monitor(std::chrono::milliseconds interval, Fetch fetch, Callback on_data)
       : _interval(interval), _fetch(std::move(fetch)), _on_data(std::move(on_data)) {
-    _thread = std::jthread([this](std::stop_token token) { run(token); });
+    _thread = std::thread([this] { run(); });
   }
 
   Monitor(const Monitor&) = delete;
@@ -199,7 +198,11 @@ class Monitor {
   // Stops the monitor and waits for a running callback to finish. When called from the callback itself, the monitor
   // stops after the callback returns.
   void stop() {
-    _thread.request_stop();
+    {
+      std::lock_guard lock(_mutex);
+      _stop_requested = true;
+    }
+    _cv.notify_all();
     if (_thread.joinable() && _thread.get_id() != std::this_thread::get_id()) {
       _thread.join();
     }
@@ -208,11 +211,13 @@ class Monitor {
   [[nodiscard]] bool running() const noexcept { return _thread.joinable(); }
 
  private:
-  void run(std::stop_token token) {
-    while (!token.stop_requested()) {
+  void run() {
+    std::unique_lock lock(_mutex);
+    while (!_stop_requested) {
+      lock.unlock();
       _on_data(_fetch());
-      std::unique_lock lock(_mutex);
-      _cv.wait_for(lock, token, _interval, [] { return false; });
+      lock.lock();
+      _cv.wait_for(lock, _interval, [this] { return _stop_requested; });
     }
   }
 
@@ -220,8 +225,9 @@ class Monitor {
   Fetch _fetch;
   Callback _on_data;
   std::mutex _mutex;
-  std::condition_variable_any _cv;
-  std::jthread _thread;  // last member: started after and joined before all others are destroyed
+  std::condition_variable _cv;
+  bool _stop_requested = false;  // guarded by _mutex
+  std::thread _thread;
 };
 
 template <typename F, typename C>
