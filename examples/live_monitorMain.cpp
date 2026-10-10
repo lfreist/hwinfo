@@ -107,7 +107,7 @@ int main() {
   std::vector<std::filesystem::path> mount_points;
   for (const auto& disk : disks.value_or(std::vector<hwinfo::Disk>{})) {
     std::cout << std::format("Disk: [{}] {}", disk.index, disk) << '\n';
-    mount_points.append_range(disk.mount_points);
+    mount_points.insert(mount_points.end(), disk.mount_points.begin(), disk.mount_points.end());
   }
   std::vector<hwinfo::GpuSampler> gpu_samplers;
   for (const auto& gpu : gpus.value_or(std::vector<hwinfo::Gpu>{})) {
@@ -163,21 +163,21 @@ int main() {
     previous_lines = lines;
   };
 
-  hwinfo::Monitor monitor{1s,
-                          [&mount_points, &gpu_samplers, sampler = hwinfo::CpuSampler{}]() mutable {
-                            return Snapshot{
-                                .cpu = sampler.sample(),
-                                .frequencies = hwinfo::cpu_frequencies(),
-                                .memory = hwinfo::memory_usage(),
-                                .disks = mount_points | std::views::transform([](const auto& path) {
-                                           return std::pair{path, hwinfo::disk_space(path)};
-                                         }) |
-                                         std::ranges::to<std::vector>(),
-                                .gpus = gpu_samplers | std::views::transform([](auto& gpu) { return gpu.sample(); }) |
-                                        std::ranges::to<std::vector>(),
-                            };
-                          },
-                          render};
+  hwinfo::Monitor monitor{
+      1s,
+      [&mount_points, &gpu_samplers, sampler = hwinfo::CpuSampler{}]() mutable {
+        return Snapshot{
+            .cpu = sampler.sample(),
+            .frequencies = hwinfo::cpu_frequencies(),
+            .memory = hwinfo::memory_usage(),
+            .disks = std::ranges::to<std::vector>(mount_points | std::views::transform([](const auto& path) {
+                                                    return std::pair{path, hwinfo::disk_space(path)};
+                                                  })),
+            .gpus = std::ranges::to<std::vector>(gpu_samplers |
+                                                 std::views::transform([](auto& gpu) { return gpu.sample(); })),
+        };
+      },
+      render};
 
   while (g_running) {
     std::this_thread::sleep_for(100ms);

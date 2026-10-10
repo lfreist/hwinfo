@@ -15,7 +15,7 @@ using namespace std::string_view_literals;
 namespace {
 template <typename R>
 std::vector<std::string_view> collect(R&& range) {
-  return std::forward<R>(range) | std::ranges::to<std::vector<std::string_view>>();
+  return std::ranges::to<std::vector<std::string_view>>(std::forward<R>(range));
 }
 }  // namespace
 

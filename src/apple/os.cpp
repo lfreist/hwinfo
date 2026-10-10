@@ -53,7 +53,7 @@ std::optional<std::string> product_version() {
 }
 
 std::string_view marketing_name(std::string_view version) {
-  const auto parts = internal::split(version, '.') | std::ranges::to<std::vector<std::string_view>>();
+  const auto parts = std::ranges::to<std::vector<std::string_view>>(internal::split(version, '.'));
   const auto major = internal::parse<int>(parts.empty() ? std::string_view{} : parts[0]);
   if (!major) {
     return {};

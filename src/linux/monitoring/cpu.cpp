@@ -52,12 +52,11 @@ result<std::vector<Hertz>> cpu_frequencies() {
   if (!std::filesystem::exists(sysfs_cpu / "cpu0/cpufreq")) {
     return std::unexpected(error{errc::not_supported, "cpufreq is not available"});
   }
-  return std::views::iota(0u, *possible) | std::views::transform([](std::uint32_t i) {
-           const auto khz = internal::read_number_attribute<std::uint64_t>(
-               sysfs_cpu / std::format("cpu{}/cpufreq/scaling_cur_freq", i));
-           return khz.value_or(0) * FrequencyUnit::kHz;
-         }) |
-         std::ranges::to<std::vector>();
+  return std::ranges::to<std::vector>(std::views::iota(0u, *possible) | std::views::transform([](std::uint32_t i) {
+                                        const auto khz = internal::read_number_attribute<std::uint64_t>(
+                                            sysfs_cpu / std::format("cpu{}/cpufreq/scaling_cur_freq", i));
+                                        return khz.value_or(0) * FrequencyUnit::kHz;
+                                      }));
 }
 
 }  // namespace hwinfo

@@ -134,7 +134,7 @@ inline result<std::vector<CpuinfoProcessor>> parse_cpuinfo(std::string_view cont
     if (p.model.empty()) {
       p.model = global_model;
     }
-    p.flags = words(get(block, {"flags", "Features", "isa"})) | std::ranges::to<std::vector<std::string>>();
+    p.flags = std::ranges::to<std::vector<std::string>>(words(get(block, {"flags", "Features", "isa"})));
     if (const auto mhz = parse<double>(get(block, {"cpu MHz"}))) {
       p.mhz = *mhz;
     }
