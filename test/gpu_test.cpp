@@ -34,3 +34,31 @@ TEST(Gpu, UnifiedMemoryFollowsType) {
   EXPECT_EQ(unified_memory(GpuType::virtualized), std::nullopt);
   EXPECT_EQ(unified_memory(GpuType::unknown), std::nullopt);
 }
+
+TEST(Gpu, OrderedByPciAddressThenEnumeration) {
+  using hwinfo::Gpu;
+  std::vector<Gpu> gpus{
+      Gpu{.index = 0, .name = "dGPU", .pci = PciDevice{.vendor_id = 0x10de, .address = "0000:01:00.0"}},
+      Gpu{.index = 1, .name = "platform A"},
+      Gpu{.index = 2, .name = "iGPU", .pci = PciDevice{.vendor_id = 0x8086, .address = "0000:00:02.0"}},
+      Gpu{.index = 3, .name = "no address", .pci = PciDevice{.vendor_id = 0x1002}},
+      Gpu{.index = 4, .name = "platform B"},
+  };
+  order_gpus(gpus);
+  std::vector<std::string> names;
+  for (std::uint32_t i = 0; i < gpus.size(); ++i) {
+    EXPECT_EQ(gpus[i].index, i);
+    names.push_back(gpus[i].name);
+  }
+  EXPECT_EQ(names, (std::vector<std::string>{"iGPU", "dGPU", "platform A", "no address", "platform B"}));
+}
+
+TEST(Gpu, ToStringNamesUnknownDevicesByPciIds) {
+  using hwinfo::Gpu;
+  EXPECT_EQ(hwinfo::to_string(Gpu{.vendor = "NVIDIA", .name = "RTX"}), "NVIDIA RTX");
+  EXPECT_EQ(hwinfo::to_string(Gpu{.vendor = "NVIDIA", .pci = PciDevice{.vendor_id = 0x10de, .device_id = 0x2820}}),
+            "NVIDIA Device [10de:2820]");
+  EXPECT_EQ(hwinfo::to_string(Gpu{.pci = PciDevice{.vendor_id = 0x1234, .device_id = 0x1111}}),
+            "Vendor Device [1234:1111]");
+  EXPECT_EQ(hwinfo::to_string(Gpu{}), "unknown GPU");
+}

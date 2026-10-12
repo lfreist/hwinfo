@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <array>
 #include <filesystem>
-#include <format>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -260,8 +259,8 @@ bool read_pci(const fs::path& pci, Gpu& gpu) {
     return false;
   }
   const auto names = internal::lookup_pci(pci_database(), *vendor_id, *device_id);
-  gpu.vendor = names.vendor.value_or(std::format("{:#06x}", *vendor_id));
-  gpu.name = names.device.value_or(std::format("{:#06x}", *device_id));
+  gpu.vendor = names.vendor.value_or("");
+  gpu.name = names.device.value_or("");
   gpu.pci = PciDevice{
       .vendor_id = *vendor_id,
       .device_id = *device_id,
@@ -375,9 +374,6 @@ result<std::vector<Gpu>> gpus(const GpuQuery& query) {
     if (!pci || !read_pci(*pci, gpu)) {
       read_devicetree_names(device, gpu);
     }
-    if (gpu.name.empty()) {
-      gpu.name = driver.value_or(card.filename().string());
-    }
     gpu.type = classify(gpu, device, link_name(device / "subsystem"));
     gpu.unified_memory = internal::unified_memory(gpu.type);
 
@@ -399,6 +395,7 @@ result<std::vector<Gpu>> gpus(const GpuQuery& query) {
 
   add_pci_gpus_without_drm(result);
   internal::gpu::enrich(result, query);
+  internal::order_gpus(result);
   return result;
 }
 

@@ -1,15 +1,17 @@
 // Copyright Leon Freist
 // Author Leon Freist <freist@informatik.uni-freiburg.de>
 
-// Platform independent rules to classify GPUs as integrated, discrete or virtual. Not part of the public API.
+// Platform independent rules to classify and order GPUs. Not part of the public API.
 
 #pragma once
 
 #include <hwinfo/gpu.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 #include "strings.h"
 
@@ -78,6 +80,19 @@ constexpr std::optional<bool> unified_memory(GpuType type) noexcept {
       return false;
     default:
       return std::nullopt;
+  }
+}
+
+// The order of gpus(): PCI GPUs by bus address, then the others in enumeration order. Unlike the enumeration order
+// (driver probe order, driver binding) it is the same on every run as long as the hardware does not change.
+inline void order_gpus(std::vector<Gpu>& gpus) {
+  std::ranges::stable_sort(gpus, [](const Gpu& a, const Gpu& b) {
+    const auto* x = a.pci && a.pci->address ? &*a.pci->address : nullptr;
+    const auto* y = b.pci && b.pci->address ? &*b.pci->address : nullptr;
+    return x && (!y || *x < *y);
+  });
+  for (std::uint32_t i = 0; i < gpus.size(); ++i) {
+    gpus[i].index = i;
   }
 }
 

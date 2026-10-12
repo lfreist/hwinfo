@@ -10,7 +10,6 @@
 #include <hwinfo/gpu.h>
 
 #include <cstdint>
-#include <format>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -64,8 +63,8 @@ result<std::vector<Gpu>> gpus(const GpuQuery& query) {
       const auto device_id = cf::number_property<std::uint16_t>(pci.get(), CFSTR("device-id"));
       if (vendor_id && device_id) {
         const auto names = internal::lookup_pci(pci_database(), *vendor_id, *device_id);
-        gpu.vendor = names.vendor.value_or(std::format("{:#06x}", *vendor_id));
-        gpu.name = names.device.value_or(std::format("{:#06x}", *device_id));
+        gpu.vendor = names.vendor.value_or("");
+        gpu.name = names.device.value_or("");
         gpu.pci = PciDevice{
             .vendor_id = *vendor_id,
             .device_id = *device_id,
@@ -102,6 +101,7 @@ result<std::vector<Gpu>> gpus(const GpuQuery& query) {
   }
 
   internal::gpu::enrich(result, query);
+  internal::order_gpus(result);
   return result;
 }
 

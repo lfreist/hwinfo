@@ -66,7 +66,7 @@ struct GpuApi {
  * KFD sysfs for AMD on Linux), preferring the vendor's own library. Fields stay empty when no source provides them.
  */
 struct Gpu {
-  std::uint32_t index = 0;  // position in the list returned by gpus(); enumeration order may change between boots
+  std::uint32_t index = 0;
   std::string vendor{};
   std::string name{};
   GpuType type = GpuType::unknown;
@@ -145,7 +145,16 @@ inline std::string to_string(const GpuUuid& uuid) {
 
 inline std::string to_string(const PcieLink& link) { return std::format("PCIe {}.0 x{}", link.generation, link.width); }
 
-inline std::string to_string(const Gpu& gpu) { return std::format("{} {}", gpu.vendor, gpu.name); }
+inline std::string to_string(const Gpu& gpu) {
+  if (!gpu.vendor.empty() && !gpu.name.empty()) {
+    return std::format("{} {}", gpu.vendor, gpu.name);
+  }
+  if (gpu.pci) {  // as lspci -nn names unknown devices
+    return std::format("{} {} [{:04x}:{:04x}]", gpu.vendor.empty() ? "Vendor" : gpu.vendor,
+                       gpu.name.empty() ? "Device" : gpu.name, gpu.pci->vendor_id, gpu.pci->device_id);
+  }
+  return gpu.vendor.empty() && gpu.name.empty() ? "unknown GPU" : std::format("{} {}", gpu.vendor, gpu.name);
+}
 
 }  // namespace hwinfo
 

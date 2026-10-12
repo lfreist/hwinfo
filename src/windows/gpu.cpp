@@ -58,7 +58,7 @@ std::string vendor_name(UINT vendor_id) {
     case 0x8086:
       return "Intel";
     default:
-      return std::format("{:#06x}", vendor_id);
+      return {};
   }
 }
 
@@ -212,6 +212,7 @@ result<std::vector<Gpu>> gpus(const GpuQuery& query) {
   }
 
   internal::gpu::enrich(result, query);
+  internal::order_gpus(result);
   return result;
 }
 
