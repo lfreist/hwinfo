@@ -30,6 +30,7 @@ result<Computer> computer() {
         .sku = read("product_sku"),
         .serial_number = read("product_serial"),
         .chassis = chassis ? internal::chassis_from_smbios(*chassis) : ChassisType::unknown,
+        .chassis_code = chassis ? std::optional(static_cast<std::uint8_t>(*chassis & 0x7f)) : std::nullopt,
     };
   }
   // Devices without SMBIOS (e.g. ARM boards) describe themselves in the device tree.

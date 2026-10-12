@@ -17,6 +17,7 @@
 #include <hwinfo/resource_limits.h>
 #include <hwinfo/virtualization.h>
 
+#include <cstdint>
 #include <format>
 #include <optional>
 #include <string>
@@ -38,6 +39,9 @@ struct Computer {
   std::optional<std::string> sku{};
   std::optional<std::string> serial_number{};  // usually requires elevated privileges on Linux
   ChassisType chassis = ChassisType::unknown;
+  // Raw SMBIOS chassis type (type 3, lock bit masked), e.g. 10 = notebook, 35 = mini PC; chassis maps it to fewer
+  // categories. Absent where there is no SMBIOS (macOS, most ARM devices).
+  std::optional<std::uint8_t> chassis_code{};
 
   static result<Os> os() { return hwinfo::os(); }
   static result<Virtualization> virtualization() { return hwinfo::virtualization(); }
