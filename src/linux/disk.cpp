@@ -8,7 +8,6 @@
 #include <hwinfo/disk.h>
 
 #include <algorithm>
-#include <array>
 #include <filesystem>
 #include <map>
 #include <optional>
@@ -16,9 +15,12 @@
 #include <string>
 #include <vector>
 
+#include "internal/block.h"
 #include "internal/file.h"
+#include "internal/pci.h"
 #include "internal/procfs.h"
 #include "internal/strings.h"
+#include "pci_vendors.h"
 
 namespace hwinfo {
 
@@ -29,10 +31,23 @@ namespace fs = std::filesystem;
 // Linux always reports sizes in 512 byte sectors, independent of the device's real block size.
 constexpr std::uint64_t sector_size = 512;
 
-// Virtual block devices and optical drives (sr*): not disks.
-bool is_excluded_device(std::string_view name) {
-  constexpr std::array prefixes{"loop", "ram", "zram", "dm-", "md", "nbd", "sr"};
-  return std::ranges::any_of(prefixes, [&](std::string_view prefix) { return name.starts_with(prefix); });
+std::string_view pci_vendor_database() { return {reinterpret_cast<const char*>(pci_vendors), pci_vendors_size}; }
+
+// NVMe namespaces have no "vendor" attribute: name the PCI subsystem vendor of the controller (the brand, the PCI
+// vendor is the maker of the controller chip).
+std::optional<std::string> pci_vendor(const fs::path& block) {
+  const fs::path pci = block / "device" / "device";
+  std::error_code ec;
+  const auto subsystem = fs::read_symlink(pci / "subsystem", ec);
+  if (ec || subsystem.filename() != "pci") {
+    return std::nullopt;
+  }
+  for (const auto* attribute : {"subsystem_vendor", "vendor"}) {
+    if (const auto id = internal::read_number_attribute<std::uint16_t>(pci / attribute, 16); id && *id != 0) {
+      return internal::lookup_pci(pci_vendor_database(), *id, 0).vendor;
+    }
+  }
+  return std::nullopt;
 }
 
 // Walks up the device hierarchy to the USB device and reads its negotiated speed (Mbit/s).
@@ -90,32 +105,6 @@ std::optional<std::string> kernel_name(const std::string& device) {
   return name;
 }
 
-// The whole disks a block device is stored on: follows device mapper / md stacks (LUKS, LVM, RAID) down through
-// their "slaves" and maps partitions to their disk.
-void backing_disks(const std::string& name, std::set<std::string, std::less<>>& out, int depth = 0) {
-  if (depth > 16) {
-    return;
-  }
-  const fs::path block = sys_class_block / name;
-  std::error_code ec;
-  bool stacked = false;
-  for (const auto& slave : fs::directory_iterator(block / "slaves", ec)) {
-    stacked = true;
-    backing_disks(slave.path().filename().string(), out, depth + 1);
-  }
-  if (stacked) {
-    return;
-  }
-  if (fs::exists(block / "partition", ec)) {
-    const auto disk = fs::canonical(block, ec).parent_path().filename().string();
-    if (!ec) {
-      out.insert(disk);
-    }
-    return;
-  }
-  out.insert(name);
-}
-
 }  // namespace
 
 result<std::vector<Disk>> disks() {
@@ -127,7 +116,7 @@ result<std::vector<Disk>> disks() {
   }
   std::vector<fs::path> blocks;
   for (const auto& entry : it) {
-    if (!is_excluded_device(entry.path().filename().string())) {
+    if (!internal::block::is_excluded_device(entry.path().filename().string())) {
       blocks.push_back(entry.path());
     }
   }
@@ -143,24 +132,36 @@ result<std::vector<Disk>> disks() {
     if (!name) {
       continue;
     }
-    std::set<std::string, std::less<>> disk_names;
-    backing_disks(*name, disk_names);
-    for (const auto& disk_name : disk_names) {
-      mounts_by_disk[disk_name].push_back({mount.mount_point, internal::non_empty(mount.fs_type)});
+    const auto stack = internal::block::resolve_stack(sys_class_block, *name);
+    MountPoint mount_point{
+        .path = mount.mount_point,
+        .filesystem = internal::non_empty(mount.fs_type),
+        .volume = *name,
+        .encrypted = stack.encrypted,
+    };
+    if (!stack.encrypted && mount.fs_type == "bcachefs") {
+      mount_point.encrypted = std::nullopt;  // encrypts itself, invisible in the block device stack
+    }
+    for (const auto& disk_name : stack.disks) {
+      mounts_by_disk[disk_name].push_back(mount_point);
     }
   }
 
   std::vector<Disk> result;
   for (const auto& block : blocks) {
     const std::string name = block.filename().string();
+    const auto sectors = internal::read_number_attribute<std::uint64_t>(block / "size").value_or(0);
+    if (sectors == 0) {
+      continue;  // no medium, e.g. an empty card reader
+    }
     Disk disk{
         .index = static_cast<std::uint32_t>(result.size()),
-        .vendor = internal::read_attribute(block / "device/vendor"),
+        .vendor = internal::read_attribute(block / "device/vendor").or_else([&] { return pci_vendor(block); }),
         .model = internal::read_attribute(block / "device/model"),
         .serial_number = internal::read_attribute(block / "device/serial").or_else([&] {
           return internal::read_attribute(block / "serial");
         }),
-        .size = {internal::read_number_attribute<std::uint64_t>(block / "size").value_or(0) * sector_size},
+        .size = {sectors * sector_size},
         .bus = disk_bus(block),
     };
     if (disk.bus == DiskBus::usb) {

@@ -15,6 +15,7 @@ include(GoogleTest)
 
 add_executable(hwinfo_tests
         apple_models_test.cpp
+        block_test.cpp
         dmi_test.cpp
         error_test.cpp
         units_test.cpp

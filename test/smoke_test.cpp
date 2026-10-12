@@ -75,6 +75,13 @@ TEST(Smoke, LogicalIdsArePinnable) {
 }
 #endif
 
+TEST(Smoke, PowerProfile) {
+  const auto profile = hwinfo::power_profile();
+  ASSERT_TRUE(profile) << profile.error().message();
+  EXPECT_TRUE(std::ranges::is_sorted(profile->governors));
+  EXPECT_TRUE(std::ranges::is_sorted(profile->energy_preferences));
+}
+
 TEST(Smoke, CpuSampler) {
   hwinfo::CpuSampler sampler;
   std::this_thread::sleep_for(50ms);
@@ -277,6 +284,12 @@ TEST(Smoke, Batteries) {
   }
   const auto missing = hwinfo::battery_status(1000);
   ASSERT_FALSE(missing);
+
+  const auto source = hwinfo::power_source();
+  expect_value_or_error(source);
+  if (source && batteries && batteries->empty()) {
+    EXPECT_EQ(*source, hwinfo::PowerSource::mains);
+  }
 }
 #endif
 

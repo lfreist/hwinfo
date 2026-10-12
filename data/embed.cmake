@@ -1,6 +1,15 @@
 message("input: ${INPUT}")
 message("output: ${OUTPUT}")
 
+if (VENDORS_ONLY)
+    # vendor lines of pci.ids only ("vvvv  name"): the vendor names without the device database
+    file(STRINGS "${INPUT}" LINES ENCODING UTF-8 REGEX "^[0-9a-f][0-9a-f][0-9a-f][0-9a-f]  ")
+    list(JOIN LINES "\n" TEXT)
+    set(FILTERED "${OUTPUT}.txt")
+    file(WRITE "${FILTERED}" "${TEXT}\n")
+    set(INPUT "${FILTERED}")
+endif ()
+
 file(READ "${INPUT}" CONTENT HEX)
 
 string(LENGTH "${CONTENT}" HEX_LENGTH)

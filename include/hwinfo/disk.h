@@ -24,6 +24,8 @@ enum class DiskBus { unknown, nvme, sata, scsi, usb, mmc, virtio };
 struct MountPoint {
   std::filesystem::path path{};
   std::optional<std::string> filesystem{};  // as named by the OS, e.g. "ext4", "apfs", "NTFS"
+  std::optional<std::string> volume{};
+  std::optional<bool> encrypted{};
 
   friend bool operator==(const MountPoint&, const MountPoint&) = default;
 };

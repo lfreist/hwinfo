@@ -87,6 +87,8 @@ endif()
 
 if (HWINFO_DISK)
     hwinfo_add_component(disk SOURCES ${HWINFO_WMI_SOURCES})
+    target_include_directories(hwinfo_disk PRIVATE ${HWINFO_CMAKE_BINARY_DIR}/generated)
+    add_dependencies(hwinfo_disk generate_pci_vendors_header)
 endif ()
 
 if (HWINFO_GPU)
