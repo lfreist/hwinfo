@@ -58,9 +58,20 @@ std::optional<Hertz> read_khz(const std::filesystem::path& path) {
 }  // namespace
 
 result<std::vector<Cpu>> cpus() {
-  const auto processors = internal::read_file("/proc/cpuinfo").and_then(internal::procfs::parse_cpuinfo);
+  auto processors = internal::read_file("/proc/cpuinfo").and_then(internal::procfs::parse_cpuinfo);
   if (!processors) {
     return std::unexpected(processors.error());
+  }
+  // The topology in sysfs: /proc/cpuinfo lacks "physical id" and "core id" on some architectures (e.g. arm64).
+  for (auto& p : *processors) {
+    const auto topology = sysfs_cpu / std::format("cpu{}", p.processor) / "topology";
+    if (const auto package = internal::read_number_attribute<std::int64_t>(topology / "physical_package_id");
+        package && *package >= 0) {  // -1 if unknown
+      p.physical_id = static_cast<std::uint32_t>(*package);
+    }
+    if (const auto core = internal::read_number_attribute<std::uint32_t>(topology / "core_id")) {
+      p.core_id = *core;
+    }
   }
 
   // socket id -> core id -> logical processors

@@ -11,6 +11,8 @@
 #include <filesystem>
 #include <format>
 #include <ranges>
+#include <set>
+#include <string>
 #include <vector>
 
 #include "internal/cpu_ticks.h"
@@ -42,6 +44,27 @@ result<std::vector<detail::CpuTicks>> internal::read_cpu_ticks() {
     ticks->resize(*possible + 1);
   }
   return ticks;
+}
+
+result<PowerProfile> power_profile() {
+  PowerProfile profile{.profile = internal::read_attribute("/sys/firmware/acpi/platform_profile")};
+  std::set<std::string, std::less<>> governors;
+  std::set<std::string, std::less<>> preferences;
+  std::error_code ec;
+  for (const auto& policy : std::filesystem::directory_iterator(sysfs_cpu / "cpufreq", ec)) {
+    if (!policy.path().filename().string().starts_with("policy")) {
+      continue;
+    }
+    if (auto governor = internal::read_attribute(policy.path() / "scaling_governor")) {
+      governors.insert(std::move(*governor));
+    }
+    if (auto preference = internal::read_attribute(policy.path() / "energy_performance_preference")) {
+      preferences.insert(std::move(*preference));
+    }
+  }
+  profile.governors.assign(governors.begin(), governors.end());
+  profile.energy_preferences.assign(preferences.begin(), preferences.end());
+  return profile;
 }
 
 result<std::vector<Hertz>> cpu_frequencies() {

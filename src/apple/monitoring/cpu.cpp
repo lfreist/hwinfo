@@ -44,6 +44,9 @@ result<std::vector<detail::CpuTicks>> internal::read_cpu_ticks() {
   return ticks;
 }
 
+// TODO: Low Power Mode (pmset "powermode" / "lowpowermode") has no public C API.
+result<PowerProfile> power_profile() { return PowerProfile{}; }
+
 result<std::vector<Hertz>> cpu_frequencies() {
   const auto logical = internal::sysctl_value<std::uint32_t>("hw.logicalcpu");
   if (!logical) {
