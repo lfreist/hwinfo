@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <array>
 #include <filesystem>
+#include <map>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
@@ -27,8 +29,9 @@ namespace fs = std::filesystem;
 // Linux always reports sizes in 512 byte sectors, independent of the device's real block size.
 constexpr std::uint64_t sector_size = 512;
 
-bool is_virtual_device(std::string_view name) {
-  constexpr std::array prefixes{"loop", "ram", "zram", "dm-", "md", "nbd"};
+// Virtual block devices and optical drives (sr*): not disks.
+bool is_excluded_device(std::string_view name) {
+  constexpr std::array prefixes{"loop", "ram", "zram", "dm-", "md", "nbd", "sr"};
   return std::ranges::any_of(prefixes, [&](std::string_view prefix) { return name.starts_with(prefix); });
 }
 
@@ -71,6 +74,48 @@ DiskBus disk_bus(const fs::path& block) {
   return DiskBus::unknown;
 }
 
+const fs::path sys_class_block = "/sys/class/block";
+
+// Kernel name ("nvme0n1p2", "dm-0") of the block device a mount's source names, also through symlinks like
+// /dev/mapper/* or /dev/disk/by-uuid/*. nullopt for sources that are no block device (tmpfs, proc, ...).
+std::optional<std::string> kernel_name(const std::string& device) {
+  if (!device.starts_with('/')) {
+    return std::nullopt;
+  }
+  std::error_code ec;
+  const auto name = fs::canonical(device, ec).filename().string();
+  if (ec || name.empty() || !fs::exists(sys_class_block / name, ec)) {
+    return std::nullopt;
+  }
+  return name;
+}
+
+// The whole disks a block device is stored on: follows device mapper / md stacks (LUKS, LVM, RAID) down through
+// their "slaves" and maps partitions to their disk.
+void backing_disks(const std::string& name, std::set<std::string, std::less<>>& out, int depth = 0) {
+  if (depth > 16) {
+    return;
+  }
+  const fs::path block = sys_class_block / name;
+  std::error_code ec;
+  bool stacked = false;
+  for (const auto& slave : fs::directory_iterator(block / "slaves", ec)) {
+    stacked = true;
+    backing_disks(slave.path().filename().string(), out, depth + 1);
+  }
+  if (stacked) {
+    return;
+  }
+  if (fs::exists(block / "partition", ec)) {
+    const auto disk = fs::canonical(block, ec).parent_path().filename().string();
+    if (!ec) {
+      out.insert(disk);
+    }
+    return;
+  }
+  out.insert(name);
+}
+
 }  // namespace
 
 result<std::vector<Disk>> disks() {
@@ -82,7 +127,7 @@ result<std::vector<Disk>> disks() {
   }
   std::vector<fs::path> blocks;
   for (const auto& entry : it) {
-    if (!is_virtual_device(entry.path().filename().string())) {
+    if (!is_excluded_device(entry.path().filename().string())) {
       blocks.push_back(entry.path());
     }
   }
@@ -91,6 +136,19 @@ result<std::vector<Disk>> disks() {
   const auto mounts = internal::read_file("/proc/self/mounts")
                           .transform(internal::procfs::parse_mounts)
                           .value_or(std::vector<internal::procfs::Mount>{});
+
+  std::map<std::string, std::vector<MountPoint>, std::less<>> mounts_by_disk;
+  for (const auto& mount : mounts) {
+    const auto name = kernel_name(mount.device);
+    if (!name) {
+      continue;
+    }
+    std::set<std::string, std::less<>> disk_names;
+    backing_disks(*name, disk_names);
+    for (const auto& disk_name : disk_names) {
+      mounts_by_disk[disk_name].push_back({mount.mount_point, internal::non_empty(mount.fs_type)});
+    }
+  }
 
   std::vector<Disk> result;
   for (const auto& block : blocks) {
@@ -108,18 +166,8 @@ result<std::vector<Disk>> disks() {
     if (disk.bus == DiskBus::usb) {
       disk.link_speed = usb_link_speed(block / "device");
     }
-
-    // the disk itself and its partitions (subdirectories containing a "partition" file)
-    std::set<std::string, std::less<>> devices{"/dev/" + name};
-    for (const auto& sub : fs::directory_iterator(block, ec)) {
-      if (fs::exists(sub.path() / "partition", ec)) {
-        devices.insert("/dev/" + sub.path().filename().string());
-      }
-    }
-    for (const auto& mount : mounts) {
-      if (devices.contains(mount.device)) {
-        disk.mount_points.push_back({mount.mount_point, internal::non_empty(mount.fs_type)});
-      }
+    if (const auto it = mounts_by_disk.find(name); it != mounts_by_disk.end()) {
+      disk.mount_points = std::move(it->second);
     }
     result.push_back(std::move(disk));
   }
