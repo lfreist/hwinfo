@@ -166,6 +166,19 @@ TEST(Smoke, GpusWithoutVendorLibraries) {
   if (gpus) {
     for (const auto& gpu : *gpus) {
       EXPECT_TRUE(gpu.compute_apis.empty());
+#ifdef __linux__
+      if (gpu.driver) {  // module version, or the kernel release for in-tree drivers
+        EXPECT_TRUE(gpu.driver_version) << *gpu.driver;
+      }
+#endif
+    }
+    // DRM cards and PCI display controllers without a card are enumerated separately: no GPU twice
+    for (auto a = gpus->begin(); a != gpus->end(); ++a) {
+      for (auto b = std::next(a); b != gpus->end(); ++b) {
+        if (a->pci && b->pci && a->pci->address) {
+          EXPECT_NE(a->pci->address, b->pci->address);
+        }
+      }
     }
   }
 }

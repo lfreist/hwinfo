@@ -252,6 +252,41 @@ void read_amdgpu(const fs::path& device, Gpu& gpu) {
   }
 }
 
+// Vendor, name and PCI properties of a GPU from its PCI device. false if the IDs are unreadable.
+bool read_pci(const fs::path& pci, Gpu& gpu) {
+  const auto vendor_id = internal::read_number_attribute<std::uint16_t>(pci / "vendor", 16);
+  const auto device_id = internal::read_number_attribute<std::uint16_t>(pci / "device", 16);
+  if (!vendor_id || !device_id) {
+    return false;
+  }
+  const auto names = internal::lookup_pci(pci_database(), *vendor_id, *device_id);
+  gpu.vendor = names.vendor.value_or(std::format("{:#06x}", *vendor_id));
+  gpu.name = names.device.value_or(std::format("{:#06x}", *device_id));
+  gpu.pci = PciDevice{
+      .vendor_id = *vendor_id,
+      .device_id = *device_id,
+      .address = pci_address(pci),
+      .max_link = max_pcie_link(pci),
+  };
+  return true;
+}
+
+// Out-of-tree modules (e.g. nvidia) report their own version. In-tree drivers (i915, amdgpu, ...) have none: they
+// are versioned with the kernel, which is what ethtool reports for them as well.
+std::optional<std::string> driver_version(const fs::path& device, const std::optional<std::string>& driver) {
+  if (!driver) {
+    return std::nullopt;
+  }
+  const fs::path module = fs::path("/sys/module") / link_name(device / "driver" / "module").value_or(*driver);
+  if (auto version = internal::read_attribute(module / "version")) {
+    return version;
+  }
+  if (internal::read_attribute(module / "taint").value_or("").contains('O')) {
+    return std::nullopt;  // out-of-tree without version
+  }
+  return internal::read_attribute("/proc/sys/kernel/osrelease");
+}
+
 GpuType classify(const Gpu& gpu, const fs::path& device, const std::optional<std::string>& subsystem) {
   if (gpu.driver && std::ranges::contains(virtual_drivers, *gpu.driver)) {
     return GpuType::virtualized;
@@ -269,6 +304,38 @@ GpuType classify(const Gpu& gpu, const fs::path& device, const std::optional<std
   static_cast<void>(device);
 #endif
   return internal::classify_pci_gpu(*gpu.pci);
+}
+
+// PCI display controllers (class 0x03) without a DRM card: no driver bound, or one that does not register with DRM
+// (vfio-pci, nvidia without nvidia-drm, ...).
+void add_pci_gpus_without_drm(std::vector<Gpu>& gpus) {
+  std::error_code ec;
+  std::vector<fs::path> devices;
+  for (const auto& entry : fs::directory_iterator("/sys/bus/pci/devices", ec)) {
+    const auto pci_class = internal::read_number_attribute<std::uint32_t>(entry.path() / "class", 16);
+    if (pci_class && (*pci_class >> 16) == 0x03) {
+      devices.push_back(entry.path());
+    }
+  }
+  std::ranges::sort(devices);
+  for (const auto& device : devices) {
+    const auto address = pci_address(device);
+    if (std::ranges::any_of(gpus, [&](const Gpu& gpu) { return address && gpu.pci && gpu.pci->address == address; })) {
+      continue;
+    }
+    const auto driver = link_name(device / "driver");
+    Gpu gpu{
+        .index = static_cast<std::uint32_t>(gpus.size()),
+        .driver = driver,
+        .driver_version = driver_version(device, driver),
+    };
+    if (!read_pci(device, gpu)) {
+      continue;
+    }
+    gpu.type = classify(gpu, device, "pci");
+    gpu.unified_memory = internal::unified_memory(gpu.type);
+    gpus.push_back(std::move(gpu));
+  }
 }
 
 }  // namespace
@@ -302,26 +369,10 @@ result<std::vector<Gpu>> gpus(const GpuQuery& query) {
         .index = static_cast<std::uint32_t>(result.size()),
         .driver = driver,
     };
-    if (driver) {
-      gpu.driver_version = internal::read_attribute(fs::path("/sys/module") / *driver / "version");
-    }
+    gpu.driver_version = driver_version(device, driver);
 
     const auto pci = pci_device(device);
-    const auto vendor_id =
-        pci ? internal::read_number_attribute<std::uint16_t>(*pci / "vendor", 16) : std::optional<std::uint16_t>{};
-    const auto device_id =
-        pci ? internal::read_number_attribute<std::uint16_t>(*pci / "device", 16) : std::optional<std::uint16_t>{};
-    if (vendor_id && device_id) {
-      const auto names = internal::lookup_pci(pci_database(), *vendor_id, *device_id);
-      gpu.vendor = names.vendor.value_or(std::format("{:#06x}", *vendor_id));
-      gpu.name = names.device.value_or(std::format("{:#06x}", *device_id));
-      gpu.pci = PciDevice{
-          .vendor_id = *vendor_id,
-          .device_id = *device_id,
-          .address = pci_address(*pci),
-          .max_link = max_pcie_link(*pci),
-      };
-    } else {
+    if (!pci || !read_pci(*pci, gpu)) {
       read_devicetree_names(device, gpu);
     }
     if (gpu.name.empty()) {
@@ -346,6 +397,7 @@ result<std::vector<Gpu>> gpus(const GpuQuery& query) {
     result.push_back(std::move(gpu));
   }
 
+  add_pci_gpus_without_drm(result);
   internal::gpu::enrich(result, query);
   return result;
 }
