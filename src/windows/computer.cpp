@@ -6,11 +6,14 @@
 #ifdef HWINFO_WINDOWS
 
 #include <hwinfo/computer.h>
+#include <windows.h>
 
+#include <chrono>
 #include <cstdint>
 #include <optional>
 #include <vector>
 
+#include "internal/cim.h"
 #include "internal/dmi.h"
 #include "internal/wmi_wrapper.h"
 
@@ -54,6 +57,8 @@ result<Computer> computer() {
   const auto products = internal::wmi::query("Win32_ComputerSystemProduct", {"Version", "IdentifyingNumber"});
   const internal::wmi::Row empty;
   const internal::wmi::Row& product = products && !products->empty() ? products->front() : empty;
+  const auto operating_systems = internal::wmi::query("Win32_OperatingSystem", {"LastBootUpTime"});
+  const internal::wmi::Row& os = operating_systems && !operating_systems->empty() ? operating_systems->front() : empty;
   return Computer{
       .vendor = internal::dmi_string(system.string("Manufacturer")),
       .model = internal::dmi_string(system.string("Model")),
@@ -62,7 +67,14 @@ result<Computer> computer() {
       .sku = internal::dmi_string(system.string("SystemSKUNumber")),
       .serial_number = internal::dmi_string(product.string("IdentifyingNumber")),
       .chassis = chassis(system.number<std::uint16_t>("PCSystemTypeEx")),
+      // the boot time Windows keeps (now - uptime would be off by up to a second)
+      .boot_time = os.string("LastBootUpTime").and_then(internal::cim::parse_datetime),
   };
+}
+
+// GetTickCount64 includes time spent asleep and hibernated.
+result<std::chrono::seconds> uptime() {
+  return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::milliseconds(GetTickCount64()));
 }
 
 }  // namespace hwinfo

@@ -190,3 +190,14 @@ TEST(CacheSize, ParsesBinarySuffixes) {
   EXPECT_EQ(procfs::parse_cache_size("K"), std::nullopt);
   EXPECT_EQ(procfs::parse_cache_size("12X"), std::nullopt);
 }
+
+TEST(Stat, BootTime) {
+  EXPECT_EQ(procfs::parse_btime("cpu  1 2 3 4\nintr 1\nbtime 1760248215\nprocesses 42\n"), 1760248215);
+  EXPECT_EQ(procfs::parse_btime("cpu  1 2 3 4\n"), std::nullopt);
+}
+
+TEST(Uptime, WholeSeconds) {
+  EXPECT_EQ(procfs::parse_uptime("12345.67 54321.00\n"), std::chrono::seconds(12345));
+  EXPECT_EQ(procfs::parse_uptime("7 3\n"), std::chrono::seconds(7));
+  EXPECT_EQ(procfs::parse_uptime(""), std::nullopt);
+}

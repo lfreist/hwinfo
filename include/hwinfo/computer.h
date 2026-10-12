@@ -17,6 +17,7 @@
 #include <hwinfo/resource_limits.h>
 #include <hwinfo/virtualization.h>
 
+#include <chrono>
 #include <cstdint>
 #include <format>
 #include <optional>
@@ -27,6 +28,9 @@
 namespace hwinfo {
 
 enum class ChassisType { unknown, desktop, laptop, tablet, all_in_one, mini_pc, server, other };
+
+// Time since the OS was started, including time spent asleep. Read anew on every call.
+[[nodiscard]] HWINFO_API result<std::chrono::seconds> uptime();
 
 // The computer as a product (e.g. a notebook or prebuilt PC), as opposed to its mainboard.
 // The member functions give access to the installed components.
@@ -43,6 +47,9 @@ struct Computer {
   // categories. Absent where there is no SMBIOS (macOS, most ARM devices).
   std::optional<std::uint8_t> chassis_code{};
 
+  std::optional<std::chrono::sys_seconds> boot_time{};  // when the OS was started (UTC)
+
+  static result<std::chrono::seconds> uptime() { return hwinfo::uptime(); }
   static result<Os> os() { return hwinfo::os(); }
   static result<Virtualization> virtualization() { return hwinfo::virtualization(); }
   static result<ResourceLimits> resource_limits() { return hwinfo::resource_limits(); }

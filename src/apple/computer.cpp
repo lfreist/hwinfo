@@ -8,7 +8,10 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOKitLib.h>
 #include <hwinfo/computer.h>
+#include <sys/sysctl.h>
+#include <sys/time.h>
 
+#include <chrono>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -56,6 +59,16 @@ ChassisType chassis(const std::optional<std::string>& name, const std::optional<
   return ChassisType::unknown;
 }
 
+// kern.boottime: a struct timeval. Includes time spent asleep, unlike the monotonic uptime clocks.
+std::optional<std::chrono::sys_seconds> kernel_boot_time() {
+  timeval boot{};
+  std::size_t size = sizeof(boot);
+  if (sysctlbyname("kern.boottime", &boot, &size, nullptr, 0) != 0 || size != sizeof(boot) || boot.tv_sec <= 0) {
+    return std::nullopt;
+  }
+  return std::chrono::sys_seconds(std::chrono::seconds(boot.tv_sec));
+}
+
 }  // namespace
 
 result<Computer> computer() {
@@ -74,7 +87,16 @@ result<Computer> computer() {
       .sku = std::nullopt,
       .serial_number = cf::string_property(platform.get(), CFSTR(kIOPlatformSerialNumberKey)),
       .chassis = type,
+      .boot_time = kernel_boot_time(),
   };
+}
+
+result<std::chrono::seconds> uptime() {
+  const auto boot_time = kernel_boot_time();
+  if (!boot_time) {
+    return std::unexpected(error{errc::not_found, "sysctl kern.boottime"});
+  }
+  return std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now()) - *boot_time;
 }
 
 }  // namespace hwinfo

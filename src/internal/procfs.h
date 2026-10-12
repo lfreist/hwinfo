@@ -11,6 +11,7 @@
 #include <hwinfo/units.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -178,6 +179,17 @@ inline std::optional<Bytes> parse_cache_size(std::string_view s) {
 
 // ----- /proc/stat ---------------------------------------------------------------------------------------------------
 
+// Boot time in seconds since the epoch: the "btime" line.
+inline std::optional<std::int64_t> parse_btime(std::string_view content) {
+  for (const auto line : lines(content)) {
+    if (line.starts_with("btime ")) {
+      const auto seconds = parse<std::int64_t>(trim(line.substr(6)));
+      return seconds ? std::optional(*seconds) : std::nullopt;
+    }
+  }
+  return std::nullopt;
+}
+
 // Returns the tick counters of the "cpu" line at [0] and those of "cpuN" at [1 + N]. Offline CPUs have no line and
 // keep zero ticks, so the index always matches the OS CPU number.
 inline result<std::vector<detail::CpuTicks>> parse_stat(std::string_view content) {
@@ -294,6 +306,15 @@ inline std::string os_release_codename(const std::map<std::string, std::string, 
     }
   }
   return codename->second;
+}
+
+// ----- /proc/uptime -------------------------------------------------------------------------------------------------
+
+// Whole seconds since boot, including time spent in suspend: the first field of /proc/uptime ("12345.67 54321.00").
+inline std::optional<std::chrono::seconds> parse_uptime(std::string_view content) {
+  const auto first = trim(content.substr(0, content.find(' ')));
+  const auto seconds = parse<std::uint64_t>(first.substr(0, first.find('.')));
+  return seconds ? std::optional(std::chrono::seconds(*seconds)) : std::nullopt;
 }
 
 // ----- /proc/self/mounts --------------------------------------------------------------------------------------------

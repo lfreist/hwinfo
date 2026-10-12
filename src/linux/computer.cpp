@@ -7,16 +7,21 @@
 
 #include <hwinfo/computer.h>
 
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <string>
 
 #include "internal/dmi.h"
 #include "internal/file.h"
+#include "internal/procfs.h"
 
 namespace hwinfo {
 
-result<Computer> computer() {
+namespace {
+
+// Identity from DMI or, on devices without SMBIOS (e.g. ARM boards), the device tree.
+Computer identity() {
   if (const auto dmi = internal::dmi_directory()) {
     const auto read = [&](std::string_view name) {
       return internal::dmi_string(internal::read_attribute(*dmi / name));
@@ -33,13 +38,33 @@ result<Computer> computer() {
         .chassis_code = chassis ? std::optional(static_cast<std::uint8_t>(*chassis & 0x7f)) : std::nullopt,
     };
   }
-  // Devices without SMBIOS (e.g. ARM boards) describe themselves in the device tree.
   if (const auto model = internal::read_file("/proc/device-tree/model")) {
-    if (auto name = internal::non_empty(std::string_view(*model).substr(0, model->find('\0')))) {
-      return Computer{.model = std::move(name)};
-    }
+    return Computer{.model = internal::non_empty(std::string_view(*model).substr(0, model->find('\0')))};
   }
-  return std::unexpected(error{errc::not_supported, "no DMI or device tree information available"});
+  return Computer{};
+}
+
+}  // namespace
+
+result<Computer> computer() {
+  Computer computer = identity();
+  // btime is the boot time the kernel keeps, independent of when it is read (now - uptime is off by up to a second)
+  if (const auto btime =
+          internal::read_file("/proc/stat").transform(internal::procfs::parse_btime).value_or(std::nullopt)) {
+    computer.boot_time = std::chrono::sys_seconds(std::chrono::seconds(*btime));
+  }
+  return computer;
+}
+
+result<std::chrono::seconds> uptime() {
+  const auto content = internal::read_file("/proc/uptime");
+  if (!content) {
+    return std::unexpected(content.error());
+  }
+  if (const auto seconds = internal::procfs::parse_uptime(*content)) {
+    return *seconds;
+  }
+  return std::unexpected(error{errc::parse_error, "/proc/uptime"});
 }
 
 }  // namespace hwinfo

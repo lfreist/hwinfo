@@ -247,6 +247,14 @@ TEST(Smoke, Computer) {
   expect_value_or_error(computer);
   if (computer) {
     EXPECT_FALSE(std::format("{} ({})", *computer, computer->chassis).empty());
+    const auto uptime = hwinfo::Computer::uptime();
+    ASSERT_TRUE(uptime) << uptime.error().message();
+    if (computer->boot_time) {
+      // both include time asleep: they add up to now (minus clock adjustments since boot)
+      const auto drift = std::chrono::system_clock::now() - (*computer->boot_time + *uptime);
+      EXPECT_LT(std::chrono::abs(drift), 5min)
+          << computer->boot_time->time_since_epoch().count() << " + " << uptime->count() << " s";
+    }
   }
 }
 #endif
