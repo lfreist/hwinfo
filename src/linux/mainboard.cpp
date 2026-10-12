@@ -23,6 +23,8 @@ result<Mainboard> mainboard() {
       .name = read("board_name"),
       .version = read("board_version"),
       .serial_number = read("board_serial"),
+      .firmware_vendor = read("bios_vendor"),
+      .firmware_version = read("bios_version"),
   };
 }
 

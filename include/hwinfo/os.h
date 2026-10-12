@@ -8,6 +8,7 @@
 #include <hwinfo/platform.h>
 
 #include <format>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -21,9 +22,10 @@ struct Os {
   std::string name{};            // e.g. "Ubuntu", "Microsoft Windows 11 Pro", "macOS"
   std::string marketing_name{};  // e.g. "Noble Numbat", "24H2", "Sequoia"; empty if the release has none
   std::string version{};         // e.g. "24.04.1 LTS (Noble Numbat)", "10.0.22631", "15.1 (24B83)"
-  std::string kernel{};          // e.g. "6.8.0-45-generic", "Darwin 24.1.0"
-  std::string architecture{};    // e.g. "x86_64", "aarch64", "arm64"
-  unsigned bits = 0;             // 32 or 64
+  std::optional<std::string> build{};
+  std::string kernel{};        // e.g. "6.8.0-45-generic", "Darwin 24.1.0"
+  std::string architecture{};  // e.g. "x86_64", "aarch64", "arm64"
+  unsigned bits = 0;           // 32 or 64
 
   friend bool operator==(const Os&, const Os&) = default;
 };

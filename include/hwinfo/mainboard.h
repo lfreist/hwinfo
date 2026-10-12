@@ -17,7 +17,9 @@ struct Mainboard {
   std::optional<std::string> vendor{};
   std::optional<std::string> name{};
   std::optional<std::string> version{};
-  std::optional<std::string> serial_number{};  // usually requires elevated privileges
+  std::optional<std::string> serial_number{};    // usually requires elevated privileges
+  std::optional<std::string> firmware_vendor{};  // BIOS / UEFI firmware, e.g. "American Megatrends International, LLC."
+  std::optional<std::string> firmware_version{};  // e.g. "N.1.10A13", "11881.1.1" (Apple)
 
   friend bool operator==(const Mainboard&, const Mainboard&) = default;
 };

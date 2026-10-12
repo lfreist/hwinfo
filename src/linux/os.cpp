@@ -62,6 +62,9 @@ result<Os> os() {
     } else if (const auto build = values.find("BUILD_ID"); build != values.end()) {
       os.version = build->second;  // rolling releases, e.g. Arch Linux
     }
+    if (const auto it = values.find("BUILD_ID"); it != values.end() && !it->second.empty()) {
+      os.build = it->second;
+    }
     os.marketing_name = internal::procfs::os_release_codename(values);
   }
   return os;
