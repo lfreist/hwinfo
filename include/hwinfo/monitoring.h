@@ -68,6 +68,22 @@ class HWINFO_API CpuSampler {
 // Current clock rate per logical core, indexed by OS CPU number (see Core::logical_ids). Offline cores report 0 Hz.
 [[nodiscard]] HWINFO_API result<std::vector<Hertz>> cpu_frequencies();
 
+// Settings that trade performance for power, and so change benchmark results. What the OS does not have stays empty.
+struct PowerProfile {
+  // Performance profile of the platform: the ACPI platform profile on Linux (e.g. "low-power", "balanced",
+  // "performance"), the power mode on Windows ("best power efficiency", "balanced", "better performance",
+  // "best performance").
+  std::optional<std::string> profile{};
+  std::optional<std::string> power_plan{};  // Windows power plan, e.g. "Balanced", "High performance"
+  // Linux cpufreq governors and energy performance preferences in use, sorted. Several if they differ between CPUs.
+  std::vector<std::string> governors{};
+  std::vector<std::string> energy_preferences{};
+
+  friend bool operator==(const PowerProfile&, const PowerProfile&) = default;
+};
+
+[[nodiscard]] HWINFO_API result<PowerProfile> power_profile();
+
 // ----- Memory -------------------------------------------------------------------------------------------------------
 
 struct MemoryUsage {
@@ -119,6 +135,23 @@ constexpr std::string_view to_string(BatteryState state) noexcept {
     case BatteryState::not_charging:
       return "not charging";
     case BatteryState::unknown:
+      break;
+  }
+  return "unknown";
+}
+
+enum class PowerSource { unknown, mains, battery };
+
+// What powers the system right now. A system without a battery runs on mains.
+[[nodiscard]] HWINFO_API result<PowerSource> power_source();
+
+constexpr std::string_view to_string(PowerSource source) noexcept {
+  switch (source) {
+    case PowerSource::mains:
+      return "mains";
+    case PowerSource::battery:
+      return "battery";
+    case PowerSource::unknown:
       break;
   }
   return "unknown";
@@ -237,3 +270,5 @@ Monitor(std::chrono::milliseconds, F, C) -> Monitor<std::invoke_result_t<F&>>;
 
 template <>
 struct std::formatter<hwinfo::BatteryState> : hwinfo::detail::to_string_formatter<hwinfo::BatteryState> {};
+template <>
+struct std::formatter<hwinfo::PowerSource> : hwinfo::detail::to_string_formatter<hwinfo::PowerSource> {};
