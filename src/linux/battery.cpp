@@ -26,7 +26,8 @@ result<std::vector<std::filesystem::path>> battery_paths() {
   std::error_code ec;
   std::vector<std::filesystem::path> paths;
   for (const auto& entry : std::filesystem::directory_iterator(power_supply, ec)) {
-    if (internal::read_attribute(entry.path() / "type") == "Battery") {
+    if (internal::read_attribute(entry.path() / "type") == "Battery" &&
+        internal::read_attribute(entry.path() / "scope") != "Device") {
       paths.push_back(entry.path());
     }
   }
@@ -68,6 +69,45 @@ result<std::vector<Battery>> batteries() {
     }
     return result;
   });
+}
+
+result<PowerSource> power_source() {
+  const auto batteries = battery_paths();
+  if (!batteries) {
+    return std::unexpected(batteries.error());
+  }
+  // AC adapters ("Mains") and USB-C power delivery ("USB") report whether they supply the system.
+  bool has_adapter = false;
+  std::error_code ec;
+  for (const auto& entry : std::filesystem::directory_iterator(power_supply, ec)) {
+    const auto type = internal::read_attribute(entry.path() / "type");
+    if ((type != "Mains" && type != "USB") || internal::read_attribute(entry.path() / "scope") == "Device") {
+      continue;
+    }
+    if (const auto online = internal::read_number_attribute<int>(entry.path() / "online")) {
+      if (*online != 0) {
+        return PowerSource::mains;
+      }
+      has_adapter |= type == "Mains";
+    }
+  }
+  if (batteries->empty()) {
+    return PowerSource::mains;
+  }
+  if (has_adapter) {
+    return PowerSource::battery;
+  }
+  // no adapter information: the batteries' state tells
+  for (const auto& path : *batteries) {
+    const auto state = internal::read_attribute(path / "status");
+    if (state == "Discharging") {
+      return PowerSource::battery;
+    }
+    if (state == "Charging") {
+      return PowerSource::mains;
+    }
+  }
+  return PowerSource::unknown;
 }
 
 result<BatteryStatus> battery_status(std::uint32_t index) {

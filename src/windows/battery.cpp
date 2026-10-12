@@ -7,6 +7,7 @@
 
 #include <hwinfo/battery.h>
 #include <hwinfo/monitoring.h>
+#include <windows.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -15,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "internal/windows_error.h"
 #include "internal/wmi_wrapper.h"
 
 namespace hwinfo {
@@ -110,6 +112,21 @@ result<std::vector<Battery>> batteries() {
     });
   }
   return result;
+}
+
+result<PowerSource> power_source() {
+  SYSTEM_POWER_STATUS status{};
+  if (!GetSystemPowerStatus(&status)) {
+    return std::unexpected(internal::last_error("GetSystemPowerStatus"));
+  }
+  switch (status.ACLineStatus) {
+    case 0:
+      return PowerSource::battery;
+    case 1:
+      return PowerSource::mains;
+    default:  // 255: unknown; BatteryFlag 128: no system battery
+      return (status.BatteryFlag & 128) != 0 ? PowerSource::mains : PowerSource::unknown;
+  }
 }
 
 result<BatteryStatus> battery_status(std::uint32_t index) {

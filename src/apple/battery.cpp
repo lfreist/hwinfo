@@ -72,6 +72,21 @@ result<std::vector<Battery>> batteries() {
   });
 }
 
+result<PowerSource> power_source() {
+  const auto services = smart_batteries();
+  if (!services) {
+    return std::unexpected(services.error());
+  }
+  if (services->empty()) {
+    return PowerSource::mains;  // desktop Macs
+  }
+  const auto external = cf::bool_property(services->front().get(), CFSTR("ExternalConnected"));
+  if (!external) {
+    return PowerSource::unknown;
+  }
+  return *external ? PowerSource::mains : PowerSource::battery;
+}
+
 result<BatteryStatus> battery_status(std::uint32_t index) {
   const auto services = smart_batteries();
   if (!services) {
