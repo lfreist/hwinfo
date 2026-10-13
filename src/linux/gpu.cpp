@@ -370,11 +370,20 @@ result<std::vector<Gpu>> gpus(const GpuQuery& query) {
     };
     gpu.driver_version = driver_version(device, driver);
 
+    const auto subsystem = link_name(device / "subsystem");
     const auto pci = pci_device(device);
     if (!pci || !read_pci(*pci, gpu)) {
-      read_devicetree_names(device, gpu);
+      if (subsystem == "vmbus") {
+        // Synthetic video of Hyper-V generation 2 VMs (e.g. GitHub's Azure runners): no PCI IDs, no devicetree node.
+        // Named like the PCI VGA device of generation 1 VMs.
+        const auto names = internal::lookup_pci(pci_database(), 0x1414, 0x5353);
+        gpu.vendor = names.vendor.value_or("");
+        gpu.name = names.device.value_or("");
+      } else {
+        read_devicetree_names(device, gpu);
+      }
     }
-    gpu.type = classify(gpu, device, link_name(device / "subsystem"));
+    gpu.type = classify(gpu, device, subsystem);
     gpu.unified_memory = internal::unified_memory(gpu.type);
 
     if (driver == "amdgpu") {

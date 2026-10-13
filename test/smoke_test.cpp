@@ -223,7 +223,7 @@ TEST(Smoke, Gpus) {
     return;
   }
   for (const auto& gpu : *gpus) {
-    EXPECT_FALSE(gpu.name.empty());
+    EXPECT_FALSE(gpu.name.empty()) << std::format("{}, driver: {}", gpu, gpu.driver.value_or("none"));
     EXPECT_FALSE(std::format("{} ({})", gpu, gpu.type).empty());
     if (gpu.unified_memory) {
       EXPECT_EQ(*gpu.unified_memory, gpu.type == hwinfo::GpuType::integrated);
