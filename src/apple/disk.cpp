@@ -49,7 +49,12 @@ MountMap mounted_devices() {
       continue;
     }
     device.remove_prefix(5);
-    mounts[std::string(device)].push_back({entry.f_mntonname, internal::non_empty(entry.f_fstypename)});
+    // TODO: encryption (FileVault / encrypted APFS volumes) needs a source that is verified without diskutil
+    mounts[std::string(device)].push_back({
+        .path = entry.f_mntonname,
+        .filesystem = internal::non_empty(entry.f_fstypename),
+        .volume = std::string(device),
+    });
   }
   return mounts;
 }

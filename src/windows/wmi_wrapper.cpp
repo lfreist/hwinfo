@@ -74,6 +74,36 @@ std::vector<std::string> string_array(SAFEARRAY* array) {
   return out;
 }
 
+// Integers of a SAFEARRAY of VT_I4 / VT_I2 / VT_UI1 (WMI arrays of 8, 16 and 32 bit integers).
+std::vector<std::int64_t> integer_array(SAFEARRAY* array, VARTYPE type) {
+  std::vector<std::int64_t> out;
+  LONG lower = 0;
+  LONG upper = -1;
+  if (array == nullptr || SafeArrayGetDim(array) != 1 || FAILED(SafeArrayGetLBound(array, 1, &lower)) ||
+      FAILED(SafeArrayGetUBound(array, 1, &upper))) {
+    return out;
+  }
+  void* data = nullptr;
+  if (FAILED(SafeArrayAccessData(array, &data))) {
+    return out;
+  }
+  for (LONG i = 0; i <= upper - lower; ++i) {
+    switch (type) {
+      case VT_I4:
+        out.push_back(static_cast<const LONG*>(data)[i]);
+        break;
+      case VT_I2:
+        out.push_back(static_cast<const SHORT*>(data)[i]);
+        break;
+      default:  // VT_UI1
+        out.push_back(static_cast<const BYTE*>(data)[i]);
+        break;
+    }
+  }
+  SafeArrayUnaccessData(array);
+  return out;
+}
+
 // WMI transfers unsigned 16 and 32 bit integers as VT_I4: the CIM type tells how to interpret them.
 std::optional<Value> to_value(const VARIANT& var, CIMTYPE cim_type) {
   const bool is_unsigned = cim_type == CIM_UINT8 || cim_type == CIM_UINT16 || cim_type == CIM_UINT32;
@@ -106,6 +136,10 @@ std::optional<Value> to_value(const VARIANT& var, CIMTYPE cim_type) {
       return var.dblVal;
     case VT_ARRAY | VT_BSTR:
       return string_array(var.parray);
+    case VT_ARRAY | VT_I4:
+    case VT_ARRAY | VT_I2:
+    case VT_ARRAY | VT_UI1:
+      return integer_array(var.parray, static_cast<VARTYPE>(var.vt & ~VT_ARRAY));
     default:
       return std::nullopt;  // VT_NULL, VT_EMPTY and types not used by hwinfo
   }

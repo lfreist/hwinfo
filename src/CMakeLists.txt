@@ -86,7 +86,8 @@ if (HWINFO_CPU)
 endif()
 
 if (HWINFO_DISK)
-    hwinfo_add_component(disk SOURCES ${HWINFO_WMI_SOURCES})
+    hwinfo_add_component(disk SOURCES ${HWINFO_WMI_SOURCES}
+            PRIVATE_LINK $<$<BOOL:${WIN32}>:propsys> $<$<BOOL:${WIN32}>:shell32>)
     target_include_directories(hwinfo_disk PRIVATE ${HWINFO_CMAKE_BINARY_DIR}/generated)
     add_dependencies(hwinfo_disk generate_pci_vendors_header)
 endif ()

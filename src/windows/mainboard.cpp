@@ -15,19 +15,26 @@
 namespace hwinfo {
 
 result<Mainboard> mainboard() {
-  return internal::wmi::query("Win32_BaseBoard", {"Manufacturer", "Product", "Version", "SerialNumber"})
-      .and_then([](const std::vector<internal::wmi::Row>& rows) -> result<Mainboard> {
-        if (rows.empty()) {
-          return std::unexpected(error{errc::not_found, "WMI: Win32_BaseBoard"});
-        }
-        const auto& board = rows.front();
-        return Mainboard{
-            .vendor = internal::dmi_string(board.string("Manufacturer")),
-            .name = internal::dmi_string(board.string("Product")),
-            .version = internal::dmi_string(board.string("Version")),
-            .serial_number = internal::dmi_string(board.string("SerialNumber")),
-        };
-      });
+  const auto boards = internal::wmi::query("Win32_BaseBoard", {"Manufacturer", "Product", "Version", "SerialNumber"});
+  if (!boards) {
+    return std::unexpected(boards.error());
+  }
+  if (boards->empty()) {
+    return std::unexpected(error{errc::not_found, "WMI: Win32_BaseBoard"});
+  }
+  const auto& board = boards->front();
+  Mainboard mainboard{
+      .vendor = internal::dmi_string(board.string("Manufacturer")),
+      .name = internal::dmi_string(board.string("Product")),
+      .version = internal::dmi_string(board.string("Version")),
+      .serial_number = internal::dmi_string(board.string("SerialNumber")),
+  };
+  if (const auto bios = internal::wmi::query("Win32_BIOS", {"Manufacturer", "SMBIOSBIOSVersion"});
+      bios && !bios->empty()) {
+    mainboard.firmware_vendor = internal::dmi_string(bios->front().string("Manufacturer"));
+    mainboard.firmware_version = internal::dmi_string(bios->front().string("SMBIOSBIOSVersion"));
+  }
+  return mainboard;
 }
 
 }  // namespace hwinfo

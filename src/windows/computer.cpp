@@ -58,6 +58,18 @@ result<Computer> computer() {
   const internal::wmi::Row empty;
   const internal::wmi::Row& product = products && !products->empty() ? products->front() : empty;
   const auto operating_systems = internal::wmi::query("Win32_OperatingSystem", {"LastBootUpTime"});
+  // SMBIOS chassis type (the first enclosure's first entry), as on Linux
+  const auto enclosures = internal::wmi::query("Win32_SystemEnclosure", {"ChassisTypes"});
+  std::optional<std::uint8_t> chassis_code;
+  if (enclosures && !enclosures->empty()) {
+    if (const auto types = enclosures->front().numbers("ChassisTypes"); !types.empty() && types.front() > 0) {
+      chassis_code = static_cast<std::uint8_t>(types.front() & 0x7f);
+    }
+  }
+  ChassisType chassis_type = chassis_code ? internal::chassis_from_smbios(*chassis_code) : ChassisType::unknown;
+  if (chassis_type == ChassisType::unknown) {
+    chassis_type = chassis(system.number<std::uint16_t>("PCSystemTypeEx"));
+  }
   const internal::wmi::Row& os = operating_systems && !operating_systems->empty() ? operating_systems->front() : empty;
   return Computer{
       .vendor = internal::dmi_string(system.string("Manufacturer")),
@@ -66,7 +78,8 @@ result<Computer> computer() {
       .version = internal::dmi_string(product.string("Version")),
       .sku = internal::dmi_string(system.string("SystemSKUNumber")),
       .serial_number = internal::dmi_string(product.string("IdentifyingNumber")),
-      .chassis = chassis(system.number<std::uint16_t>("PCSystemTypeEx")),
+      .chassis = chassis_type,
+      .chassis_code = chassis_code,
       // the boot time Windows keeps (now - uptime would be off by up to a second)
       .boot_time = os.string("LastBootUpTime").and_then(internal::cim::parse_datetime),
   };

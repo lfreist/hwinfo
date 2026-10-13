@@ -44,6 +44,20 @@ std::optional<std::string> board_name(io_registry_entry_t platform) {
   return std::nullopt;
 }
 
+// Version of the system firmware, as "System Firmware Version" in System Information: iBoot on Apple Silicon
+// ("iBoot-11881.1.1"), the boot ROM on Intel Macs.
+std::optional<std::string> firmware_version() {
+  if (const cf::io_ptr chosen(IORegistryEntryFromPath(MACH_PORT_NULL, "IODeviceTree:/chosen")); chosen) {
+    if (auto version = cf::string_property(chosen.get(), CFSTR("system-firmware-version"))) {
+      return version;
+    }
+  }
+  if (const cf::io_ptr rom(IORegistryEntryFromPath(MACH_PORT_NULL, "IODeviceTree:/rom")); rom) {
+    return cf::string_property(rom.get(), CFSTR("version"));
+  }
+  return std::nullopt;
+}
+
 }  // namespace
 
 result<Mainboard> mainboard() {
@@ -51,12 +65,17 @@ result<Mainboard> mainboard() {
   if (!platform) {
     return std::unexpected(error{errc::not_found, "IOPlatformExpertDevice"});
   }
-  return Mainboard{
+  Mainboard mainboard{
       .vendor = cf::string_property(platform.get(), CFSTR("manufacturer")),  // "Apple Inc."
       .name = board_name(platform.get()),
       .version = std::nullopt,
       .serial_number = cf::string_property(platform.get(), CFSTR(kIOPlatformSerialNumberKey)),
   };
+  mainboard.firmware_version = firmware_version();
+  if (mainboard.firmware_version) {
+    mainboard.firmware_vendor = "Apple Inc.";
+  }
+  return mainboard;
 }
 
 }  // namespace hwinfo

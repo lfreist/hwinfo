@@ -39,7 +39,8 @@
 namespace hwinfo::internal::wmi {
 
 // Value of a WMI property. 64 bit integers are transferred as strings by WMI and are kept as such.
-using Value = std::variant<std::string, std::int64_t, std::uint64_t, double, bool, std::vector<std::string>>;
+using Value = std::variant<std::string, std::int64_t, std::uint64_t, double, bool, std::vector<std::string>,
+                           std::vector<std::int64_t>>;
 
 // One object of a query result: the requested properties that are not NULL.
 class Row {
@@ -91,6 +92,13 @@ class Row {
     const auto* value = find(property);
     const auto* v = value != nullptr ? std::get_if<std::vector<std::string>>(value) : nullptr;
     return v != nullptr ? *v : std::vector<std::string>{};
+  }
+
+  // Integer array property, e.g. Win32_SystemEnclosure.ChassisTypes; empty if NULL.
+  [[nodiscard]] std::vector<std::int64_t> numbers(std::string_view property) const {
+    const auto* value = find(property);
+    const auto* v = value != nullptr ? std::get_if<std::vector<std::int64_t>>(value) : nullptr;
+    return v != nullptr ? *v : std::vector<std::int64_t>{};
   }
 
  private:

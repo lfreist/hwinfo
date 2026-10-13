@@ -102,7 +102,8 @@ result<Os> os() {
   // e.g. "15.1 (24B83)"
   std::string version = product_version().value_or(std::string{});
   std::string name{marketing_name(version)};
-  if (const auto build = internal::sysctl_attribute("kern.osversion")) {
+  auto build = internal::sysctl_attribute("kern.osversion");  // e.g. "24B83"
+  if (build) {
     version += version.empty() ? *build : std::format(" ({})", *build);
   }
 
@@ -111,6 +112,7 @@ result<Os> os() {
       .name = "macOS",
       .marketing_name = std::move(name),
       .version = std::move(version),
+      .build = std::move(build),
       .kernel = std::format("{} {}", std::string_view(info.sysname), std::string_view(info.release)),
       .architecture = info.machine,  // "arm64", "x86_64"
 #if defined(__x86_64__) || defined(__aarch64__) || defined(__arm64__) || defined(__ppc64__)

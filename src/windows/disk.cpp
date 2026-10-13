@@ -8,6 +8,8 @@
 // clang-format off
 #include <windows.h>
 #include <winioctl.h>
+#include <propsys.h>
+#include <shobjidl.h>
 // clang-format on
 #include <hwinfo/disk.h>
 
@@ -26,7 +28,13 @@
 #include <vector>
 
 #include "internal/strings.h"
+#include "internal/windows_com.h"
 #include "internal/windows_strings.h"
+
+#ifdef _MSC_VER
+#pragma comment(lib, "propsys.lib")
+#pragma comment(lib, "shell32.lib")
+#endif
 
 namespace hwinfo {
 
@@ -115,6 +123,56 @@ std::optional<std::string> filesystem_name(const wchar_t* root) {
   return internal::non_empty(internal::to_utf8(name.data()));
 }
 
+// Volume GUID path of the volume mounted at `root`, e.g. "\\?\Volume{4c1b02c1-d990-11dc-99ae-806e6f6e6963}\".
+std::optional<std::string> volume_name(const wchar_t* root) {
+  std::array<wchar_t, 64> name{};
+  if (!GetVolumeNameForVolumeMountPointW(root, name.data(), static_cast<DWORD>(name.size()))) {
+    return std::nullopt;
+  }
+  return internal::non_empty(internal::to_utf8(name.data()));
+}
+
+// BitLocker state of the volume mounted at `root` from the shell property System.Volume.BitLockerProtection, which,
+// unlike Win32_EncryptableVolume, needs no administrator rights. Its values are not documented; as Explorer shows
+// them: 1 on, 2 off, 3 encrypting, 4 decrypting, 5 suspended (encrypted, key stored in the clear), 6 locked. Volumes
+// without BitLocker support have no value.
+std::optional<bool> bitlocker_encrypted(const wchar_t* root) {
+  PROPERTYKEY key{};
+  if (FAILED(PSGetPropertyKeyFromName(L"System.Volume.BitLockerProtection", &key))) {
+    return std::nullopt;
+  }
+  internal::ComPtr<IPropertyStore> store;
+  if (FAILED(
+          SHGetPropertyStoreFromParsingName(root, nullptr, GPS_DEFAULT, __uuidof(IPropertyStore), store.put_void()))) {
+    return std::nullopt;
+  }
+  PROPVARIANT value;
+  PropVariantInit(&value);
+  if (FAILED(store->GetValue(key, &value))) {
+    return std::nullopt;
+  }
+  std::optional<bool> encrypted;
+  if (value.vt == VT_EMPTY) {
+    encrypted = false;
+  } else if (value.vt == VT_I4 || value.vt == VT_UI4) {
+    switch (value.vt == VT_I4 ? value.lVal : static_cast<LONG>(value.ulVal)) {
+      case 1:
+      case 5:
+      case 6:
+        encrypted = true;
+        break;
+      case 0:
+      case 2:
+        encrypted = false;
+        break;
+      default:  // in transition (3, 4) or unknown
+        break;
+    }
+  }
+  PropVariantClear(&value);
+  return encrypted;
+}
+
 // Device number -> drive letters ("C:\") of the volumes on that disk.
 std::map<DWORD, std::vector<MountPoint>> drive_letters() {
   std::map<DWORD, std::vector<MountPoint>> mapping;
@@ -133,7 +191,12 @@ std::map<DWORD, std::vector<MountPoint>> drive_letters() {
     DWORD returned = 0;
     if (volume.valid() && DeviceIoControl(volume.get(), IOCTL_STORAGE_GET_DEVICE_NUMBER, nullptr, 0, &number,
                                           sizeof(number), &returned, nullptr)) {
-      mapping[number.DeviceNumber].push_back({root, filesystem_name(root)});
+      mapping[number.DeviceNumber].push_back({
+          .path = root,
+          .filesystem = filesystem_name(root),
+          .volume = volume_name(root),
+          .encrypted = bitlocker_encrypted(root),
+      });
     }
   }
   return mapping;
@@ -142,6 +205,7 @@ std::map<DWORD, std::vector<MountPoint>> drive_letters() {
 }  // namespace
 
 result<std::vector<Disk>> disks() {
+  const internal::ComInit com;  // for the shell property store
   auto mount_points = drive_letters();
 
   std::vector<Disk> result;
