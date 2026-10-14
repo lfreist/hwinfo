@@ -29,6 +29,15 @@ void append(std::vector<std::byte>& out, std::string_view strings) {
   }
 }
 
+// Structure of `type` with the formatted area `fields` (after the 4 byte header) and NUL-terminated `strings`.
+void structure(std::vector<std::byte>& out, unsigned type, unsigned handle, std::initializer_list<unsigned> fields,
+               std::string_view strings) {
+  append(out, {type, static_cast<unsigned>(4 + fields.size()), handle & 0xff, handle >> 8});
+  append(out, fields);
+  append(out, strings.empty() ? std::string_view("\0", 1) : strings);
+  append(out, {0});
+}
+
 // SMBIOS 2.7 memory device (type 17, 0x22 bytes). Strings: 1 device locator, 2 bank locator, 3 manufacturer,
 // 4 serial number, 5 part number. `strings` holds them NUL-separated, followed by the terminating NUL.
 void memory_device(std::vector<std::byte>& out, unsigned handle, unsigned size_mib, unsigned speed,
@@ -44,6 +53,18 @@ void memory_device(std::vector<std::byte>& out, unsigned handle, unsigned size_m
 smbios::Table table() {
   std::vector<std::byte> bytes;
   using namespace std::string_view_literals;
+  // BIOS (type 0): vendor, version, segment, release date, ROM size, characteristics
+  structure(bytes, 0, 0x00, {1, 2, 0x00, 0xf0, 3, 0xff, 0, 0, 0, 0, 0, 0, 0, 0},
+            "American Megatrends International, LLC.\0N.1.10A13\0"
+            "05/14/2024\0"sv);
+  // System (type 1): manufacturer, product, version, serial, UUID, wake-up type, SKU, family
+  structure(bytes, 1, 0x01, {1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x06, 5, 6},
+            "SchenkerTechnologiesGmbH\0SCHENKER VISION (M23)\0System Version\0NV41PZ1234\0SVS14M23\0"
+            "SCHENKER VISION\0"sv);
+  // Baseboard (type 2): manufacturer, product, version, serial
+  structure(bytes, 2, 0x02, {1, 2, 3, 4}, "NB02\0NV4XMZ\0Not Applicable\0 \0"sv);
+  // Chassis (type 3): manufacturer, type 10 (notebook) with the lock bit set, version, serial, asset tag
+  structure(bytes, 3, 0x03, {1, 0x8a, 0, 0, 0}, "NB02\0"sv);
   memory_device(bytes, 0x20, 0x2000, 4800, 4400,
                 "DIMM 0\0BANK 0\0Micron Technology\0"
                 "33A83711\0MTC4C10163S1SC48BA1 \0"sv);
@@ -84,10 +105,37 @@ TEST(Smbios, MemoryModules) {
                         }));
 }
 
-TEST(Smbios, NoMemoryDevices) {
+TEST(Smbios, ComputerIdentity) {
+  const auto computer = internal::computer_identity(table());
+  ASSERT_TRUE(computer.has_value());
+  EXPECT_EQ(computer->vendor, "SchenkerTechnologiesGmbH");
+  EXPECT_EQ(computer->model, "SCHENKER VISION (M23)");
+  EXPECT_EQ(computer->family, "SCHENKER VISION");
+  EXPECT_EQ(computer->version, std::nullopt);  // placeholder
+  EXPECT_EQ(computer->sku, "SVS14M23");
+  EXPECT_EQ(computer->serial_number, "NV41PZ1234");
+  EXPECT_EQ(computer->chassis, hwinfo::ChassisType::laptop);
+  EXPECT_EQ(computer->chassis_code, 10);  // lock bit masked
+  EXPECT_EQ(computer->boot_time, std::nullopt);
+}
+
+TEST(Smbios, MainboardInfo) {
+  EXPECT_EQ(internal::mainboard_info(table()), (hwinfo::Mainboard{
+                                                   .vendor = "NB02",
+                                                   .name = "NV4XMZ",
+                                                   .version = std::nullopt,
+                                                   .serial_number = std::nullopt,
+                                                   .firmware_vendor = "American Megatrends International, LLC.",
+                                                   .firmware_version = "N.1.10A13",
+                                               }));
+}
+
+TEST(Smbios, EmptyTable) {
   std::vector<std::byte> bytes;
   append(bytes, {127, 4, 0x00, 0x00, 0, 0});
   const auto t = smbios::parse(bytes, smbios::Version{.major = 3, .minor = 0});
   ASSERT_TRUE(t.has_value());
   EXPECT_TRUE(internal::memory_modules(*t).empty());
+  EXPECT_EQ(internal::computer_identity(*t), std::nullopt);
+  EXPECT_EQ(internal::mainboard_info(*t), std::nullopt);
 }

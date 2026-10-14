@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "internal/smbios.h"
 #include "internal/windows_error.h"
 #include "internal/wmi_wrapper.h"
 
@@ -18,8 +19,9 @@ namespace hwinfo {
 
 namespace {
 
-// Installed modules from SMBIOS (via WMI). Empty if WMI is not available.
-std::vector<MemoryModule> memory_modules() {
+// Installed modules from SMBIOS, decoded by WMI. Fallback if the raw table cannot be read; empty if WMI is not
+// available.
+std::vector<MemoryModule> memory_modules_from_wmi() {
   const auto rows =
       internal::wmi::query("Win32_PhysicalMemory", {"BankLabel", "Capacity", "ConfiguredClockSpeed", "DeviceLocator",
                                                     "Manufacturer", "PartNumber", "SerialNumber", "Speed"});
@@ -43,6 +45,11 @@ std::vector<MemoryModule> memory_modules() {
     });
   }
   return modules;
+}
+
+std::vector<MemoryModule> memory_modules() {
+  const auto table = smbios::read_system_table();
+  return table ? internal::memory_modules(*table) : memory_modules_from_wmi();
 }
 
 }  // namespace

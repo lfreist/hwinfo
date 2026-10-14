@@ -72,7 +72,8 @@ endif()
 
 # === Components =======================================================================================================
 if (HWINFO_COMPUTER)
-    hwinfo_add_component(computer SOURCES ${HWINFO_WMI_SOURCES})
+    hwinfo_add_component(computer SOURCES ${HWINFO_WMI_SOURCES}
+            PRIVATE_LINK $<$<BOOL:${WIN32}>:ntdll> $<$<BOOL:${WIN32}>:powrprof>)
 endif ()
 
 if (HWINFO_BATTERY)

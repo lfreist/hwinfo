@@ -6,15 +6,20 @@
 #ifdef HWINFO_WINDOWS
 
 #include <hwinfo/mainboard.h>
+#include <windows.h>
 
 #include <vector>
 
 #include "internal/dmi.h"
+#include "internal/smbios.h"
 #include "internal/wmi_wrapper.h"
 
 namespace hwinfo {
 
-result<Mainboard> mainboard() {
+namespace {
+
+// Fallback if the raw SMBIOS table cannot be read. WMI decodes the same table.
+result<Mainboard> mainboard_from_wmi() {
   const auto boards = internal::wmi::query("Win32_BaseBoard", {"Manufacturer", "Product", "Version", "SerialNumber"});
   if (!boards) {
     return std::unexpected(boards.error());
@@ -35,6 +40,18 @@ result<Mainboard> mainboard() {
     mainboard.firmware_version = internal::dmi_string(bios->front().string("SMBIOSBIOSVersion"));
   }
   return mainboard;
+}
+
+}  // namespace
+
+result<Mainboard> mainboard() {
+  if (const auto table = smbios::read_system_table()) {
+    if (auto board = internal::mainboard_info(*table)) {
+      return *std::move(board);
+    }
+    return std::unexpected(error{errc::not_found, "SMBIOS: no baseboard or BIOS information"});
+  }
+  return mainboard_from_wmi();
 }
 
 }  // namespace hwinfo
