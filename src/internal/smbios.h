@@ -27,10 +27,19 @@ namespace hwinfo::internal {
 // The SMBIOS table of the running system, read on first use and kept for the lifetime of the process (per component
 // library): firmware does not change it while the system runs, and a missing permission stays missing. Records decoded
 // from it point into the cached table and stay valid.
+// MSVC (release, /W4) reports C4702 "unreachable code" at the return: not for anything in the source, but for code it
+// generates around the guarded static once it has inlined read_system_table().
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4702)
+#endif
 inline const std::expected<smbios::Table, smbios::Error>& system_table() {
   static const auto table = smbios::read_system_table();
   return table;
 }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 inline std::optional<std::string> smbios_string(std::optional<std::string_view> value) {
   return dmi_string(value.transform([](std::string_view s) { return std::string(s); }));
@@ -39,10 +48,8 @@ inline std::optional<std::string> smbios_string(std::optional<std::string_view> 
 // The first record of type T, if any.
 template <typename T>
 std::optional<T> first_record(const smbios::Table& table) {
-  for (const T& record : table.get<T>()) {
-    return record;
-  }
-  return std::nullopt;
+  const auto records = table.get<T>();
+  return records.empty() ? std::nullopt : std::optional<T>(records.front());
 }
 
 // Identity from the system information (type 1) and the first enclosure (type 3). std::nullopt without type 1.
