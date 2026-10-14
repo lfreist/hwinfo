@@ -3,6 +3,7 @@
 
 #include <hwinfo/hwinfo.h>
 
+#include <cstdint>
 #include <format>
 #include <iostream>
 #include <ranges>
@@ -139,13 +140,24 @@ int main() {
   section("Memory");
   if (const auto memory = hwinfo::memory(); check(memory)) {
     field("total:", memory->total);
+    field("slots:", memory->slots);
+    field("max capacity:", memory->max_capacity);
     for (const auto& module : memory->modules) {
       std::cout << std::format("Module {}", module.index) << '\n';
+      field("name:", module.name);
       field("vendor:", module.vendor);
       field("model:", module.model);
       field("serial number:", module.serial_number);
       field("size:", module.size);
+      field("type:", module.type);
+      field("form factor:", module.form_factor);
       field("frequency:", module.frequency);
+      field("max frequency:", module.max_frequency);
+      field("rank:", module.rank);
+      field("width:", module.data_width.transform([&](std::uint32_t data) {
+        return std::format("{} bits{}", data, module.total_width > data ? " (ECC)" : "");
+      }));
+      field("voltage:", module.voltage_mv.transform([](std::uint32_t mv) { return std::format("{} mV", mv); }));
     }
   }
 

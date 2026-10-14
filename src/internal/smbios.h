@@ -11,6 +11,7 @@
 #include <hwinfo/units.h>
 #include <smbios/smbios.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -79,28 +80,90 @@ inline std::optional<Mainboard> mainboard_info(const smbios::Table& table) {
   return mainboard;
 }
 
-// Populated memory devices (type 17). Empty slots (size 0) are skipped; modules of unknown size are kept.
-inline std::vector<MemoryModule> memory_modules(const smbios::Table& table) {
-  std::vector<MemoryModule> modules;
-  for (const smbios::MemoryDevice& device : table.get<smbios::MemoryDevice>()) {
-    if (device.size_bytes == 0) {
+// SMBIOS memory type (type 17 offset 0x12, also Win32_PhysicalMemory.SMBIOSMemoryType) as e.g. "DDR5".
+inline std::optional<std::string> memory_type_name(std::uint8_t type) {
+  const auto memory_type = smbios::MemoryType{type};
+  if (memory_type == smbios::MemoryType::other || memory_type == smbios::MemoryType::unknown) {
+    return std::nullopt;
+  }
+  return smbios::name(memory_type).transform([](std::string_view name) { return std::string(name); });
+}
+
+constexpr MemoryFormFactor memory_form_factor(smbios::MemoryFormFactor form_factor) noexcept {
+  switch (static_cast<std::uint8_t>(form_factor)) {
+    case 0x00:
+    case 0x02:  // unknown
+      return MemoryFormFactor::unknown;
+    case 0x09:  // DIMM
+    case 0x0c:  // RIMM
+    case 0x0f:  // FB-DIMM
+      return MemoryFormFactor::dimm;
+    case 0x0d:  // SODIMM
+    case 0x0e:  // SRIMM
+      return MemoryFormFactor::sodimm;
+    case 0x11:  // CAMM (3.7)
+      return MemoryFormFactor::camm;
+    case 0x05:  // chip
+    case 0x0a:  // TSOP
+    case 0x0b:  // row of chips
+    case 0x10:  // die
+      return MemoryFormFactor::soldered;
+    default:
+      return MemoryFormFactor::other;
+  }
+}
+
+// Data rate in MT/s as hwinfo frequency; 0 is unknown.
+inline std::optional<Hertz> mts_frequency(std::optional<std::uint32_t> mts) {
+  return mts.and_then([](std::uint32_t value) {
+    return value > 0 ? std::optional(std::uint64_t{value} * FrequencyUnit::MHz) : std::nullopt;
+  });
+}
+
+// Modules, slots and maximum capacity from the physical memory arrays (type 16) and memory devices (type 17). Only
+// arrays used as system memory count; devices of other arrays (e.g. flash, video memory) are skipped, as are empty
+// slots (size 0). total is left empty.
+inline Memory memory_info(const smbios::Table& table) {
+  constexpr std::uint8_t system_memory = 0x03;  // MemoryArray::use
+  Memory memory;
+  std::vector<std::uint16_t> other_arrays;
+  for (const smbios::RawStructure s : table.structures() | smbios::of_type(smbios::MemoryArray::type_id)) {
+    const auto array = smbios::MemoryArray::decode(s);
+    if (!array) {
       continue;
     }
-    // MT/s, as reported by Win32_PhysicalMemory.ConfiguredClockSpeed on Windows
-    const auto mts = device.configured_speed_mts.or_else([&] { return device.speed_mts; });
-    modules.push_back(MemoryModule{
-        .index = static_cast<std::uint32_t>(modules.size()),
+    if (array->use != system_memory) {
+      other_arrays.push_back(s.handle());
+      continue;
+    }
+    memory.slots = memory.slots.value_or(0) + array->device_count;
+    if (array->max_capacity_bytes) {
+      memory.max_capacity = memory.max_capacity.value_or(Bytes{}) + Bytes{*array->max_capacity_bytes};
+    }
+  }
+  for (const smbios::MemoryDevice& device : table.get<smbios::MemoryDevice>()) {
+    if (device.size_bytes == 0 || std::ranges::contains(other_arrays, device.array_handle)) {
+      continue;
+    }
+    memory.modules.push_back(MemoryModule{
+        .index = static_cast<std::uint32_t>(memory.modules.size()),
         .vendor = smbios_string(device.manufacturer),
         .name = smbios_string(device.device_locator).or_else([&] { return smbios_string(device.bank_locator); }),
         .model = smbios_string(device.part_number),
         .serial_number = smbios_string(device.serial_number),
         .size = device.size_bytes.transform([](std::uint64_t bytes) { return Bytes{bytes}; }),
-        .frequency = mts.and_then([](std::uint32_t value) {
-          return value > 0 ? std::optional(std::uint64_t{value} * FrequencyUnit::MHz) : std::nullopt;
-        }),
+        .frequency =
+            mts_frequency(device.configured_speed_mts).or_else([&] { return mts_frequency(device.speed_mts); }),
+        .max_frequency = mts_frequency(device.speed_mts),
+        .type = memory_type_name(static_cast<std::uint8_t>(device.memory_type)),
+        .form_factor = memory_form_factor(device.form_factor),
+        .rank = device.rank,
+        .data_width = device.data_width_bits,
+        .total_width = device.total_width_bits,
+        .voltage_mv = device.configured_voltage_mv,
     });
   }
-  return modules;
+  return memory;
 }
 
 }  // namespace hwinfo::internal
