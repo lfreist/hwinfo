@@ -169,6 +169,7 @@ int main() {
     field("version:", computer->version);
     field("sku:", computer->sku);
     field("serial number:", computer->serial_number);
+    field("uuid:", computer->uuid);
     field("chassis:", computer->chassis);
   }
 
@@ -178,6 +179,9 @@ int main() {
     field("name:", board->name);
     field("version:", board->version);
     field("serial number:", board->serial_number);
+    field("firmware vendor:", board->firmware_vendor);
+    field("firmware version:", board->firmware_version);
+    field("firmware date:", board->firmware_date);
   }
 
   section("Batteries");

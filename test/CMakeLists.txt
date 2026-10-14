@@ -19,6 +19,7 @@ add_executable(hwinfo_tests
         dmi_test.cpp
         error_test.cpp
         units_test.cpp
+        uuid_test.cpp
         strings_test.cpp
         procfs_test.cpp
         smbios_test.cpp

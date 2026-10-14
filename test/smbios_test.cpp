@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -93,7 +94,9 @@ smbios::Table table() {
             "American Megatrends International, LLC.\0N.1.10A13\0"
             "05/14/2024\0"sv);
   // System (type 1): manufacturer, product, version, serial, UUID, wake-up type, SKU, family
-  structure(bytes, 1, 0x01, {1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x06, 5, 6},
+  // (UUID 86f17d41-e257-95c0-a2aa-8c148ab96b97, first three fields little endian since SMBIOS 2.6)
+  structure(bytes, 1, 0x01, {1,    2,    3,    4,    0x41, 0x7d, 0xf1, 0x86, 0x57, 0xe2, 0xc0, 0x95,
+                             0xa2, 0xaa, 0x8c, 0x14, 0x8a, 0xb9, 0x6b, 0x97, 0x06, 5,    6},
             "SchenkerTechnologiesGmbH\0SCHENKER VISION (M23)\0System Version\0NV41PZ1234\0SVS14M23\0"
             "SCHENKER VISION\0"sv);
   // Baseboard (type 2): manufacturer, product, version, serial
@@ -195,20 +198,24 @@ TEST(Smbios, ComputerIdentity) {
   EXPECT_EQ(computer->version, std::nullopt);  // placeholder
   EXPECT_EQ(computer->sku, "SVS14M23");
   EXPECT_EQ(computer->serial_number, "NV41PZ1234");
+  EXPECT_EQ(computer->uuid, internal::parse_uuid("86f17d41-e257-95c0-a2aa-8c148ab96b97"));
   EXPECT_EQ(computer->chassis, hwinfo::ChassisType::laptop);
   EXPECT_EQ(computer->chassis_code, 10);  // lock bit masked
   EXPECT_EQ(computer->boot_time, std::nullopt);
 }
 
 TEST(Smbios, MainboardInfo) {
-  EXPECT_EQ(internal::mainboard_info(table()), (hwinfo::Mainboard{
-                                                   .vendor = "NB02",
-                                                   .name = "NV4XMZ",
-                                                   .version = std::nullopt,
-                                                   .serial_number = std::nullopt,
-                                                   .firmware_vendor = "American Megatrends International, LLC.",
-                                                   .firmware_version = "N.1.10A13",
-                                               }));
+  EXPECT_EQ(
+      internal::mainboard_info(table()),
+      (hwinfo::Mainboard{
+          .vendor = "NB02",
+          .name = "NV4XMZ",
+          .version = std::nullopt,
+          .serial_number = std::nullopt,
+          .firmware_vendor = "American Megatrends International, LLC.",
+          .firmware_version = "N.1.10A13",
+          .firmware_date = std::chrono::year_month_day{std::chrono::year(2024), std::chrono::May, std::chrono::day(14)},
+      }));
 }
 
 TEST(Smbios, VmFlag) {

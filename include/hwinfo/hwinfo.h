@@ -16,4 +16,5 @@
 #include <hwinfo/ram.h>
 #include <hwinfo/resource_limits.h>
 #include <hwinfo/units.h>
+#include <hwinfo/uuid.h>
 #include <hwinfo/virtualization.h>

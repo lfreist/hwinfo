@@ -7,8 +7,8 @@
 #include <hwinfo/error.h>
 #include <hwinfo/platform.h>
 #include <hwinfo/units.h>
+#include <hwinfo/uuid.h>
 
-#include <array>
 #include <cstdint>
 #include <format>
 #include <optional>
@@ -36,11 +36,7 @@ struct PciDevice {
   friend bool operator==(const PciDevice&, const PciDevice&) = default;
 };
 
-struct GpuUuid {
-  std::array<std::uint8_t, 16> bytes{};
-
-  friend bool operator==(const GpuUuid&, const GpuUuid&) = default;
-};
+using GpuUuid = Uuid;
 
 enum class GpuType {
   unknown,
@@ -132,17 +128,6 @@ constexpr std::string_view to_string(GpuType type) noexcept {
   return "unknown";
 }
 
-inline std::string to_string(const GpuUuid& uuid) {
-  std::string out;
-  for (std::size_t i = 0; i < uuid.bytes.size(); ++i) {
-    if (i == 4 || i == 6 || i == 8 || i == 10) {
-      out += '-';
-    }
-    out += std::format("{:02x}", uuid.bytes[i]);
-  }
-  return out;
-}
-
 inline std::string to_string(const PcieLink& link) { return std::format("PCIe {}.0 x{}", link.generation, link.width); }
 
 inline std::string to_string(const Gpu& gpu) {
@@ -160,9 +145,6 @@ inline std::string to_string(const Gpu& gpu) {
 
 template <>
 struct std::formatter<hwinfo::GpuType> : hwinfo::detail::to_string_formatter<hwinfo::GpuType> {};
-
-template <>
-struct std::formatter<hwinfo::GpuUuid> : hwinfo::detail::to_string_formatter<hwinfo::GpuUuid> {};
 
 template <>
 struct std::formatter<hwinfo::PcieLink> : hwinfo::detail::to_string_formatter<hwinfo::PcieLink> {};

@@ -15,6 +15,7 @@
 #include <hwinfo/platform.h>
 #include <hwinfo/ram.h>
 #include <hwinfo/resource_limits.h>
+#include <hwinfo/uuid.h>
 #include <hwinfo/virtualization.h>
 
 #include <chrono>
@@ -42,6 +43,7 @@ struct Computer {
   std::optional<std::string> version{};
   std::optional<std::string> sku{};
   std::optional<std::string> serial_number{};  // usually requires elevated privileges on Linux
+  std::optional<Uuid> uuid{};
   ChassisType chassis = ChassisType::unknown;
   // Raw SMBIOS chassis type (type 3, lock bit masked), e.g. 10 = notebook, 35 = mini PC; chassis maps it to fewer
   // categories. Absent where there is no SMBIOS (macOS, most ARM devices).

@@ -18,6 +18,7 @@ set(HWINFO_PUBLIC_HEADERS
         ${HWINFO_INCLUDE_DIR}/hwinfo/platform.h
         ${HWINFO_INCLUDE_DIR}/hwinfo/error.h
         ${HWINFO_INCLUDE_DIR}/hwinfo/units.h
+        ${HWINFO_INCLUDE_DIR}/hwinfo/uuid.h
         ${HWINFO_INCLUDE_DIR}/hwinfo/monitoring.h
         ${HWINFO_INCLUDE_DIR}/hwinfo/hwinfo.h
         ${HWINFO_INCLUDE_DIR}/hwinfo/computer.h

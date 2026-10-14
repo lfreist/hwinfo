@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -59,6 +60,29 @@ inline std::optional<std::string> dmi_string(std::optional<std::string> value) {
     return std::nullopt;
   }
   return std::string(trimmed);
+}
+
+// SMBIOS BIOS release date "mm/dd/yyyy" (also Linux' bios_date). Two-digit years ("mm/dd/yy", before SMBIOS 2.3) are
+// 19yy.
+inline std::optional<std::chrono::year_month_day> parse_smbios_date(std::string_view s) {
+  s = trim(s);
+  const auto first = s.find('/');
+  const auto second = first == std::string_view::npos ? first : s.find('/', first + 1);
+  if (second == std::string_view::npos) {
+    return std::nullopt;
+  }
+  const auto month = parse<unsigned>(s.substr(0, first));
+  const auto day = parse<unsigned>(s.substr(first + 1, second - first - 1));
+  const auto year_text = s.substr(second + 1);
+  auto year = parse<int>(year_text);
+  if (!month || !day || !year || (year_text.size() != 2 && year_text.size() != 4)) {
+    return std::nullopt;
+  }
+  if (year_text.size() == 2) {
+    *year += 1900;
+  }
+  const std::chrono::year_month_day date{std::chrono::year(*year), std::chrono::month(*month), std::chrono::day(*day)};
+  return date.ok() ? std::optional(date) : std::nullopt;
 }
 
 // SMBIOS system enclosure (type 3) chassis type. The most significant bit is a lock flag.

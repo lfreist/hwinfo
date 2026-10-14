@@ -10,6 +10,7 @@
 #include <string_view>
 
 #include "internal/gpu_backend.h"
+#include "internal/uuid.h"
 
 namespace hwinfo::internal::gpu {
 
@@ -66,29 +67,7 @@ std::optional<GpuUuid> parse_uuid(std::string_view s) {
   if (s.starts_with("GPU-")) {
     s.remove_prefix(4);
   }
-  GpuUuid uuid;
-  std::size_t digits = 0;
-  for (const char c : s) {
-    if (c == '-') {
-      continue;
-    }
-    int value = 0;
-    if (c >= '0' && c <= '9') {
-      value = c - '0';
-    } else if (c >= 'a' && c <= 'f') {
-      value = c - 'a' + 10;
-    } else if (c >= 'A' && c <= 'F') {
-      value = c - 'A' + 10;
-    } else {
-      return std::nullopt;
-    }
-    if (digits == 32) {
-      return std::nullopt;
-    }
-    uuid.bytes[digits / 2] = static_cast<std::uint8_t>(uuid.bytes[digits / 2] << 4 | value);
-    ++digits;
-  }
-  return digits == 32 ? std::optional(uuid) : std::nullopt;
+  return internal::parse_uuid(s);
 }
 
 }  // namespace hwinfo::internal::gpu

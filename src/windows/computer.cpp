@@ -19,6 +19,7 @@
 
 #include "internal/dmi.h"
 #include "internal/smbios.h"
+#include "internal/uuid.h"
 #include "internal/wmi_wrapper.h"
 
 #ifdef _MSC_VER
@@ -88,7 +89,7 @@ result<Computer> computer_from_wmi() {
     return std::unexpected(error{errc::not_found, "WMI: Win32_ComputerSystem"});
   }
   const internal::wmi::Row& system = systems->front();
-  const auto products = internal::wmi::query("Win32_ComputerSystemProduct", {"Version", "IdentifyingNumber"});
+  const auto products = internal::wmi::query("Win32_ComputerSystemProduct", {"Version", "IdentifyingNumber", "UUID"});
   const internal::wmi::Row empty;
   const internal::wmi::Row& product = products && !products->empty() ? products->front() : empty;
   // SMBIOS chassis type (the first enclosure's first entry), as on Linux
@@ -106,6 +107,7 @@ result<Computer> computer_from_wmi() {
       .version = internal::dmi_string(product.string("Version")),
       .sku = internal::dmi_string(system.string("SystemSKUNumber")),
       .serial_number = internal::dmi_string(product.string("IdentifyingNumber")),
+      .uuid = internal::system_uuid(product.string("UUID").and_then(internal::parse_uuid)),
       .chassis = chassis_code ? internal::chassis_from_smbios(*chassis_code) : ChassisType::unknown,
       .chassis_code = chassis_code,
   };

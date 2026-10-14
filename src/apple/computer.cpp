@@ -19,6 +19,7 @@
 #include "internal/apple_cf.h"
 #include "internal/apple_models.h"
 #include "internal/sysctl.h"
+#include "internal/uuid.h"
 
 namespace hwinfo {
 
@@ -86,6 +87,8 @@ result<Computer> computer() {
       .version = std::nullopt,
       .sku = std::nullopt,
       .serial_number = cf::string_property(platform.get(), CFSTR(kIOPlatformSerialNumberKey)),
+      .uuid = internal::system_uuid(
+          cf::string_property(platform.get(), CFSTR(kIOPlatformUUIDKey)).and_then(internal::parse_uuid)),
       .chassis = type,
       .boot_time = kernel_boot_time(),
   };

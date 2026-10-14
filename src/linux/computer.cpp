@@ -15,6 +15,7 @@
 #include "internal/dmi.h"
 #include "internal/file.h"
 #include "internal/procfs.h"
+#include "internal/uuid.h"
 
 namespace hwinfo {
 
@@ -34,6 +35,7 @@ Computer identity() {
         .version = read("product_version"),
         .sku = read("product_sku"),
         .serial_number = read("product_serial"),
+        .uuid = internal::system_uuid(internal::read_attribute(*dmi / "product_uuid").and_then(internal::parse_uuid)),
         .chassis = chassis ? internal::chassis_from_smbios(*chassis) : ChassisType::unknown,
         .chassis_code = chassis ? std::optional(static_cast<std::uint8_t>(*chassis & 0x7f)) : std::nullopt,
     };

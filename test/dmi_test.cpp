@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <format>
 #include <optional>
 #include <string>
@@ -46,4 +47,15 @@ TEST(Dmi, ChassisFromSmbios) {
 TEST(Dmi, ChassisToString) {
   EXPECT_EQ(std::format("{}", ChassisType::all_in_one), "all-in-one");
   EXPECT_EQ(std::format("{:>8}", ChassisType::laptop), "  laptop");
+}
+
+TEST(Dmi, ParseSmbiosDate) {
+  using namespace std::chrono;
+  EXPECT_EQ(internal::parse_smbios_date("05/14/2024"), 2024y / May / 14);
+  EXPECT_EQ(internal::parse_smbios_date(" 12/01/2019\n"), 2019y / December / 1);
+  EXPECT_EQ(internal::parse_smbios_date("02/22/99"), 1999y / February / 22);
+  EXPECT_EQ(internal::parse_smbios_date("02/30/2024"), std::nullopt);
+  EXPECT_EQ(internal::parse_smbios_date("2024-05-14"), std::nullopt);
+  EXPECT_EQ(internal::parse_smbios_date("05/14/224"), std::nullopt);
+  EXPECT_EQ(internal::parse_smbios_date(""), std::nullopt);
 }

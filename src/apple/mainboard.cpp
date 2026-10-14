@@ -89,6 +89,7 @@ result<Mainboard> mainboard() {
       fill(mainboard.serial_number, board->serial_number);
       fill(mainboard.firmware_vendor, board->firmware_vendor);
       fill(mainboard.firmware_version, board->firmware_version);
+      mainboard.firmware_date = board->firmware_date;
     }
   }
   return mainboard;

@@ -25,6 +25,7 @@ result<Mainboard> mainboard() {
       .serial_number = read("board_serial"),
       .firmware_vendor = read("bios_vendor"),
       .firmware_version = read("bios_version"),
+      .firmware_date = internal::read_attribute(*dmi / "bios_date").and_then(internal::parse_smbios_date),
   };
 }
 

@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "dmi.h"
+#include "uuid.h"
 
 namespace hwinfo::internal {
 
@@ -54,6 +55,7 @@ inline std::optional<Computer> computer_identity(const smbios::Table& table) {
       .version = smbios_string(system->version),
       .sku = smbios_string(system->sku_number),
       .serial_number = smbios_string(system->serial_number),
+      .uuid = system_uuid(system->uuid.transform([](const smbios::Uuid& uuid) { return Uuid{uuid.bytes}; })),
       .chassis = chassis_code ? chassis_from_smbios(*chassis_code) : ChassisType::unknown,
       .chassis_code = chassis_code,
   };
@@ -76,6 +78,7 @@ inline std::optional<Mainboard> mainboard_info(const smbios::Table& table) {
   if (bios) {
     mainboard.firmware_vendor = smbios_string(bios->vendor);
     mainboard.firmware_version = smbios_string(bios->version);
+    mainboard.firmware_date = bios->release_date.and_then(parse_smbios_date);
   }
   return mainboard;
 }
