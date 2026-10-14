@@ -100,7 +100,8 @@ Every component is a plain aggregate returned by a free function:
 
 | Function                       | Returns                                                      | Header                     |
 |--------------------------------|--------------------------------------------------------------|----------------------------|
-| `hwinfo::computer()`           | `result<Computer>` (vendor, model, chassis)                  | `hwinfo/computer.h`        |
+| `hwinfo::computer()`           | `result<Computer>` (vendor, model, chassis, boot time)       | `hwinfo/computer.h`        |
+| `hwinfo::uptime()`             | `result<std::chrono::seconds>` (including time asleep)       | `hwinfo/computer.h`        |
 | `hwinfo::cpus()`               | `result<std::vector<Cpu>>` (one per socket)                  | `hwinfo/cpu.h`             |
 | `hwinfo::memory()`             | `result<Memory>` (total + installed modules)                 | `hwinfo/ram.h`             |
 | `hwinfo::gpus()`               | `result<std::vector<Gpu>>`                                   | `hwinfo/gpu.h`             |
@@ -135,6 +136,12 @@ components. Each member function queries on call, so only the components you use
 if (auto pc = hwinfo::computer()) {
   std::println("{} ({})", *pc, pc->chassis);  // "LENOVO 21CBCTO1WW (laptop)"
   auto gpus = pc->gpus();                      // same as hwinfo::gpus()
+  if (pc->boot_time) {
+    std::println("booted {:%F %T} UTC", *pc->boot_time);
+  }
+}
+if (auto up = hwinfo::uptime()) {
+  std::println("up for {:%j days %T}", *up);   // read anew on every call
 }
 ```
 
@@ -276,15 +283,19 @@ Things to know:
 | Computer         | Vendor, model, serial number                                                  |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Family, version, SKU                                                          |          ✔️          |                    family (marketing name)                    |                      ✔️                      |
 |                  | Chassis type                                                                  |          ✔️          |                          from model                           |                      ✔️                      |
+|                  | Boot time, uptime                                                             |          ✔️          |                              ✔️                               |                      ✔️                      |
 | Mainboard        | Vendor, name                                                                  |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Version                                                                       |          ✔️          |                              ❌                               |                      ✔️                      |
 |                  | Serial number                                                                 |         root         |                              ✔️                               |                      ✔️                      |
+|                  | Firmware (BIOS / UEFI) vendor, version                                        |          ✔️          |                     ✔️ (iBoot / boot ROM)                     |                      ✔️                      |
 | Disk             | Vendor, model, serial number                                                  |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Size, bus type                                                                |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Mount points, filesystem                                                      |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Volume, encryption                                                            | ✔️ (LUKS / dm-crypt) |                          volume only                          |                ✔️ (BitLocker)                |
 |                  | Free space (`disk_space`)                                                     |          ✔️          |                              ✔️                               |                      ✔️                      |
 | Operating System | Name, version, kernel                                                         |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Family, marketing name                                                        |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Build                                                                         |   `BUILD_ID` only    |                              ✔️                               |                      ✔️                      |
 |                  | Architecture, bits                                                            |          ✔️          |                              ✔️                               |                      ✔️                      |
 | Virtualization   | VM, hypervisor                                                                |          ✔️          | ✔️ (Apple silicon: Apple Virtualization only, others unknown) |                      ✔️                      |
 |                  | Container, runtime                                                            |          ✔️          |                   ➖ (no native containers)                   |       Windows containers (no runtime)        |
