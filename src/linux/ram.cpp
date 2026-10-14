@@ -7,16 +7,24 @@
 
 #include <hwinfo/ram.h>
 
+#include <vector>
+
 #include "internal/file.h"
 #include "internal/procfs.h"
+#include "internal/smbios.h"
 
 namespace hwinfo {
 
 result<Memory> memory() {
-  // TODO: memory modules (DIMMs) are only available via SMBIOS type 17 tables, which require root privileges.
   return internal::read_file("/proc/meminfo")
       .and_then(internal::procfs::parse_meminfo)
-      .transform([](const MemoryUsage& usage) { return Memory{.total = usage.total, .modules = {}}; });
+      .transform([](const MemoryUsage& usage) {
+        // Modules are only in the raw SMBIOS table, which the kernel exposes to root only. Without it (or without
+        // SMBIOS, e.g. on most ARM devices) the module list stays empty.
+        const auto table = smbios::read_system_table();
+        return Memory{.total = usage.total,
+                      .modules = table ? internal::memory_modules(*table) : std::vector<MemoryModule>{}};
+      });
 }
 
 }  // namespace hwinfo

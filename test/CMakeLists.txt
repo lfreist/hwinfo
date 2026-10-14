@@ -22,6 +22,7 @@ add_executable(hwinfo_tests
         units_test.cpp
         strings_test.cpp
         procfs_test.cpp
+        smbios_test.cpp
         gpu_test.cpp
         gpu_merge_test.cpp
         ${PROJECT_SOURCE_DIR}/src/common/gpu/intel.cpp
@@ -32,7 +33,7 @@ add_executable(hwinfo_tests
         smoke_test.cpp
         virtualization_test.cpp
 )
-target_include_directories(hwinfo_tests PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_include_directories(hwinfo_tests PRIVATE ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/third_party)
 target_link_libraries(hwinfo_tests PRIVATE lfreist-hwinfo::hwinfo GTest::gtest_main)
 foreach (component battery computer cpu disk gpu mainboard os ram network)
     if (TARGET hwinfo_${component})

@@ -43,7 +43,7 @@ function(hwinfo_add_component name)
     target_compile_features(${target} PUBLIC cxx_std_23)
     target_include_directories(${target}
             PUBLIC $<BUILD_INTERFACE:${HWINFO_INCLUDE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/third_party)
     if(WIN32)
         if(BUILD_SHARED_LIBS)
             target_compile_definitions(${target} PRIVATE HWINFO_EXPORTS)
