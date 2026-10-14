@@ -117,7 +117,7 @@ result<Computer> computer_from_wmi() {
 
 result<Computer> computer() {
   // GetSystemFirmwareTable needs no administrator rights; WMI only if it fails
-  const auto table = smbios::read_system_table();
+  const auto& table = internal::system_table();
   auto computer = table ? internal::computer_identity(*table) : std::nullopt;
   if (!computer) {
     auto from_wmi = computer_from_wmi();

@@ -58,7 +58,7 @@ std::optional<VirtualMachine> virtual_machine() {
   }
 #endif
   // the raw SMBIOS table is only readable by root
-  const auto table = smbios::read_system_table();
+  const auto& table = internal::system_table();
   return internal::classify_vm(cpuid, hypervisor_from_firmware(), table && internal::smbios_vm_flag(*table));
 }
 

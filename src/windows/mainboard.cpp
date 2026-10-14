@@ -66,7 +66,7 @@ result<Mainboard> mainboard_from_wmi() {
 }  // namespace
 
 result<Mainboard> mainboard() {
-  if (const auto table = smbios::read_system_table()) {
+  if (const auto& table = internal::system_table()) {
     if (auto board = internal::mainboard_info(*table)) {
       return *std::move(board);
     }

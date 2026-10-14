@@ -76,7 +76,7 @@ result<Mainboard> mainboard() {
   if (mainboard.firmware_version) {
     mainboard.firmware_vendor = "Apple Inc.";
   }
-  if (const auto table = smbios::read_system_table()) {
+  if (const auto& table = internal::system_table()) {
     if (const auto board = internal::mainboard_info(*table)) {
       const auto fill = [](std::optional<std::string>& field, const std::optional<std::string>& value) {
         if (!field) {

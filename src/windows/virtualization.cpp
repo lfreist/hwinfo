@@ -39,7 +39,7 @@ std::optional<VirtualMachine> virtual_machine() {
   const std::wstring bios = L"HARDWARE\\DESCRIPTION\\System\\BIOS";
   const auto vendor = internal::registry::read_string(HKEY_LOCAL_MACHINE, bios, L"SystemManufacturer");
   const auto product = internal::registry::read_string(HKEY_LOCAL_MACHINE, bios, L"SystemProductName");
-  const auto table = smbios::read_system_table();
+  const auto& table = internal::system_table();
   return internal::classify_vm(cpuid, internal::hypervisor_from_dmi(vendor.value_or(""), product.value_or("")),
                                table && internal::smbios_vm_flag(*table));
 }

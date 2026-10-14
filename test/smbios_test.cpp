@@ -236,6 +236,11 @@ TEST(Smbios, VmFlag) {
   EXPECT_FALSE(internal::smbios_vm_flag(bios(0x0c)));
 }
 
+TEST(Smbios, SystemTableIsReadOnce) {
+  // succeeds or fails depending on the platform and permissions, but always the same object
+  EXPECT_EQ(&internal::system_table(), &internal::system_table());
+}
+
 TEST(Smbios, EmptyTable) {
   std::vector<std::byte> bytes;
   append(bytes, {127, 4, 0x00, 0x00, 0, 0});

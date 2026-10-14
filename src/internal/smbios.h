@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <expected>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -22,6 +23,14 @@
 #include "uuid.h"
 
 namespace hwinfo::internal {
+
+// The SMBIOS table of the running system, read on first use and kept for the lifetime of the process (per component
+// library): firmware does not change it while the system runs, and a missing permission stays missing. Records decoded
+// from it point into the cached table and stay valid.
+inline const std::expected<smbios::Table, smbios::Error>& system_table() {
+  static const auto table = smbios::read_system_table();
+  return table;
+}
 
 inline std::optional<std::string> smbios_string(std::optional<std::string_view> value) {
   return dmi_string(value.transform([](std::string_view s) { return std::string(s); }));

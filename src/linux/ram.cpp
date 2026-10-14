@@ -19,7 +19,7 @@ result<Memory> memory() {
       .transform([](const MemoryUsage& usage) {
         // Modules and slots are only in the raw SMBIOS table, which the kernel exposes to root only. Without it (or
         // without SMBIOS, e.g. on most ARM devices) they stay empty.
-        const auto table = smbios::read_system_table();
+        const auto& table = internal::system_table();
         Memory memory = table ? internal::memory_info(*table) : Memory{};
         memory.total = usage.total;
         return memory;

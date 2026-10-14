@@ -96,7 +96,7 @@ result<Memory> memory() {
     return std::unexpected(internal::last_error("GlobalMemoryStatusEx"));
   }
   // GetSystemFirmwareTable needs no administrator rights; WMI only if it fails
-  const auto table = smbios::read_system_table();
+  const auto& table = internal::system_table();
   Memory memory = table ? internal::memory_info(*table) : memory_from_wmi();
   memory.total = Bytes{status.ullTotalPhys};
   return memory;
