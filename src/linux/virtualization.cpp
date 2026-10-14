@@ -15,6 +15,7 @@
 
 #include "internal/dmi.h"
 #include "internal/file.h"
+#include "internal/smbios.h"
 #include "internal/virtualization.h"
 
 namespace hwinfo {
@@ -56,7 +57,9 @@ std::optional<VirtualMachine> virtual_machine() {
     cpuid->root_partition = true;
   }
 #endif
-  return internal::classify_vm(cpuid, hypervisor_from_firmware());
+  // the raw SMBIOS table is only readable by root
+  const auto table = smbios::read_system_table();
+  return internal::classify_vm(cpuid, hypervisor_from_firmware(), table && internal::smbios_vm_flag(*table));
 }
 
 std::optional<std::string> pid1_container() {

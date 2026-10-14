@@ -59,6 +59,11 @@ TEST(Virtualization, ClassifyVm) {
   // unknown hypervisor
   EXPECT_EQ(classify_vm(CpuidHypervisor{.vendor_id = "ACRNACRNACRN"}, std::nullopt),
             (VirtualMachine{Hypervisor::unknown, "ACRNACRNACRN"}));
+  // only the SMBIOS "virtual machine" bit, e.g. on ARM with custom SMBIOS strings
+  EXPECT_EQ(classify_vm(std::nullopt, std::nullopt, true), (VirtualMachine{Hypervisor::unknown, std::nullopt}));
+  EXPECT_EQ(classify_vm(std::nullopt, Hypervisor::vmware, true), (VirtualMachine{Hypervisor::vmware, std::nullopt}));
+  EXPECT_EQ(classify_vm(CpuidHypervisor{.vendor_id = "Microsoft Hv", .root_partition = true}, std::nullopt, true),
+            std::nullopt);
 }
 
 TEST(Virtualization, ContainerMarkers) {

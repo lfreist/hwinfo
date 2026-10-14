@@ -120,13 +120,14 @@ inline std::optional<CpuidHypervisor> cpuid_hypervisor() {
 }
 #endif
 
-// Combines the CPUID and SMBIOS based detection. Either may be missing (non-x86, no SMBIOS).
+// Combines the CPUID and SMBIOS based detection. Either may be missing (non-x86, no SMBIOS). smbios_vm_flag is the
+// "virtual machine" bit of the SMBIOS BIOS information: alone it only tells that there is a hypervisor, not which.
 inline std::optional<VirtualMachine> classify_vm(const std::optional<CpuidHypervisor>& cpuid,
-                                                 std::optional<Hypervisor> dmi) {
+                                                 std::optional<Hypervisor> dmi, bool smbios_vm_flag = false) {
   if (cpuid && cpuid->root_partition) {
     return std::nullopt;
   }
-  if (!cpuid && !dmi) {
+  if (!cpuid && !dmi && !smbios_vm_flag) {
     return std::nullopt;
   }
   VirtualMachine vm;

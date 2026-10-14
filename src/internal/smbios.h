@@ -80,6 +80,13 @@ inline std::optional<Mainboard> mainboard_info(const smbios::Table& table) {
   return mainboard;
 }
 
+// "SMBIOS table describes a virtual machine": BIOS characteristics extension byte 2, bit 4 (2.4). Set by QEMU,
+// Hyper-V, VMware, VirtualBox and others; physical machines leave it unset.
+inline bool smbios_vm_flag(const smbios::Table& table) {
+  const auto bios = first_record<smbios::BiosInfo>(table);
+  return bios && bios->characteristics_ext2 && (*bios->characteristics_ext2 & 0x10) != 0;
+}
+
 // SMBIOS memory type (type 17 offset 0x12, also Win32_PhysicalMemory.SMBIOSMemoryType) as e.g. "DDR5".
 inline std::optional<std::string> memory_type_name(std::uint8_t type) {
   const auto memory_type = smbios::MemoryType{type};

@@ -211,6 +211,24 @@ TEST(Smbios, MainboardInfo) {
                                                }));
 }
 
+TEST(Smbios, VmFlag) {
+  EXPECT_FALSE(internal::smbios_vm_flag(table()));  // BIOS information without extension bytes (before 2.4)
+
+  const auto bios = [](unsigned extension2) {
+    using namespace std::string_view_literals;
+    std::vector<std::byte> bytes;
+    structure(bytes, 0, 0x00, {1, 2, 0x00, 0xe8, 0, 0x00, 0, 0, 0, 0, 0, 0, 0, 0x08, 0x01, extension2},
+              "SeaBIOS\0"
+              "1.16.3\0"sv);
+    append(bytes, {127, 4, 0x01, 0x00, 0, 0});
+    auto parsed = smbios::parse(bytes, smbios::Version{.major = 2, .minor = 8});
+    EXPECT_TRUE(parsed.has_value());
+    return *std::move(parsed);
+  };
+  EXPECT_TRUE(internal::smbios_vm_flag(bios(0x1c)));  // targeted content distribution, UEFI, VM (as QEMU)
+  EXPECT_FALSE(internal::smbios_vm_flag(bios(0x0c)));
+}
+
 TEST(Smbios, EmptyTable) {
   std::vector<std::byte> bytes;
   append(bytes, {127, 4, 0x00, 0x00, 0, 0});
