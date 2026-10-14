@@ -9,14 +9,18 @@
 
 #include <cstdint>
 
+#include "internal/smbios.h"
 #include "internal/sysctl.h"
 
 namespace hwinfo {
 
 result<Memory> memory() {
-  // TODO: memory modules (DIMMs) are not reported (Apple Silicon has on-package memory).
   return internal::sysctl_value<std::uint64_t>("hw.memsize").transform([](std::uint64_t total) {
-    return Memory{.total = Bytes{total}, .modules = {}};
+    // Modules and slots from SMBIOS on Intel Macs. Apple Silicon has no SMBIOS (memory is part of the SoC package).
+    const auto table = smbios::read_system_table();
+    Memory memory = table ? internal::memory_info(*table) : Memory{};
+    memory.total = Bytes{total};
+    return memory;
   });
 }
 

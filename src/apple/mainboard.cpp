@@ -14,6 +14,7 @@
 #include <string_view>
 
 #include "internal/apple_cf.h"
+#include "internal/smbios.h"
 
 namespace hwinfo {
 
@@ -74,6 +75,21 @@ result<Mainboard> mainboard() {
   mainboard.firmware_version = firmware_version();
   if (mainboard.firmware_version) {
     mainboard.firmware_vendor = "Apple Inc.";
+  }
+  if (const auto table = smbios::read_system_table()) {
+    if (const auto board = internal::mainboard_info(*table)) {
+      const auto fill = [](std::optional<std::string>& field, const std::optional<std::string>& value) {
+        if (!field) {
+          field = value;
+        }
+      };
+      fill(mainboard.vendor, board->vendor);
+      fill(mainboard.name, board->name);
+      fill(mainboard.version, board->version);
+      fill(mainboard.serial_number, board->serial_number);
+      fill(mainboard.firmware_vendor, board->firmware_vendor);
+      fill(mainboard.firmware_version, board->firmware_version);
+    }
   }
   return mainboard;
 }
