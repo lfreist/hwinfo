@@ -11,10 +11,12 @@
 #include <filesystem>
 #include <format>
 #include <map>
+#include <optional>
 #include <ranges>
 #include <string>
 #include <vector>
 
+#include "internal/core_types.h"
 #include "internal/file.h"
 #include "internal/procfs.h"
 
@@ -55,6 +57,36 @@ std::optional<Hertz> read_khz(const std::filesystem::path& path) {
       [](const std::uint64_t khz) { return khz * FrequencyUnit::kHz; });
 }
 
+// Logical CPU -> core type rank on Intel hybrid CPUs, which register one PMU per core type (Linux 5.13).
+// Empty on other CPUs.
+std::map<std::uint32_t, std::uint32_t> intel_hybrid_ranks() {
+  const auto pmu_cpus = [](const char* pmu) {
+    return internal::read_attribute(std::filesystem::path("/sys/devices") / pmu / "cpus")
+        .and_then(internal::procfs::parse_cpu_list);
+  };
+  std::map<std::uint32_t, std::uint32_t> ranks;
+  if (const auto atom = pmu_cpus("cpu_atom"), core = pmu_cpus("cpu_core"); atom && core) {
+    for (const auto cpu : *atom) {
+      ranks[cpu] = 0;
+    }
+    for (const auto cpu : *core) {
+      ranks[cpu] = 1;
+    }
+  }
+  return ranks;
+}
+
+// Raw performance value of a logical CPU (higher = faster), for internal::assign_core_types.
+std::optional<std::uint32_t> performance_rank(std::uint32_t processor,
+                                              const std::map<std::uint32_t, std::uint32_t>& intel_hybrid) {
+  if (!intel_hybrid.empty()) {
+    const auto it = intel_hybrid.find(processor);
+    return it != intel_hybrid.end() ? std::optional(it->second) : std::nullopt;
+  }
+  // The scheduler's capacity of the CPU, distinct per core type on arm64. 1024 everywhere on non-hybrid CPUs.
+  return internal::read_number_attribute<std::uint32_t>(sysfs_cpu / std::format("cpu{}", processor) / "cpu_capacity");
+}
+
 }  // namespace
 
 result<std::vector<Cpu>> cpus() {
@@ -80,11 +112,14 @@ result<std::vector<Cpu>> cpus() {
     sockets[p.physical_id][p.core_id].push_back(&p);
   }
 
+  const auto intel_hybrid = intel_hybrid_ranks();
+
   std::vector<Cpu> result;
   result.reserve(sockets.size());
   for (const auto& [socket_id, cores] : sockets) {
     const auto& first = *cores.begin()->second.front();
     Cpu cpu{.socket = socket_id, .vendor = first.vendor, .model = first.model, .flags = first.flags};
+    std::vector<std::optional<std::uint32_t>> core_ranks;
     for (const auto& [core_id, threads] : cores) {
       const auto path = sysfs_cpu / std::format("cpu{}", threads.front()->processor);
       cpu.cores.push_back(Core{
@@ -97,9 +132,11 @@ result<std::vector<Cpu>> cpus() {
               threads | std::views::transform(&internal::procfs::CpuinfoProcessor::processor)),
       });
       std::ranges::sort(cpu.cores.back().logical_ids);
+      core_ranks.push_back(performance_rank(threads.front()->processor, intel_hybrid));
       cpu.logical_cores += static_cast<std::uint32_t>(threads.size());
     }
     cpu.physical_cores = static_cast<std::uint32_t>(cpu.cores.size());
+    internal::assign_core_types(cpu.cores, core_ranks);
     result.push_back(std::move(cpu));
   }
   return result;

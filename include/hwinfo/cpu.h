@@ -27,6 +27,10 @@ struct Cache {
   friend bool operator==(const Cache&, const Cache&) = default;
 };
 
+// Kind of core on a hybrid CPU (Intel P-/E-cores, Apple Silicon performance/efficiency clusters, Arm big.LITTLE).
+// Cores of a non-hybrid CPU are all performance cores.
+enum class CoreType : std::uint8_t { unknown, performance, efficiency };
+
 // A physical core.
 struct Core {
   // Topology id of the core within its socket.
@@ -44,6 +48,11 @@ struct Core {
   // to (group, bit) for SetThreadGroupAffinity.
   // Empty on macOS, which has no thread affinity API.
   std::vector<std::uint32_t> logical_ids{};
+  // performance for the fastest cores of the CPU, efficiency for all slower ones. unknown if the OS does not tell.
+  CoreType type = CoreType::unknown;
+  // Relative performance rank within the CPU: 0 = slowest, higher = faster, equal for all cores of a non-hybrid CPU.
+  // Distinguishes more than two tiers, e.g. Intel low power E-cores or Arm prime/big/LITTLE cores.
+  std::optional<std::uint8_t> efficiency_class{};
 
   friend bool operator==(const Core&, const Core&) = default;
 };
@@ -59,6 +68,10 @@ struct Cpu {
   std::vector<Core> cores{};
 
   [[nodiscard]] bool has_flag(std::string_view flag) const { return std::ranges::find(flags, flag) != flags.end(); }
+  // Whether the CPU mixes core types, e.g. P- and E-cores.
+  [[nodiscard]] bool is_hybrid() const {
+    return std::ranges::any_of(cores, [](const Core& core) { return core.type == CoreType::efficiency; });
+  }
 
   friend bool operator==(const Cpu&, const Cpu&) = default;
 };
@@ -66,11 +79,26 @@ struct Cpu {
 // All CPU packages of the system.
 [[nodiscard]] HWINFO_API result<std::vector<Cpu>> cpus();
 
+constexpr std::string_view to_string(CoreType type) noexcept {
+  switch (type) {
+    case CoreType::performance:
+      return "performance";
+    case CoreType::efficiency:
+      return "efficiency";
+    case CoreType::unknown:
+      break;
+  }
+  return "unknown";
+}
+
 inline std::string to_string(const Cpu& cpu) {
   return std::format("{} {} ({} cores, {} threads)", cpu.vendor, cpu.model, cpu.physical_cores, cpu.logical_cores);
 }
 
 }  // namespace hwinfo
+
+template <>
+struct std::formatter<hwinfo::CoreType> : hwinfo::detail::to_string_formatter<hwinfo::CoreType> {};
 
 template <>
 struct std::formatter<hwinfo::Cpu> : hwinfo::detail::to_string_formatter<hwinfo::Cpu> {};

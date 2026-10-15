@@ -3,6 +3,7 @@
 
 #include <hwinfo/hwinfo.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <format>
 #include <iostream>
@@ -56,10 +57,21 @@ int main() {
       std::cout << std::format("Socket {}", cpu.socket) << '\n';
       field("vendor:", cpu.vendor);
       field("model:", cpu.model);
-      field("cores:", std::format("{} ({} threads)", cpu.physical_cores, cpu.logical_cores));
+      if (cpu.is_hybrid()) {
+        const auto count = [&](hwinfo::CoreType type) {
+          return std::ranges::count(cpu.cores, type, &hwinfo::Core::type);
+        };
+        field("cores:",
+              std::format("{} ({}P + {}E, {} threads)", cpu.physical_cores, count(hwinfo::CoreType::performance),
+                          count(hwinfo::CoreType::efficiency), cpu.logical_cores));
+      } else {
+        field("cores:", std::format("{} ({} threads)", cpu.physical_cores, cpu.logical_cores));
+      }
       field("flags:", std::format("{} flags", cpu.flags.size()));
       field("core -> logical ids:", join(cpu.cores | std::views::transform([](const hwinfo::Core& core) {
-                                           return std::format("{}:[{}]", core.id, join(core.logical_ids, ","));
+                                           return std::format("{}{}:[{}]", core.id,
+                                                              core.type == hwinfo::CoreType::efficiency ? "E" : "",
+                                                              join(core.logical_ids, ","));
                                          })));
       if (!cpu.cores.empty()) {
         const auto& core = cpu.cores.front();

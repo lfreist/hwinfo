@@ -6,7 +6,9 @@
 #include <gtest/gtest.h>
 
 #include <format>
+#include <optional>
 #include <string>
+#include <vector>
 
 namespace procfs = hwinfo::internal::procfs;
 
@@ -189,6 +191,16 @@ TEST(CacheSize, ParsesBinarySuffixes) {
   EXPECT_EQ(procfs::parse_cache_size(""), std::nullopt);
   EXPECT_EQ(procfs::parse_cache_size("K"), std::nullopt);
   EXPECT_EQ(procfs::parse_cache_size("12X"), std::nullopt);
+}
+
+TEST(CpuList, ParsesRangesAndSingles) {
+  using List = std::vector<std::uint32_t>;
+  EXPECT_EQ(procfs::parse_cpu_list("0-11\n"), List({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}));
+  EXPECT_EQ(procfs::parse_cpu_list("0-1,4,6-7"), List({0, 1, 4, 6, 7}));
+  EXPECT_EQ(procfs::parse_cpu_list(""), List{});
+  EXPECT_EQ(procfs::parse_cpu_list("3-1"), std::nullopt);
+  EXPECT_EQ(procfs::parse_cpu_list("a-b"), std::nullopt);
+  EXPECT_EQ(procfs::parse_cpu_list("1,,2"), std::nullopt);
 }
 
 TEST(Stat, BootTime) {

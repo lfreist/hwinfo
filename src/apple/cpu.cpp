@@ -16,6 +16,7 @@
 #include <string_view>
 #include <vector>
 
+#include "internal/core_types.h"
 #include "internal/strings.h"
 #include "internal/sysctl.h"
 
@@ -159,6 +160,7 @@ struct CoreGroup {
   std::uint32_t physical = 0;
   std::uint32_t logical = 0;
   Cache cache{};
+  std::uint32_t rank = 0;  // higher = faster
 };
 
 std::vector<CoreGroup> perf_levels(const Cache& fallback) {
@@ -186,6 +188,7 @@ std::vector<CoreGroup> perf_levels(const Cache& fallback) {
                 .l2 = level_cache("l2cachesize", fallback.l2),
                 .l3 = level_cache("l3cachesize", fallback.l3),
             },
+        .rank = count - 1 - level,  // perflevel0 is the fastest
     });
   }
   return groups;
@@ -226,6 +229,7 @@ result<std::vector<Cpu>> cpus() {
       .flags = flags(),
       .cores = {},
   };
+  std::vector<std::optional<std::uint32_t>> core_ranks;
   for (const auto& group : groups) {
     const std::uint32_t threads = std::max(1u, group.logical / std::max(1u, group.physical));
     for (std::uint32_t i = 0; i < group.physical; ++i) {
@@ -236,8 +240,10 @@ result<std::vector<Cpu>> cpus() {
           .base_frequency = base_frequency,
           .max_frequency = max_frequency,
       });
+      core_ranks.emplace_back(group.rank);
     }
   }
+  internal::assign_core_types(cpu.cores, core_ranks);
   return std::vector<Cpu>{std::move(cpu)};
 }
 

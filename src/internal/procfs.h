@@ -177,6 +177,29 @@ inline std::optional<Bytes> parse_cache_size(std::string_view s) {
   return value ? std::optional(*value * unit) : std::nullopt;
 }
 
+// ----- sysfs cpu lists, e.g. /sys/devices/cpu_core/cpus ------------------------------------------------------------
+
+// Comma separated CPU numbers and inclusive ranges, e.g. "0-3,8,10-11". nullopt if malformed.
+inline std::optional<std::vector<std::uint32_t>> parse_cpu_list(std::string_view s) {
+  std::vector<std::uint32_t> cpus;
+  s = trim(s);
+  if (s.empty()) {
+    return cpus;
+  }
+  for (const auto item : split(s, ',')) {
+    const auto dash = item.find('-');
+    const auto first = parse<std::uint32_t>(item.substr(0, dash));
+    const auto last = dash == std::string_view::npos ? first : parse<std::uint32_t>(item.substr(dash + 1));
+    if (!first || !last || *last < *first) {
+      return std::nullopt;
+    }
+    for (std::uint32_t cpu = *first; cpu <= *last; ++cpu) {
+      cpus.push_back(cpu);
+    }
+  }
+  return cpus;
+}
+
 // ----- /proc/stat ---------------------------------------------------------------------------------------------------
 
 // Boot time in seconds since the epoch: the "btime" line.

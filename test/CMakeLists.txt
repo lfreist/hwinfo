@@ -22,6 +22,7 @@ add_executable(hwinfo_tests
         uuid_test.cpp
         strings_test.cpp
         procfs_test.cpp
+        core_types_test.cpp
         smbios_test.cpp
         gpu_test.cpp
         gpu_merge_test.cpp

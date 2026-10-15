@@ -14,10 +14,12 @@
 #include <cstdint>
 #include <format>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "internal/core_types.h"
 #include "internal/win_registry.h"
 #include "internal/windows_error.h"
 #include "internal/windows_power.h"
@@ -34,9 +36,14 @@ struct CacheEntry {
   DWORD size = 0;
 };
 
+struct CoreEntry {
+  GROUP_AFFINITY affinity{};
+  BYTE efficiency_class = 0;  // higher = faster, 0 on all cores of a non-hybrid CPU (Windows 10)
+};
+
 struct Topology {
   std::vector<std::vector<GROUP_AFFINITY>> packages;  // processor groups spanned by each package
-  std::vector<GROUP_AFFINITY> cores;
+  std::vector<CoreEntry> cores;
   std::vector<CacheEntry> caches;
 };
 
@@ -70,7 +77,8 @@ result<Topology> read_topology() {
         break;
       case RelationProcessorCore:
         if (info->Processor.GroupCount > 0) {
-          topology.cores.push_back(info->Processor.GroupMask[0]);
+          topology.cores.push_back(
+              CoreEntry{.affinity = info->Processor.GroupMask[0], .efficiency_class = info->Processor.EfficiencyClass});
         }
         break;
       case RelationCache:
@@ -166,7 +174,8 @@ result<std::vector<Cpu>> cpus() {
   }
   if (topology->packages.empty()) {
     // should not happen: treat all cores as one package
-    topology->packages.push_back(topology->cores);
+    topology->packages.push_back(
+        std::ranges::to<std::vector>(topology->cores | std::views::transform(&CoreEntry::affinity)));
   }
   const auto power =
       internal::processor_power_information().value_or(std::vector<internal::ProcessorPowerInformation>{});
@@ -182,7 +191,8 @@ result<std::vector<Cpu>> cpus() {
         .model = internal::registry::read_string(HKEY_LOCAL_MACHINE, key, L"ProcessorNameString").value_or(""),
         .flags = flags,
     };
-    for (const auto& core : topology->cores) {
+    std::vector<std::optional<std::uint32_t>> core_ranks;
+    for (const auto& [core, efficiency_class] : topology->cores) {
       if (std::ranges::none_of(package, [&](const GROUP_AFFINITY& group) { return overlaps(group, core); })) {
         continue;
       }
@@ -198,9 +208,11 @@ result<std::vector<Cpu>> cpus() {
           .max_frequency = processor < power.size() ? mhz(power[processor].max_mhz) : std::nullopt,
           .logical_ids = std::move(logical_ids),
       });
+      core_ranks.emplace_back(efficiency_class);
       cpu.logical_cores += threads;
     }
     cpu.physical_cores = static_cast<std::uint32_t>(cpu.cores.size());
+    internal::assign_core_types(cpu.cores, core_ranks);
     result.push_back(std::move(cpu));
   }
   return result;

@@ -45,6 +45,9 @@ TEST(Smoke, Cpus) {
         EXPECT_EQ(core.logical_ids.size(), core.threads);
         EXPECT_TRUE(std::ranges::is_sorted(core.logical_ids));
       }
+      // Either all cores of a CPU have a type or none.
+      EXPECT_EQ(core.type == hwinfo::CoreType::unknown, cpu.cores.front().type == hwinfo::CoreType::unknown);
+      EXPECT_EQ(core.efficiency_class.has_value(), core.type != hwinfo::CoreType::unknown);
     }
   }
 }
