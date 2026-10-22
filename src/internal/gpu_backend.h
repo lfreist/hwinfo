@@ -24,24 +24,27 @@ namespace hwinfo::internal::gpu {
 // - name is only set by vendor libraries, whose names are the marketing names ("NVIDIA GeForce RTX 4070 Laptop GPU").
 using BackendResult = std::vector<Gpu>;
 
+enum class OsPriority { lowest, highest };
+
 /**
  * Merges backend results into the GPUs enumerated by the operating system. `results` is ordered from highest to lowest
- * priority: a field known by several backends is taken from the first one, and backends override the OS values.
+ * priority: a field known by several backends is taken from the first one. Backends override OS values unless
+ * `os_priority` is highest, in which case they only fill fields the OS does not provide.
  *
  * Backend devices are matched to OS GPUs by PCI address, LUID or UUID; failing that by PCI vendor and device id (or by
  * vendor alone) when exactly one GPU fits. Never by name. Unmatched backend devices are dropped, so a backend can
  * neither duplicate a GPU nor add one the OS does not know.
  */
-void merge(std::vector<Gpu>& gpus, std::span<const BackendResult> results);
+void merge(std::vector<Gpu>& gpus, std::span<const BackendResult> results, OsPriority os_priority = OsPriority::lowest);
 
 // Queries the backends selected by `query`, ordered by priority (vendor libraries first, OpenCL last).
 std::vector<BackendResult> query_backends(const GpuQuery& query);
 
 // query_backends() + merge().
-inline void enrich(std::vector<Gpu>& gpus, const GpuQuery& query) {
+inline void enrich(std::vector<Gpu>& gpus, const GpuQuery& query, OsPriority os_priority = OsPriority::lowest) {
   if (!gpus.empty()) {
     const auto results = query_backends(query);
-    merge(gpus, results);
+    merge(gpus, results, os_priority);
   }
 }
 

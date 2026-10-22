@@ -146,7 +146,8 @@ void overlay(Gpu& gpu, const Gpu& device) {
 
 }  // namespace
 
-void merge(std::vector<Gpu>& gpus, std::span<const BackendResult> results) {
+void merge(std::vector<Gpu>& gpus, std::span<const BackendResult> results, OsPriority os_priority) {
+  const BackendResult os = os_priority == OsPriority::highest ? gpus : BackendResult{};
   // 1. match, highest priority first: keys learned from earlier backends help later ones
   std::vector<std::vector<std::optional<std::size_t>>> matches(results.size());
   for (std::size_t r = 0; r < results.size(); ++r) {
@@ -164,6 +165,9 @@ void merge(std::vector<Gpu>& gpus, std::span<const BackendResult> results) {
       if (const auto match = matches[r][d]) {
         overlay(gpus[*match], results[r][d]);
       }
+    }
+    for (std::size_t i = 0; i < os.size(); ++i) {
+      overlay(gpus[i], os[i]);
     }
   }
 }

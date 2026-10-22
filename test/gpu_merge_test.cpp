@@ -18,6 +18,7 @@ using namespace hwinfo;
 using namespace hwinfo::literals;
 using hwinfo::internal::gpu::BackendResult;
 using hwinfo::internal::gpu::merge;
+using hwinfo::internal::gpu::OsPriority;
 
 namespace {
 
@@ -72,6 +73,69 @@ TEST(GpuMerge, HigherPriorityBackendWins) {
 
   EXPECT_EQ(gpus[0].max_frequency, 3105_MHz);
   EXPECT_EQ(gpus[0].l2_cache, 32_MiB);
+}
+
+TEST(GpuMerge, OsPriorityPreservesDisplayDriverAndPhysicalMemory) {
+  auto os = os_gpu(0x1002, 0x7550, "0000:03:00.0", GpuType::discrete);
+  os.vendor = "AMD";
+  os.name = "AMD Radeon RX 9070 XT";
+  os.unified_memory = false;
+  os.driver_version = "32.0.32015.2008";
+  os.dedicated_memory = Bytes{16'977'985'536};
+  os.shared_memory = Bytes{50'907'672'576};
+  os.max_frequency = 2520_MHz;
+  std::vector gpus{os};
+  auto opencl = backend_gpu(0x1002, 0, "0000:03:00.0");
+  opencl.name = "gfx1201";
+  opencl.type = GpuType::integrated;
+  opencl.unified_memory = true;
+  opencl.driver_version = "3683.0 (PAL,LC)";
+  opencl.dedicated_memory = 3_GiB;
+  opencl.shared_memory = 1_GiB;
+  opencl.max_frequency = 2000_MHz;
+  opencl.compute_capability = "gfx1201";
+  opencl.compute_units = 32;
+  opencl.compute_apis = {{"OpenCL", "1.2 AMD-APP (3683.0)"}};
+  const std::vector<BackendResult> results{{opencl}};
+  merge(gpus, results, OsPriority::highest);
+
+  EXPECT_EQ(gpus[0].vendor, os.vendor);
+  EXPECT_EQ(gpus[0].name, os.name);
+  EXPECT_EQ(gpus[0].type, os.type);
+  EXPECT_EQ(gpus[0].unified_memory, os.unified_memory);
+  EXPECT_EQ(gpus[0].driver_version, os.driver_version);
+  EXPECT_EQ(gpus[0].dedicated_memory, os.dedicated_memory);
+  EXPECT_GT(gpus[0].dedicated_memory->value, 0xffffffffull);
+  EXPECT_EQ(gpus[0].shared_memory, os.shared_memory);
+  EXPECT_GT(gpus[0].shared_memory->value, 0xffffffffull);
+  EXPECT_EQ(gpus[0].max_frequency, os.max_frequency);
+  EXPECT_EQ(gpus[0].compute_capability, "gfx1201");
+  EXPECT_EQ(gpus[0].compute_units, 32u);
+  EXPECT_EQ(gpus[0].compute_apis, opencl.compute_apis);
+}
+
+TEST(GpuMerge, OsPriorityStillFillsMissingFieldsInBackendPriorityOrder) {
+  std::vector gpus{os_gpu(0x10de, 0x2820, "0000:01:00.0", GpuType::unknown)};
+  auto nvml = backend_gpu(0x10de, 0x2820, "0000:01:00.0");
+  nvml.type = GpuType::discrete;
+  nvml.driver_version = "576.80";
+  nvml.dedicated_memory = 16_GiB;
+  nvml.max_frequency = 3105_MHz;
+  auto opencl = backend_gpu(0x10de, 0, "0000:01:00.0");
+  opencl.driver_version = "OpenCL runtime";
+  opencl.dedicated_memory = 3_GiB;
+  opencl.max_frequency = 2000_MHz;
+  opencl.compute_units = 36;
+  const std::vector<BackendResult> results{{nvml}, {opencl}};
+  merge(gpus, results, OsPriority::highest);
+
+  EXPECT_EQ(gpus[0].name, "OS name");
+  EXPECT_EQ(gpus[0].type, GpuType::discrete);
+  EXPECT_EQ(gpus[0].unified_memory, false);
+  EXPECT_EQ(gpus[0].driver_version, "576.80");
+  EXPECT_EQ(gpus[0].dedicated_memory, 16_GiB);
+  EXPECT_EQ(gpus[0].max_frequency, 3105_MHz);
+  EXPECT_EQ(gpus[0].compute_units, 36u);
 }
 
 TEST(GpuMerge, LaterBackendsMatchByLearnedUuid) {
