@@ -297,6 +297,7 @@ using zesFrequencyGetProperties_t = ze_result_t(HWINFO_ZE_CALL*)(zes_freq_handle
 using zesFrequencyGetState_t = ze_result_t(HWINFO_ZE_CALL*)(zes_freq_handle_t frequency, zes_freq_state_t* state);
 
 // Layout checks against the upstream headers (LP64 / LLP64).
+#if INTPTR_MAX == INT64_MAX
 static_assert(sizeof(ze_device_properties_t) == 368);
 static_assert(sizeof(ze_device_memory_properties_t) == 296);
 static_assert(sizeof(ze_device_cache_properties_t) == 32);
@@ -308,6 +309,7 @@ static_assert(sizeof(zes_mem_properties_t) == 48);
 static_assert(sizeof(zes_mem_state_t) == 40);
 static_assert(sizeof(zes_freq_properties_t) == 48);
 static_assert(sizeof(zes_freq_state_t) == 64);
+#endif
 
 // A value-initialized structure with its `stype` set, as Level Zero requires for every queried structure.
 template <typename T>
