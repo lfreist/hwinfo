@@ -130,7 +130,8 @@ int main() {
       field("driver:", gpu.driver);
       field("driver version:", gpu.driver_version);
       field("vbios version:", gpu.vbios_version);
-      field("memory:", gpu.dedicated_memory);
+      field("dedicated memory:", gpu.dedicated_memory);
+      field("shared memory:", gpu.shared_memory);
       field("memory type:", gpu.memory_type);
       field("memory bus width:",
             gpu.memory_bus_width.transform([](std::uint32_t bits) { return std::format("{} bit", bits); }));

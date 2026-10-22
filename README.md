@@ -226,6 +226,11 @@ See [live_monitorMain.cpp](examples/live_monitorMain.cpp) for a complete example
 
 ### GPU vendor libraries
 
+On Windows, WMI supplies GPU names, PCI IDs and driver versions. DXGI and D3DKMT add adapter identity, classification,
+64-bit memory sizes (including in 32-bit applications), and maximum core clocks when supported by the display driver.
+If D3DKMT memory queries are unavailable, 32-bit applications retain WMI's limited 32-bit `AdapterRAM` value rather than
+using truncated DXGI memory sizes.
+
 `gpus()` and `GpuSampler` start from what the operating system reports and add details from vendor and compute
 libraries, if installed. They are loaded at runtime (`dlopen` / `LoadLibrary`): hwinfo has no build or link dependency
 on any of them, and a missing library is simply skipped.
@@ -235,11 +240,17 @@ on any of them, and a missing library is simply skipped.
 | NVML (`libnvidia-ml` / `nvml.dll`)                     | NVIDIA driver         | marketing name, UUID, architecture, CUDA cores, clocks, VRAM, bus width, power limit, VBIOS; live data |
 | CUDA driver API (`libcuda` / `nvcuda.dll`)             | NVIDIA driver         | SM count, compute capability, L2 cache                                                                 |
 | Level Zero (`libze_loader` / `ze_loader.dll`)          | Intel compute runtime | Xe-cores, EUs, IP version / architecture, memory, PCIe; live data via Sysman                           |
-| OpenCL (`libOpenCL` / `OpenCL.dll` / OpenCL.framework) | any vendor's driver   | compute units, clocks, memory, cache (fallback for all vendors)                                        |
+| OpenCL (`libOpenCL` / `OpenCL.dll` / OpenCL.framework) | any vendor's driver   | compute units, clocks, memory (fallback for all vendors)                                               |
 
 AMD GPUs on Linux are covered by the amdgpu / KFD sysfs files of the kernel driver (no ROCm needed). Vendor libraries
-take precedence over OpenCL, which takes precedence over the operating system. Devices are matched by PCI address, LUID
-or UUID, never by name.
+take precedence over OpenCL. On Windows, operating-system fields take precedence over backend values: WMI's display
+driver version and D3DKMT's physical memory sizes and clocks are not replaced by compute-runtime versions or
+process-limited OpenCL memory sizes. On other platforms, backends take precedence over the operating system.
+Devices are matched by PCI address, LUID or UUID, never by name.
+
+OpenCL compute-unit counts are runtime-specific and do not always correspond to hardware compute units (for example,
+an AMD runtime may count workgroup processors). They are not used to guess AMD shader-core counts. OpenCL's global
+memory cache size is not reported as L2 cache because the API does not identify its cache level.
 
 ```c++
 auto all = hwinfo::gpus();                               // OS + every installed library

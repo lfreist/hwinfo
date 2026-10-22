@@ -59,7 +59,8 @@ struct GpuApi {
  *
  * The device list and the basic fields come from the operating system. Everything else is filled in from vendor and
  * compute libraries found at runtime (NVML and CUDA for NVIDIA, Level Zero for Intel, OpenCL for all vendors, amdgpu /
- * KFD sysfs for AMD on Linux), preferring the vendor's own library. Fields stay empty when no source provides them.
+ * KFD sysfs for AMD on Linux), preferring the vendor's own library. On Windows, OS-reported fields take precedence over
+ * backend values. Fields stay empty when no source provides them.
  */
 struct Gpu {
   std::uint32_t index = 0;
@@ -72,7 +73,7 @@ struct Gpu {
 
   std::optional<std::string> architecture{};
   std::optional<std::string> compute_capability{};
-  std::optional<std::uint32_t> compute_units{};
+  std::optional<std::uint32_t> compute_units{};  // backend-reported units (e.g. SMs, Xe-cores, OpenCL compute units)
   std::optional<std::uint32_t> cores{};
 
   std::optional<std::string> driver{};

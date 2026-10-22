@@ -162,9 +162,6 @@ void read_vendor_specific(const Device& device, std::string_view extensions, std
     if (auto board = device.string(CL_DEVICE_BOARD_NAME_AMD); board && !board->empty()) {
       gpu.name = std::move(*board);
     }
-    if (gpu.compute_units) {
-      gpu.cores = *gpu.compute_units * 64;  // GCN: 4 x SIMD16, RDNA: 2 x SIMD32 per compute unit
-    }
   }
   if (vendor_id == pci_vendor::intel && has_extension(extensions, "cl_intel_device_attribute_query")) {
     if (const auto ip = device.get<cl_uint>(CL_DEVICE_IP_VERSION_INTEL); ip && *ip != 0) {
@@ -193,9 +190,6 @@ Gpu read_device(const Device& device) {
   }
   if (const auto mhz = device.get<cl_uint>(CL_DEVICE_MAX_CLOCK_FREQUENCY); mhz && *mhz > 0) {
     gpu.max_frequency = std::uint64_t{*mhz} * FrequencyUnit::MHz;
-  }
-  if (const auto cache = device.get<cl_ulong>(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE); cache && *cache > 0) {
-    gpu.l2_cache = Bytes{*cache};
   }
   const auto unified = device.get<cl_bool>(CL_DEVICE_HOST_UNIFIED_MEMORY);
   if (unified) {
