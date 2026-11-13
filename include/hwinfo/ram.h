@@ -8,9 +8,11 @@
 #include <hwinfo/platform.h>
 #include <hwinfo/units.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -52,6 +54,15 @@ struct Memory {
 
 // Physical memory of the system. See hwinfo/monitoring.h for free and available memory.
 [[nodiscard]] HWINFO_API result<Memory> memory();
+
+// Modules, slots and maximum capacity decoded from a raw SMBIOS table the caller supplies: the entry point and the
+// structure table, e.g. the contents of /sys/firmware/dmi/tables/smbios_entry_point and /sys/firmware/dmi/tables/DMI
+// on Linux, which only root may read. For the table of the running system the result is what memory() gives as root,
+// except that total is 0: it does not come from SMBIOS. Available on every platform.
+// Malformed input fails with errc::parse_error, never with a partial list: an invalid entry point or checksum, a
+// truncated table, or a memory array or memory device structure that is too short.
+[[nodiscard]] HWINFO_API result<Memory> memory_from_smbios(std::span<const std::byte> entry_point,
+                                                           std::span<const std::byte> table);
 
 constexpr std::string_view to_string(MemoryFormFactor form_factor) noexcept {
   switch (form_factor) {

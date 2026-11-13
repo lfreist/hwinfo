@@ -129,7 +129,7 @@ if (HWINFO_OS)
 endif ()
 
 if (HWINFO_RAM)
-    hwinfo_add_component(ram SOURCES ${HWINFO_PLATFORM}/monitoring/ram.cpp ${HWINFO_WMI_SOURCES})
+    hwinfo_add_component(ram SOURCES common/ram_smbios.cpp ${HWINFO_PLATFORM}/monitoring/ram.cpp ${HWINFO_WMI_SOURCES})
 endif ()
 
 if (HWINFO_NETWORK)

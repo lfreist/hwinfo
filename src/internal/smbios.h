@@ -6,15 +6,18 @@
 #pragma once
 
 #include <hwinfo/computer.h>
+#include <hwinfo/error.h>
 #include <hwinfo/mainboard.h>
 #include <hwinfo/ram.h>
 #include <hwinfo/units.h>
 #include <smbios/smbios.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -148,14 +151,18 @@ inline std::optional<Hertz> mts_frequency(std::optional<std::uint32_t> mts) {
 
 // Modules, slots and maximum capacity from the physical memory arrays (type 16) and memory devices (type 17). Only
 // arrays used as system memory count; devices of other arrays (e.g. flash, video memory) are skipped, as are empty
-// slots (size 0). total is left empty.
-inline Memory memory_info(const smbios::Table& table) {
+// slots (size 0). total is left empty. A type 16 or 17 structure that does not decode (too short) makes the result
+// std::nullopt if `strict`, and is skipped otherwise.
+inline std::optional<Memory> decode_memory(const smbios::Table& table, bool strict) {
   constexpr std::uint8_t system_memory = 0x03;  // MemoryArray::use
   Memory memory;
   std::vector<std::uint16_t> other_arrays;
   for (const smbios::RawStructure s : table.structures() | smbios::of_type(smbios::MemoryArray::type_id)) {
     const auto array = smbios::MemoryArray::decode(s);
     if (!array) {
+      if (strict) {
+        return std::nullopt;
+      }
       continue;
     }
     if (array->use != system_memory) {
@@ -167,7 +174,15 @@ inline Memory memory_info(const smbios::Table& table) {
       memory.max_capacity = memory.max_capacity.value_or(Bytes{}) + Bytes{*array->max_capacity_bytes};
     }
   }
-  for (const smbios::MemoryDevice& device : table.get<smbios::MemoryDevice>()) {
+  for (const smbios::RawStructure s : table.structures() | smbios::of_type(smbios::MemoryDevice::type_id)) {
+    const auto decoded = smbios::MemoryDevice::decode(s);
+    if (!decoded) {
+      if (strict) {
+        return std::nullopt;
+      }
+      continue;
+    }
+    const smbios::MemoryDevice& device = *decoded;
     if (device.size_bytes == 0 || std::ranges::contains(other_arrays, device.array_handle)) {
       continue;
     }
@@ -190,6 +205,88 @@ inline Memory memory_info(const smbios::Table& table) {
     });
   }
   return memory;
+}
+
+// Best effort: structures that do not decode are skipped.
+inline Memory memory_info(const smbios::Table& table) { return *decode_memory(table, false); }
+
+// Where a walk over the structure table stopped.
+enum class TableEnd {
+  end_of_table,  // after a type 127 structure
+  end_of_bytes,  // the last structure ends exactly at the end of the bytes
+  malformed,     // empty, or a structure is truncated: short header, length below 4, formatted area beyond the bytes
+                 // or no double NUL terminating its string set
+};
+
+// Walks the structures independently of smbios::StructureView, which stops silently before a malformed structure.
+inline TableEnd walk_structure_table(std::span<const std::byte> table) {
+  constexpr std::size_t header_size = 4;
+  constexpr std::uint8_t end_of_table = 127;
+  if (table.empty()) {
+    return TableEnd::malformed;
+  }
+  std::size_t offset = 0;
+  while (offset < table.size()) {
+    const auto rest = table.subspan(offset);
+    if (rest.size() < header_size) {
+      return TableEnd::malformed;
+    }
+    const auto type = std::to_integer<std::uint8_t>(rest[0]);
+    const auto length = std::to_integer<std::size_t>(rest[1]);
+    if (length < header_size || length > rest.size()) {
+      return TableEnd::malformed;
+    }
+    std::size_t end = length;
+    while (end + 1 < rest.size() && (rest[end] != std::byte{0} || rest[end + 1] != std::byte{0})) {
+      ++end;
+    }
+    if (end + 1 >= rest.size()) {
+      return TableEnd::malformed;
+    }
+    if (type == end_of_table) {
+      return TableEnd::end_of_table;
+    }
+    offset += end + 2;
+  }
+  return TableEnd::end_of_bytes;
+}
+
+// A table from caller-supplied entry point and structure table bytes, e.g. the contents of
+// /sys/firmware/dmi/tables/smbios_entry_point and /sys/firmware/dmi/tables/DMI. Unlike smbios::parse(), anything that
+// is not a complete table is an error (errc::parse_error): an invalid entry point or checksum, a table longer than the
+// entry point allows, a truncated structure, or a table that ends without type 127 before the length an SMBIOS 2.x
+// entry point states. Linux trims the table after type 127, so a shorter table that ends with it is complete.
+inline result<smbios::Table> table_from_bytes(std::span<const std::byte> entry_point_bytes,
+                                              std::span<const std::byte> table_bytes) {
+  const auto entry_point = smbios::parse_entry_point(entry_point_bytes);
+  if (!entry_point || !entry_point->checksum_valid) {
+    return std::unexpected(error(errc::parse_error, "SMBIOS entry point"));
+  }
+  const auto table_error = [] { return std::unexpected(error(errc::parse_error, "SMBIOS table")); };
+  if (table_bytes.size() > entry_point->table_length) {
+    return table_error();
+  }
+  switch (walk_structure_table(table_bytes)) {
+    case TableEnd::end_of_table:
+      break;
+    case TableEnd::end_of_bytes:
+      // 3.x states only a maximum length and requires type 127; 2.x states the exact length.
+      if (entry_point->version.major >= 3 || table_bytes.size() != entry_point->table_length) {
+        return table_error();
+      }
+      break;
+    case TableEnd::malformed:
+      return table_error();
+  }
+  auto table = smbios::parse(smbios::RawTable{
+      .bytes = {table_bytes.begin(), table_bytes.end()},
+      .version = entry_point->version,
+      .entry_point = *entry_point,
+  });
+  if (!table) {
+    return table_error();
+  }
+  return *std::move(table);
 }
 
 }  // namespace hwinfo::internal

@@ -104,6 +104,7 @@ Every component is a plain aggregate returned by a free function:
 | `hwinfo::uptime()`             | `result<std::chrono::seconds>` (including time asleep)       | `hwinfo/computer.h`        |
 | `hwinfo::cpus()`               | `result<std::vector<Cpu>>` (one per socket)                  | `hwinfo/cpu.h`             |
 | `hwinfo::memory()`             | `result<Memory>` (total + installed modules)                 | `hwinfo/ram.h`             |
+| `hwinfo::memory_from_smbios()` | `result<Memory>` (modules from caller-supplied SMBIOS bytes) | `hwinfo/ram.h`             |
 | `hwinfo::gpus()`               | `result<std::vector<Gpu>>`                                   | `hwinfo/gpu.h`             |
 | `hwinfo::disks()`              | `result<std::vector<Disk>>`                                  | `hwinfo/disk.h`            |
 | `hwinfo::os()`                 | `result<Os>`                                                 | `hwinfo/os.h`              |

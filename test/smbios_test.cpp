@@ -4,6 +4,7 @@
 #include "internal/smbios.h"
 
 #include <gtest/gtest.h>
+#include <hwinfo/ram.h>
 
 #include <chrono>
 #include <cstddef>
@@ -11,8 +12,11 @@
 #include <format>
 #include <initializer_list>
 #include <optional>
+#include <span>
 #include <string_view>
 #include <vector>
+
+#include "internal/file.h"
 
 namespace internal = hwinfo::internal;
 using namespace hwinfo::literals;
@@ -86,7 +90,7 @@ void memory_array(std::vector<std::byte>& out, unsigned handle, unsigned use, un
             "");
 }
 
-smbios::Table table() {
+std::vector<std::byte> table_bytes() {
   std::vector<std::byte> bytes;
   using namespace std::string_view_literals;
   // BIOS (type 0): vendor, version, segment, release date, ROM size, characteristics
@@ -121,11 +125,54 @@ smbios::Table table() {
                         .attributes = 0,
                         .width = 0xffff,
                         .strings = "Not Specified\0BANK 2\0To Be Filled By O.E.M.\0 \0Not Specified\0"sv});
-  memory_device(bytes, {.handle = 0x23, .array = 0x1001, .size_mib = 16, .type = 0x09, .strings = "BIOS\0\0\0\0\0"sv});
+  memory_device(bytes, {.handle = 0x23, .array = 0x1001, .size_mib = 16, .type = 0x09, .strings = "BIOS\0"sv});
   append(bytes, {127, 4, 0x24, 0x00, 0, 0});
-  auto parsed = smbios::parse(bytes, smbios::Version{.major = 2, .minor = 8});
+  return bytes;
+}
+
+smbios::Table table() {
+  auto parsed = smbios::parse(table_bytes(), smbios::Version{.major = 2, .minor = 8});
   EXPECT_TRUE(parsed.has_value());
   return *std::move(parsed);
+}
+
+// Sets the checksum byte at `at` so that the bytes of `range` sum to 0.
+void fix_checksum(std::vector<std::byte>& bytes, std::size_t first, std::size_t count, std::size_t at) {
+  bytes[at] = std::byte{0};
+  unsigned sum = 0;
+  for (std::size_t i = first; i < first + count; ++i) {
+    sum += std::to_integer<unsigned>(bytes[i]);
+  }
+  bytes[at] = static_cast<std::byte>((0x100 - (sum & 0xff)) & 0xff);
+}
+
+// SMBIOS 3.0 entry point (_SM3_, 0x18 bytes) for a table of at most `length` bytes.
+std::vector<std::byte> entry_point_v3(std::uint32_t length) {
+  std::vector<std::byte> bytes;
+  append(bytes, "_SM3_");
+  append(bytes, {0, 0x18, 3, 0, 0, 1, 0});  // checksum, length, version 3.0.0, revision 1, reserved
+  append(bytes, {length & 0xff, (length >> 8) & 0xff, (length >> 16) & 0xff, length >> 24});
+  append(bytes, {0x00, 0x10, 0x0f, 0, 0, 0, 0, 0});  // table address
+  fix_checksum(bytes, 0, 0x18, 0x05);
+  return bytes;
+}
+
+// SMBIOS 2.8 entry point (_SM_ with _DMI_, 0x1f bytes) for a table of exactly `length` bytes.
+std::vector<std::byte> entry_point_v2(std::uint16_t length, unsigned structures) {
+  std::vector<std::byte> bytes;
+  append(bytes, "_SM_");
+  append(bytes, {0, 0x1f, 2, 8, 0, 0, 0, 0, 0, 0, 0, 0});  // checksum, length, version, max size, revision, area
+  append(bytes, "_DMI_");
+  append(bytes, {0, length & 0xffu, static_cast<unsigned>(length) >> 8, 0x00, 0x10, 0x0f, 0, structures & 0xff,
+                 structures >> 8, 0x28});
+  fix_checksum(bytes, 0x10, 0x0f, 0x15);
+  fix_checksum(bytes, 0, 0x1f, 0x04);
+  return bytes;
+}
+
+void expect_parse_error(const hwinfo::result<hwinfo::Memory>& memory) {
+  ASSERT_FALSE(memory.has_value());
+  EXPECT_EQ(memory.error(), hwinfo::errc::parse_error);
 }
 
 }  // namespace
@@ -250,3 +297,115 @@ TEST(Smbios, EmptyTable) {
   EXPECT_EQ(internal::computer_identity(*t), std::nullopt);
   EXPECT_EQ(internal::mainboard_info(*t), std::nullopt);
 }
+
+#ifdef HWINFO_HAS_RAM
+
+TEST(Smbios, MemoryFromBytes) {
+  const auto bytes = table_bytes();
+  const auto expected = internal::memory_info(table());
+
+  const auto v3 = hwinfo::memory_from_smbios(entry_point_v3(static_cast<std::uint32_t>(bytes.size())), bytes);
+  ASSERT_TRUE(v3.has_value()) << v3.error().message();
+  EXPECT_EQ(*v3, expected);
+  EXPECT_EQ(v3->total, hwinfo::Bytes{});
+  EXPECT_EQ(v3->modules.size(), 2u);
+
+  // 3.x states a maximum length
+  EXPECT_EQ(hwinfo::memory_from_smbios(entry_point_v3(0x1000), bytes), expected);
+
+  const auto v2 = hwinfo::memory_from_smbios(entry_point_v2(static_cast<std::uint16_t>(bytes.size()), 11), bytes);
+  ASSERT_TRUE(v2.has_value()) << v2.error().message();
+  EXPECT_EQ(*v2, expected);
+}
+
+TEST(Smbios, MemoryFromBytesInvalidEntryPoint) {
+  const auto bytes = table_bytes();
+  const auto length = static_cast<std::uint32_t>(bytes.size());
+
+  auto anchor = entry_point_v3(length);
+  anchor[3] = std::byte{'X'};
+  expect_parse_error(hwinfo::memory_from_smbios(anchor, bytes));
+
+  auto checksum = entry_point_v3(length);
+  checksum[0x0c] = static_cast<std::byte>(std::to_integer<unsigned>(checksum[0x0c]) + 1);
+  expect_parse_error(hwinfo::memory_from_smbios(checksum, bytes));
+
+  auto dmi_checksum = entry_point_v2(static_cast<std::uint16_t>(length), 11);
+  dmi_checksum[0x15] = static_cast<std::byte>(std::to_integer<unsigned>(dmi_checksum[0x15]) + 1);
+  expect_parse_error(hwinfo::memory_from_smbios(dmi_checksum, bytes));
+
+  const auto truncated = entry_point_v3(length);
+  expect_parse_error(hwinfo::memory_from_smbios(std::span(truncated).first(0x10), bytes));
+  expect_parse_error(hwinfo::memory_from_smbios({}, bytes));
+}
+
+TEST(Smbios, MemoryFromBytesMalformedTable) {
+  const auto bytes = table_bytes();
+  const auto ep = entry_point_v3(0x1000);
+
+  expect_parse_error(hwinfo::memory_from_smbios(ep, {}));
+  // cut inside a memory device, inside a header, and between the two NULs ending a string set
+  for (const std::size_t cut : {bytes.size() - 20, bytes.size() - 4, bytes.size() - 1}) {
+    expect_parse_error(hwinfo::memory_from_smbios(ep, std::span(bytes).first(cut)));
+  }
+  // cut at a structure boundary: complete structures, but no type 127
+  expect_parse_error(hwinfo::memory_from_smbios(ep, std::span(bytes).first(bytes.size() - 6)));
+
+  // longer than the entry point allows
+  expect_parse_error(hwinfo::memory_from_smbios(entry_point_v3(static_cast<std::uint32_t>(bytes.size() - 1)), bytes));
+
+  // a structure with a length below the header size
+  auto short_length = bytes;
+  short_length[1] = std::byte{3};
+  expect_parse_error(hwinfo::memory_from_smbios(ep, short_length));
+}
+
+TEST(Smbios, MemoryFromBytesV2Length) {
+  // 2.x: a table without type 127 must have exactly the stated length
+  auto bytes = table_bytes();
+  bytes.resize(bytes.size() - 6);
+  const auto length = static_cast<std::uint16_t>(bytes.size());
+  EXPECT_EQ(hwinfo::memory_from_smbios(entry_point_v2(length, 10), bytes), internal::memory_info(table()));
+  expect_parse_error(hwinfo::memory_from_smbios(entry_point_v2(static_cast<std::uint16_t>(length + 40), 10), bytes));
+
+  // Linux trims the table after type 127, so a shorter table that ends with it is complete
+  const auto full = table_bytes();
+  EXPECT_TRUE(
+      hwinfo::memory_from_smbios(entry_point_v2(static_cast<std::uint16_t>(full.size() + 40), 11), full).has_value());
+}
+
+TEST(Smbios, MemoryFromBytesShortMemoryStructures) {
+  using namespace std::string_view_literals;
+  const auto check = [](unsigned type, std::initializer_list<unsigned> fields) {
+    std::vector<std::byte> bytes;
+    memory_array(bytes, 0x1000, 0x03, 16 * 1024 * 1024, 2);
+    memory_device(bytes, {.handle = 0x20, .size_mib = 0x2000, .strings = "DIMM 0\0BANK 0\0A\0B\0C\0"sv});
+    structure(bytes, type, 0x30, fields, "");
+    append(bytes, {127, 4, 0x31, 0x00, 0, 0});
+
+    expect_parse_error(hwinfo::memory_from_smbios(entry_point_v3(0x1000), bytes));
+    // memory() stays best effort: the short structure is skipped
+    const auto parsed = smbios::parse(bytes, smbios::Version{.major = 3, .minor = 0});
+    ASSERT_TRUE(parsed.has_value());
+    EXPECT_EQ(internal::memory_info(*parsed).modules.size(), 1u);
+  };
+  check(17, {0x00, 0x10, 0xfe, 0xff});  // memory device below 0x15 bytes
+  check(16, {0x03, 0x03});              // memory array below 0x0f bytes
+}
+
+#ifdef __linux__
+TEST(Smbios, MemoryFromSystemBytes) {
+  const auto entry_point = internal::read_file("/sys/firmware/dmi/tables/smbios_entry_point");
+  const auto dmi = internal::read_file("/sys/firmware/dmi/tables/DMI");
+  if (!entry_point || !dmi) {
+    GTEST_SKIP() << "SMBIOS tables not readable (root only)";
+  }
+  auto expected = hwinfo::memory();
+  ASSERT_TRUE(expected.has_value());
+  expected->total = hwinfo::Bytes{};
+  EXPECT_EQ(hwinfo::memory_from_smbios(std::as_bytes(std::span(*entry_point)), std::as_bytes(std::span(*dmi))),
+            *expected);
+}
+#endif
+
+#endif  // HWINFO_HAS_RAM
