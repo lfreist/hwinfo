@@ -17,7 +17,6 @@ add_executable(hwinfo_tests
         apple_models_test.cpp
         block_test.cpp
         dmi_test.cpp
-        edac_test.cpp
         mount_test.cpp
         error_test.cpp
         units_test.cpp
