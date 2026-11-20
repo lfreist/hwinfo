@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -27,8 +26,10 @@
 #include <string_view>
 #include <vector>
 
+#include "internal/disk_vendor.h"
 #include "internal/strings.h"
 #include "internal/windows_com.h"
+#include "internal/windows_error.h"
 #include "internal/windows_strings.h"
 
 #ifdef _MSC_VER
@@ -98,21 +99,6 @@ std::optional<std::string> descriptor_string(const std::vector<char>& buffer, DW
   return internal::non_empty(std::string_view(begin, strnlen(begin, length - offset)));
 }
 
-// Some drivers (NVMe, ATA) report no or a generic vendor: guess it from the model.
-std::optional<std::string> vendor_from_model(std::string_view model) {
-  constexpr std::array<std::string_view, 12> vendors{"SAMSUNG", "WESTERN DIGITAL", "WDC",      "WD",
-                                                     "SEAGATE", "KIOXIA",          "TOSHIBA",  "INTEL",
-                                                     "CRUCIAL", "MICRON",          "KINGSTON", "SANDISK"};
-  std::string upper(model);
-  std::ranges::transform(upper, upper.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
-  for (const auto vendor : vendors) {
-    if (upper.starts_with(vendor) || upper.contains(std::format(" {}", vendor))) {
-      return std::string(vendor);
-    }
-  }
-  return std::nullopt;
-}
-
 // Filesystem of the volume mounted at `root` ("C:\"), e.g. "NTFS", "FAT32", "exFAT", "ReFS".
 std::optional<std::string> filesystem_name(const wchar_t* root) {
   std::array<wchar_t, MAX_PATH + 1> name{};
@@ -173,6 +159,19 @@ std::optional<bool> bitlocker_encrypted(const wchar_t* root) {
   return encrypted;
 }
 
+// The volume mounted at `root` ("C:\", "C:\mnt\data\", "\\server\share\").
+MountPoint describe_volume(const wchar_t* root) {
+  auto volume = volume_name(root);
+  auto space_id = volume.or_else([&] { return internal::non_empty(internal::to_utf8(root)); });  // network shares
+  return {
+      .path = root,
+      .filesystem = filesystem_name(root),
+      .volume = std::move(volume),
+      .space_id = std::move(space_id),
+      .encrypted = bitlocker_encrypted(root),
+  };
+}
+
 // Device number -> drive letters ("C:\") of the volumes on that disk.
 std::map<DWORD, std::vector<MountPoint>> drive_letters() {
   std::map<DWORD, std::vector<MountPoint>> mapping;
@@ -191,12 +190,7 @@ std::map<DWORD, std::vector<MountPoint>> drive_letters() {
     DWORD returned = 0;
     if (volume.valid() && DeviceIoControl(volume.get(), IOCTL_STORAGE_GET_DEVICE_NUMBER, nullptr, 0, &number,
                                           sizeof(number), &returned, nullptr)) {
-      mapping[number.DeviceNumber].push_back({
-          .path = root,
-          .filesystem = filesystem_name(root),
-          .volume = volume_name(root),
-          .encrypted = bitlocker_encrypted(root),
-      });
+      mapping[number.DeviceNumber].push_back(describe_volume(root));
     }
   }
   return mapping;
@@ -232,7 +226,7 @@ result<std::vector<Disk>> disks() {
       disk.serial_number = descriptor_string(buffer, returned, descriptor.SerialNumberOffset);
       disk.vendor = descriptor_string(buffer, returned, descriptor.VendorIdOffset);
       if ((!disk.vendor || disk.vendor == "ATA" || disk.vendor == "NVMe") && disk.model) {
-        disk.vendor = vendor_from_model(*disk.model);
+        disk.vendor = internal::disk_vendor_from_model(*disk.model);
       }
     }
 
@@ -248,6 +242,21 @@ result<std::vector<Disk>> disks() {
     result.push_back(std::move(disk));
   }
   return result;
+}
+
+result<MountPoint> mount_point_of(const std::filesystem::path& path) {
+  std::error_code ec;
+  const auto canonical = std::filesystem::canonical(path, ec);
+  if (ec) {
+    return std::unexpected(error{ec, path.string()});
+  }
+  const std::wstring wide = canonical.wstring();
+  std::vector<wchar_t> root(wide.size() + 2, L'\0');  // the mount point is a prefix, plus a trailing backslash
+  if (!GetVolumePathNameW(wide.c_str(), root.data(), static_cast<DWORD>(root.size()))) {
+    return std::unexpected(internal::last_error("GetVolumePathNameW"));
+  }
+  const internal::ComInit com;  // for the shell property store
+  return describe_volume(root.data());
 }
 
 }  // namespace hwinfo

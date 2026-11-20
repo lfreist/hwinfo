@@ -79,6 +79,29 @@ struct Cpu {
 // All CPU packages of the system.
 [[nodiscard]] HWINFO_API result<std::vector<Cpu>> cpus();
 
+enum class VulnerabilityState : std::uint8_t {
+  unknown,       // the OS cannot tell
+  not_affected,  // the CPU is not affected
+  mitigated,     // the CPU is affected, and the OS mitigates it
+  vulnerable,    // the CPU is affected, and no (or no sufficient) mitigation is active
+};
+
+// A CPU (speculative execution) vulnerability as assessed by the OS.
+struct CpuVulnerability {
+  // Named as Linux names them in /sys/devices/system/cpu/vulnerabilities, on all platforms: "meltdown",
+  // "spectre_v2", "spec_store_bypass", "l1tf", "mds", "tsx_async_abort", ...
+  std::string name{};
+  VulnerabilityState state = VulnerabilityState::unknown;
+  // The OS's own description, e.g. "Mitigation: Enhanced / Automatic IBRS; IBPB: conditional". Linux only.
+  std::optional<std::string> details{};
+
+  friend bool operator==(const CpuVulnerability&, const CpuVulnerability&) = default;
+};
+
+// The CPU vulnerabilities the OS knows about, sorted by name. Linux: all the kernel reports; Windows: those the
+// speculation control information of NtQuerySystemInformation covers. errc::not_supported on macOS, which reports none.
+[[nodiscard]] HWINFO_API result<std::vector<CpuVulnerability>> cpu_vulnerabilities();
+
 constexpr std::string_view to_string(CoreType type) noexcept {
   switch (type) {
     case CoreType::performance:
@@ -91,6 +114,24 @@ constexpr std::string_view to_string(CoreType type) noexcept {
   return "unknown";
 }
 
+constexpr std::string_view to_string(VulnerabilityState state) noexcept {
+  switch (state) {
+    case VulnerabilityState::not_affected:
+      return "not affected";
+    case VulnerabilityState::mitigated:
+      return "mitigated";
+    case VulnerabilityState::vulnerable:
+      return "vulnerable";
+    case VulnerabilityState::unknown:
+      break;
+  }
+  return "unknown";
+}
+
+inline std::string to_string(const CpuVulnerability& vulnerability) {
+  return std::format("{}: {}", vulnerability.name, to_string(vulnerability.state));
+}
+
 inline std::string to_string(const Cpu& cpu) {
   return std::format("{} {} ({} cores, {} threads)", cpu.vendor, cpu.model, cpu.physical_cores, cpu.logical_cores);
 }
@@ -99,6 +140,12 @@ inline std::string to_string(const Cpu& cpu) {
 
 template <>
 struct std::formatter<hwinfo::CoreType> : hwinfo::detail::to_string_formatter<hwinfo::CoreType> {};
+
+template <>
+struct std::formatter<hwinfo::VulnerabilityState> : hwinfo::detail::to_string_formatter<hwinfo::VulnerabilityState> {};
+
+template <>
+struct std::formatter<hwinfo::CpuVulnerability> : hwinfo::detail::to_string_formatter<hwinfo::CpuVulnerability> {};
 
 template <>
 struct std::formatter<hwinfo::Cpu> : hwinfo::detail::to_string_formatter<hwinfo::Cpu> {};

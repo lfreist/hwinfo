@@ -142,6 +142,26 @@ result<std::vector<Cpu>> cpus() {
   return result;
 }
 
+result<std::vector<CpuVulnerability>> cpu_vulnerabilities() {
+  const auto directory = sysfs_cpu / "vulnerabilities";
+  std::error_code ec;
+  std::filesystem::directory_iterator it(directory, ec);
+  if (ec) {
+    return std::unexpected(error{ec, directory.string()});
+  }
+  std::vector<CpuVulnerability> result;
+  for (const auto& entry : it) {
+    const auto text = internal::read_attribute(entry.path());
+    result.push_back({
+        .name = entry.path().filename().string(),
+        .state = internal::procfs::vulnerability_state(text.value_or("")),
+        .details = text,
+    });
+  }
+  std::ranges::sort(result, {}, &CpuVulnerability::name);
+  return result;
+}
+
 }  // namespace hwinfo
 
 #endif  // HWINFO_UNIX

@@ -92,6 +92,9 @@ if (HWINFO_DISK)
             PRIVATE_LINK $<$<BOOL:${WIN32}>:propsys> $<$<BOOL:${WIN32}>:shell32>)
     target_include_directories(hwinfo_disk PRIVATE ${HWINFO_CMAKE_BINARY_DIR}/generated)
     add_dependencies(hwinfo_disk generate_pci_vendors_header)
+    if (APPLE)
+        target_link_libraries(hwinfo_disk PRIVATE "-framework DiskArbitration")  # volume encryption
+    endif ()
 endif ()
 
 if (HWINFO_GPU)

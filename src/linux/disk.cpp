@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <format>
 #include <map>
 #include <optional>
 #include <set>
@@ -16,10 +17,12 @@
 #include <vector>
 
 #include "internal/block.h"
+#include "internal/disk_vendor.h"
 #include "internal/file.h"
 #include "internal/pci.h"
 #include "internal/procfs.h"
 #include "internal/strings.h"
+#include "internal/udev.h"
 #include "pci_vendors.h"
 
 namespace hwinfo {
@@ -90,19 +93,124 @@ DiskBus disk_bus(const fs::path& block) {
 }
 
 const fs::path sys_class_block = "/sys/class/block";
+const fs::path udev_data = "/run/udev/data";
 
-// Kernel name ("nvme0n1p2", "dm-0") of the block device a mount's source names, also through symlinks like
-// /dev/mapper/* or /dev/disk/by-uuid/*. nullopt for sources that are no block device (tmpfs, proc, ...).
-std::optional<std::string> kernel_name(const std::string& device) {
-  if (!device.starts_with('/')) {
+// Kernel name ("nvme0n1p2", "dm-0") of the block device with the given device number. nullopt for 0:x (filesystems
+// without a block device, and btrfs, which reports an anonymous device number).
+std::optional<std::string> kernel_name(std::uint32_t major, std::uint32_t minor) {
+  if (major == 0) {
     return std::nullopt;
   }
   std::error_code ec;
-  const auto name = fs::canonical(device, ec).filename().string();
+  const auto name = fs::canonical(std::format("/sys/dev/block/{}:{}", major, minor), ec).filename().string();
   if (ec || name.empty() || !fs::exists(sys_class_block / name, ec)) {
     return std::nullopt;
   }
   return name;
+}
+
+// Kernel name of the block device a mount's source names, also through symlinks like /dev/mapper/* or
+// /dev/disk/by-uuid/*. nullopt for sources that are no block device (tmpfs, proc, ...) and for "/dev/root".
+std::optional<std::string> kernel_name(const std::string& source) {
+  if (!source.starts_with('/')) {
+    return std::nullopt;
+  }
+  std::error_code ec;
+  const auto name = fs::canonical(source, ec).filename().string();
+  if (ec || name.empty() || !fs::exists(sys_class_block / name, ec)) {
+    return std::nullopt;
+  }
+  return name;
+}
+
+// The udev properties of a block device ("<major>:<minor>"); empty without udev (e.g. in containers).
+std::map<std::string, std::string, std::less<>> udev_properties(std::string_view device_number) {
+  return internal::read_file(udev_data / std::format("b{}", device_number))
+      .transform(internal::udev::parse_properties)
+      .value_or(std::map<std::string, std::string, std::less<>>{});
+}
+
+// ZFS pool name -> kernel names of its member devices (vdevs), from the udev database ("ID_FS_TYPE=zfs_member",
+// "ID_FS_LABEL=<pool>"). Read on first use.
+class ZfsPools {
+ public:
+  const std::vector<std::string>& members(std::string_view pool) {
+    if (!_pools) {
+      _pools.emplace();
+      std::error_code ec;
+      for (const auto& entry : fs::directory_iterator(udev_data, ec)) {
+        const auto file = entry.path().filename().string();  // "b8:1"
+        if (!file.starts_with('b')) {
+          continue;
+        }
+        const auto properties = udev_properties(std::string_view(file).substr(1));
+        const auto type = properties.find("ID_FS_TYPE");
+        const auto label = properties.find("ID_FS_LABEL");
+        if (type == properties.end() || type->second != "zfs_member" || label == properties.end()) {
+          continue;
+        }
+        const auto colon = file.find(':');
+        const auto major = internal::parse<std::uint32_t>(std::string_view(file).substr(1, colon - 1));
+        const auto minor = internal::parse<std::uint32_t>(std::string_view(file).substr(colon + 1));
+        if (colon == std::string::npos || !major || !minor) {
+          continue;
+        }
+        if (auto name = kernel_name(*major, *minor)) {
+          (*_pools)[label->second].push_back(std::move(*name));
+        }
+      }
+    }
+    static const std::vector<std::string> none;
+    const auto it = _pools->find(pool);
+    return it == _pools->end() ? none : it->second;
+  }
+
+ private:
+  std::optional<std::map<std::string, std::vector<std::string>, std::less<>>> _pools;
+};
+
+struct ResolvedMount {
+  MountPoint mount_point;
+  std::set<std::string, std::less<>> disks;  // whole disks the filesystem is stored on
+};
+
+ResolvedMount resolve(const internal::procfs::MountInfo& mount, ZfsPools& zfs) {
+  ResolvedMount resolved{
+      .mount_point =
+          {
+              .path = mount.mount_point,
+              .filesystem = internal::non_empty(mount.fs_type),
+              .source = internal::non_empty(mount.source),
+              .space_id = std::format("{}:{}", mount.major, mount.minor),
+          },
+      .disks = {},
+  };
+  if (mount.fs_type == "zfs") {
+    // A dataset draws from its pool; ZFS encrypts per dataset, invisible here
+    const auto pool = internal::procfs::zfs_pool(mount.source);
+    resolved.mount_point.space_id = std::format("zfs:{}", pool);
+    for (const auto& member : zfs.members(pool)) {
+      resolved.disks.merge(internal::block::resolve_stack(sys_class_block, member).disks);
+    }
+    return resolved;
+  }
+  // The device number also resolves sources that are no device path ("/dev/root" without initramfs)
+  const auto name = kernel_name(mount.major, mount.minor).or_else([&] { return kernel_name(mount.source); });
+  if (!name) {
+    return resolved;  // tmpfs, NFS, overlay, ...
+  }
+  auto stack = internal::block::resolve_stack(sys_class_block, *name);
+  resolved.mount_point.volume = *name;
+  resolved.mount_point.encrypted = stack.encrypted;
+  if (!stack.encrypted && mount.fs_type == "bcachefs") {
+    resolved.mount_point.encrypted = std::nullopt;  // encrypts itself, invisible in the block device stack
+  }
+  resolved.disks = std::move(stack.disks);
+  return resolved;
+}
+
+result<std::vector<internal::procfs::MountInfo>> mounts() {
+  return internal::read_file("/proc/self/mountinfo").transform(internal::procfs::parse_mountinfo);
 }
 
 }  // namespace
@@ -122,28 +230,12 @@ result<std::vector<Disk>> disks() {
   }
   std::ranges::sort(blocks);
 
-  const auto mounts = internal::read_file("/proc/self/mounts")
-                          .transform(internal::procfs::parse_mounts)
-                          .value_or(std::vector<internal::procfs::Mount>{});
-
+  ZfsPools zfs;
   std::map<std::string, std::vector<MountPoint>, std::less<>> mounts_by_disk;
-  for (const auto& mount : mounts) {
-    const auto name = kernel_name(mount.device);
-    if (!name) {
-      continue;
-    }
-    const auto stack = internal::block::resolve_stack(sys_class_block, *name);
-    MountPoint mount_point{
-        .path = mount.mount_point,
-        .filesystem = internal::non_empty(mount.fs_type),
-        .volume = *name,
-        .encrypted = stack.encrypted,
-    };
-    if (!stack.encrypted && mount.fs_type == "bcachefs") {
-      mount_point.encrypted = std::nullopt;  // encrypts itself, invisible in the block device stack
-    }
-    for (const auto& disk_name : stack.disks) {
-      mounts_by_disk[disk_name].push_back(mount_point);
+  for (const auto& mount : mounts().value_or(std::vector<internal::procfs::MountInfo>{})) {
+    auto resolved = resolve(mount, zfs);
+    for (const auto& disk_name : resolved.disks) {
+      mounts_by_disk[disk_name].push_back(resolved.mount_point);
     }
   }
 
@@ -164,6 +256,24 @@ result<std::vector<Disk>> disks() {
         .size = {sectors * sector_size},
         .bus = disk_bus(block),
     };
+    // ATA drives, also behind USB-SATA bridges, whose SCSI vendor / model sysfs shows: "ATA" and the model truncated
+    // to 16 characters, or the bridge (e.g. "ASMT" / "2115"). udev's ata_id read the drive's own identity.
+    const auto properties = udev_properties(internal::read_attribute(block / "dev").value_or(""));
+    if (const auto ata = properties.find("ID_ATA"); ata != properties.end() && ata->second == "1") {
+      const auto property = [&](std::string_view key) -> std::optional<std::string> {
+        const auto it = properties.find(key);
+        return it == properties.end() ? std::nullopt : internal::udev::decode(it->second);
+      };
+      if (auto model = property("ID_MODEL_ENC").or_else([&] { return property("ID_MODEL"); })) {
+        disk.model = std::move(model);
+        disk.vendor = internal::disk_vendor_from_model(*disk.model);  // ATA has no vendor field
+      }
+      if (auto serial = property("ID_SERIAL_SHORT")) {
+        disk.serial_number = std::move(serial);
+      }
+    } else if (disk.vendor == "ATA" && disk.model) {
+      disk.vendor = internal::disk_vendor_from_model(*disk.model);
+    }
     if (disk.bus == DiskBus::usb) {
       disk.link_speed = usb_link_speed(block / "device");
     }
@@ -173,6 +283,24 @@ result<std::vector<Disk>> disks() {
     result.push_back(std::move(disk));
   }
   return result;
+}
+
+result<MountPoint> mount_point_of(const fs::path& path) {
+  std::error_code ec;
+  const auto canonical = fs::canonical(path, ec);
+  if (ec) {
+    return std::unexpected(error{ec, path.string()});
+  }
+  const auto all = mounts();
+  if (!all) {
+    return std::unexpected(all.error());
+  }
+  const auto* mount = internal::procfs::containing_mount(*all, canonical.string());
+  if (mount == nullptr) {
+    return std::unexpected(error{errc::not_found, std::format("no mount contains {}", canonical.string())});
+  }
+  ZfsPools zfs;
+  return resolve(*mount, zfs).mount_point;
 }
 
 }  // namespace hwinfo

@@ -165,21 +165,6 @@ TEST(OsRelease, Codename) {
   EXPECT_EQ(procfs::os_release_codename(Values{}), "");
 }
 
-TEST(Mounts, ParsesAndUnescapes) {
-  const auto mounts = procfs::parse_mounts(
-      "/dev/nvme0n1p2 / ext4 rw,relatime 0 0\n"
-      "/dev/sdb1 /media/My\\040Disk vfat rw 0 0\n"
-      "\n"
-      "proc /proc proc rw 0 0\n");
-  ASSERT_EQ(mounts.size(), 3u);
-  EXPECT_EQ(mounts[0].device, "/dev/nvme0n1p2");
-  EXPECT_EQ(mounts[0].mount_point, "/");
-  EXPECT_EQ(mounts[0].fs_type, "ext4");
-  EXPECT_EQ(mounts[1].mount_point, "/media/My Disk");
-  EXPECT_EQ(mounts[1].fs_type, "vfat");
-  EXPECT_EQ(mounts[2].device, "proc");
-}
-
 TEST(CacheSize, ParsesBinarySuffixes) {
   using namespace hwinfo::literals;
   EXPECT_EQ(procfs::parse_cache_size("48K"), 48_KiB);

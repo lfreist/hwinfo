@@ -78,6 +78,21 @@ TEST(Smoke, LogicalIdsArePinnable) {
 }
 #endif
 
+TEST(Smoke, CpuVulnerabilities) {
+  const auto vulnerabilities = hwinfo::cpu_vulnerabilities();
+#ifdef HWINFO_APPLE
+  ASSERT_FALSE(vulnerabilities);
+  EXPECT_EQ(vulnerabilities.error(), hwinfo::errc::not_supported);
+#else
+  expect_value_or_error(vulnerabilities);
+  for (const auto& vulnerability : vulnerabilities.value_or(std::vector<hwinfo::CpuVulnerability>{})) {
+    EXPECT_FALSE(vulnerability.name.empty());
+  }
+  EXPECT_TRUE(std::ranges::is_sorted(vulnerabilities.value_or(std::vector<hwinfo::CpuVulnerability>{}), {},
+                                     &hwinfo::CpuVulnerability::name));
+#endif
+}
+
 TEST(Smoke, PowerProfile) {
   const auto profile = hwinfo::power_profile();
   ASSERT_TRUE(profile) << profile.error().message();
@@ -160,6 +175,22 @@ TEST(Smoke, Disks) {
       expect_value_or_error(hwinfo::disk_space(mount_point.path));
     }
   }
+}
+
+TEST(Smoke, MountPointOf) {
+  const auto here = hwinfo::mount_point_of(std::filesystem::current_path());
+  ASSERT_TRUE(here) << here.error().message();
+  EXPECT_FALSE(here->path.empty());
+  EXPECT_TRUE(here->space_id);
+  // the mount point is contained in itself
+  const auto self = hwinfo::mount_point_of(here->path);
+  ASSERT_TRUE(self) << self.error().message();
+  EXPECT_EQ(self->path, here->path);
+  EXPECT_EQ(self->space_id, here->space_id);
+
+  const auto missing = hwinfo::mount_point_of("/this/path/does/not/exist");
+  ASSERT_FALSE(missing);
+  EXPECT_EQ(missing.error(), hwinfo::errc::not_found);
 }
 #endif
 

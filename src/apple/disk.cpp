@@ -6,6 +6,7 @@
 #ifdef HWINFO_APPLE
 
 #include <CoreFoundation/CoreFoundation.h>
+#include <DiskArbitration/DiskArbitration.h>
 #include <IOKit/IOBSD.h>
 #include <IOKit/IOKitLib.h>
 #include <IOKit/storage/IOMedia.h>
@@ -14,13 +15,17 @@
 #include <sys/param.h>
 
 #include <algorithm>
+#include <cerrno>
 #include <cstdint>
 #include <filesystem>
+#include <format>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
 
+#include "internal/apfs.h"
 #include "internal/apple_cf.h"
 #include "internal/strings.h"
 
@@ -34,6 +39,43 @@ namespace fs = std::filesystem;
 // BSD name ("disk3s1s1") -> mount points
 using MountMap = std::unordered_map<std::string, std::vector<MountPoint>>;
 
+// Encryption of the medium with the BSD name, as DiskArbitration reports it (macOS 10.14.4+): FileVault and encrypted
+// APFS volumes. Note that the internal SSDs of T2 and Apple Silicon Macs are always encrypted by hardware.
+// std::nullopt if not reported (diskarbitrationd determines it in the background shortly after a disk appears).
+std::optional<bool> encrypted(DASessionRef session, const char* bsd_name) {
+  if (session == nullptr) {
+    return std::nullopt;
+  }
+  const cf::cf_ptr<DADiskRef> disk(DADiskCreateFromBSDName(kCFAllocatorDefault, session, bsd_name));
+  if (!disk) {
+    return std::nullopt;
+  }
+  const cf::cf_ptr<CFDictionaryRef> description(DADiskCopyDescription(disk.get()));
+  return cf::to_bool(cf::dictionary_value(description.get(), CFSTR("DAMediaEncrypted")));
+}
+
+// The mounted filesystem a statfs entry describes. `session` may be nullptr.
+MountPoint describe(const struct statfs& entry, DASessionRef session) {
+  MountPoint mount_point{
+      .path = entry.f_mntonname,
+      .filesystem = internal::non_empty(entry.f_fstypename),
+      .source = internal::non_empty(entry.f_mntfromname),
+      // any filesystem: its fsid
+      .space_id = std::format("fsid:{:08x}{:08x}", static_cast<std::uint32_t>(entry.f_fsid.val[0]),
+                              static_cast<std::uint32_t>(entry.f_fsid.val[1])),
+  };
+  std::string_view device = entry.f_mntfromname;  // e.g. "/dev/disk3s1s1"
+  if (!device.starts_with("/dev/")) {
+    return mount_point;  // devfs, NFS, SMB, autofs, ...
+  }
+  device.remove_prefix(5);
+  mount_point.volume = std::string(device);
+  // APFS volumes ("disk3s1", snapshots "disk3s1s1") share the space of their container, the synthesized disk "disk3"
+  mount_point.space_id = mount_point.filesystem == "apfs" ? internal::apfs_container(device) : *mount_point.volume;
+  mount_point.encrypted = encrypted(session, mount_point.volume->c_str());
+  return mount_point;
+}
+
 MountMap mounted_devices() {
   MountMap mounts;
   const int count = getfsstat(nullptr, 0, MNT_NOWAIT);
@@ -43,18 +85,13 @@ MountMap mounted_devices() {
   std::vector<struct statfs> entries(static_cast<std::size_t>(count));
   const int filled = getfsstat(entries.data(), static_cast<int>(entries.size() * sizeof(struct statfs)), MNT_NOWAIT);
   entries.resize(static_cast<std::size_t>(std::clamp(filled, 0, count)));
+  const cf::cf_ptr<DASessionRef> session(DASessionCreate(kCFAllocatorDefault));
   for (const auto& entry : entries) {
-    std::string_view device = entry.f_mntfromname;  // e.g. "/dev/disk3s1s1"
-    if (!device.starts_with("/dev/")) {
-      continue;
+    auto mount_point = describe(entry, session.get());
+    if (mount_point.volume) {
+      auto volume = *mount_point.volume;
+      mounts[volume].push_back(std::move(mount_point));
     }
-    device.remove_prefix(5);
-    // TODO: encryption (FileVault / encrypted APFS volumes) needs a source that is verified without diskutil
-    mounts[std::string(device)].push_back({
-        .path = entry.f_mntonname,
-        .filesystem = internal::non_empty(entry.f_fstypename),
-        .volume = std::string(device),
-    });
   }
   return mounts;
 }
@@ -175,6 +212,20 @@ result<std::vector<Disk>> disks() {
     });
   }
   return result;
+}
+
+result<MountPoint> mount_point_of(const std::filesystem::path& path) {
+  std::error_code ec;
+  const auto canonical = std::filesystem::canonical(path, ec);
+  if (ec) {
+    return std::unexpected(error{ec, path.string()});
+  }
+  struct statfs entry {};
+  if (statfs(canonical.c_str(), &entry) != 0) {
+    return std::unexpected(error{std::error_code(errno, std::generic_category()), "statfs " + canonical.string()});
+  }
+  const cf::cf_ptr<DASessionRef> session(DASessionCreate(kCFAllocatorDefault));
+  return describe(entry, session.get());
 }
 
 }  // namespace hwinfo

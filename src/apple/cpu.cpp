@@ -247,6 +247,10 @@ result<std::vector<Cpu>> cpus() {
   return std::vector<Cpu>{std::move(cpu)};
 }
 
+result<std::vector<CpuVulnerability>> cpu_vulnerabilities() {
+  return std::unexpected(error{errc::not_supported, "macOS reports no CPU vulnerability status"});
+}
+
 }  // namespace hwinfo
 
 #endif  // HWINFO_APPLE

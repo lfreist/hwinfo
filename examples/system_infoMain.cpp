@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <filesystem>
 #include <format>
 #include <iostream>
 #include <ranges>
@@ -83,6 +84,13 @@ int main() {
         field("base frequency:", core.base_frequency);
         field("max frequency:", core.max_frequency);
       }
+    }
+  }
+
+  section("CPU Vulnerabilities");
+  if (const auto vulnerabilities = hwinfo::cpu_vulnerabilities(); check(vulnerabilities)) {
+    for (const auto& vulnerability : *vulnerabilities) {
+      std::cout << std::format("  {:<27}{}", vulnerability.name, vulnerability.state) << '\n';
     }
   }
 
@@ -232,6 +240,9 @@ int main() {
       field("mount points:",
             join(disk.mount_points | std::views::transform([](const auto& m) { return to_string(m); })));
     }
+  }
+  if (const auto mount = hwinfo::mount_point_of(std::filesystem::current_path()); check(mount)) {
+    field("working directory on:", std::format("{} (space {})", *mount, mount->space_id.value_or("<unknown>")));
   }
 
   section("Network");

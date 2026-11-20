@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <hwinfo/cpu.h>
 #include <hwinfo/error.h>
 #include <hwinfo/monitoring.h>
 #include <hwinfo/units.h>
@@ -340,15 +341,9 @@ inline std::optional<std::chrono::seconds> parse_uptime(std::string_view content
   return seconds ? std::optional(std::chrono::seconds(*seconds)) : std::nullopt;
 }
 
-// ----- /proc/self/mounts --------------------------------------------------------------------------------------------
+// ----- /proc/self/mountinfo -----------------------------------------------------------------------------------------
 
-struct Mount {
-  std::string device;
-  std::string mount_point;
-  std::string fs_type;
-};
-
-// Decodes the octal escapes (\040 for space, ...) used in /proc/self/mounts.
+// Decodes the octal escapes (\040 for space, ...) used in /proc/self/mountinfo.
 inline std::string unescape_mount_path(std::string_view s) {
   std::string out;
   out.reserve(s.size());
@@ -365,32 +360,14 @@ inline std::string unescape_mount_path(std::string_view s) {
   return out;
 }
 
-inline std::vector<Mount> parse_mounts(std::string_view content) {
-  std::vector<Mount> mounts;
-  for (const auto line : lines(content)) {
-    auto fields = words(line);
-    auto it = fields.begin();
-    if (it == fields.end()) {
-      continue;
-    }
-    const std::string_view device = *it;
-    if (++it == fields.end()) {
-      continue;
-    }
-    const std::string_view mount_point = *it;
-    const std::string_view fs_type = ++it == fields.end() ? std::string_view{} : *it;
-    mounts.push_back({unescape_mount_path(device), unescape_mount_path(mount_point), std::string(fs_type)});
-  }
-  return mounts;
-}
-
-// ----- /proc/self/mountinfo -----------------------------------------------------------------------------------------
-
 struct MountInfo {
   std::string root;
   std::string mount_point;
   std::string fs_type;
   std::string super_options;
+  std::uint32_t major = 0;  // st_dev of the filesystem; major 0 for filesystems without a block device (and btrfs)
+  std::uint32_t minor = 0;
+  std::string source;  // e.g. "/dev/nvme0n1p2", "/dev/root", "tank/home", "server:/export", "tmpfs"
 };
 
 // Format: "<id> <parent> <major:minor> <root> <mount point> <options> [optional fields...] - <type> <source> <super
@@ -404,14 +381,66 @@ inline std::vector<MountInfo> parse_mountinfo(std::string_view content) {
     if (index < 6 || fields.size() < index + 2) {
       continue;
     }
+    const auto device = fields[2];
+    const auto colon = device.find(':');
     mounts.push_back({
         .root = unescape_mount_path(fields[3]),
         .mount_point = unescape_mount_path(fields[4]),
         .fs_type = std::string(fields[index + 1]),
         .super_options = fields.size() > index + 3 ? std::string(fields[index + 3]) : std::string{},
+        .major = parse<std::uint32_t>(device.substr(0, colon)).value_or(0),
+        .minor = colon == std::string_view::npos ? 0 : parse<std::uint32_t>(device.substr(colon + 1)).value_or(0),
+        .source = fields.size() > index + 2 ? unescape_mount_path(fields[index + 2]) : std::string{},
     });
   }
   return mounts;
+}
+
+// Whether `mount_point` is `path` or one of its ancestors. Both absolute and normalized (as in mountinfo).
+constexpr bool contains_path(std::string_view mount_point, std::string_view path) noexcept {
+  if (!path.starts_with(mount_point)) {
+    return false;
+  }
+  return path.size() == mount_point.size() || mount_point.ends_with('/') || path[mount_point.size()] == '/';
+}
+
+// The mount of `mounts` (in /proc/self/mountinfo order) that contains the absolute, canonical `path`: the one with the
+// longest mount point that is a prefix of the path. Of several mounts on the same mount point, the last one is on top.
+inline const MountInfo* containing_mount(const std::vector<MountInfo>& mounts, std::string_view path) {
+  const MountInfo* best = nullptr;
+  for (const auto& mount : mounts) {
+    if (contains_path(mount.mount_point, path) &&
+        (best == nullptr || mount.mount_point.size() >= best->mount_point.size())) {
+      best = &mount;
+    }
+  }
+  return best;
+}
+
+// Pool of a ZFS dataset ("tank/home/alice" -> "tank").
+constexpr std::string_view zfs_pool(std::string_view dataset) noexcept {
+  return dataset.substr(0, dataset.find_first_of("/@"));
+}
+
+// ----- /sys/devices/system/cpu/vulnerabilities ---------------------------------------------------------------------
+
+// State of a vulnerability from its sysfs text, e.g. "Not affected", "Mitigation: PTI", "Vulnerable: Clear CPU buffers
+// attempted, no microcode", "Unknown: Dependent on hypervisor status", "KVM: Mitigation: VMX disabled" (itlb_multihit).
+constexpr VulnerabilityState vulnerability_state(std::string_view text) noexcept {
+  text = trim(text);
+  if (text.starts_with("KVM: ")) {
+    text.remove_prefix(5);
+  }
+  if (text.starts_with("Not affected")) {
+    return VulnerabilityState::not_affected;
+  }
+  if (text.starts_with("Mitigation")) {
+    return VulnerabilityState::mitigated;
+  }
+  if (text.starts_with("Vulnerable")) {
+    return VulnerabilityState::vulnerable;
+  }
+  return VulnerabilityState::unknown;  // "Unknown: ..." and anything new
 }
 
 // ----- cgroups ------------------------------------------------------------------------------------------------------

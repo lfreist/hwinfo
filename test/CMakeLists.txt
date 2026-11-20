@@ -17,6 +17,8 @@ add_executable(hwinfo_tests
         apple_models_test.cpp
         block_test.cpp
         dmi_test.cpp
+        edac_test.cpp
+        mount_test.cpp
         error_test.cpp
         units_test.cpp
         uuid_test.cpp
@@ -33,6 +35,7 @@ add_executable(hwinfo_tests
         monitor_test.cpp
         smoke_test.cpp
         virtualization_test.cpp
+        vulnerability_test.cpp
 )
 target_include_directories(hwinfo_tests PRIVATE ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/third_party)
 target_link_libraries(hwinfo_tests PRIVATE lfreist-hwinfo::hwinfo GTest::gtest_main)

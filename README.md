@@ -98,21 +98,23 @@ hwinfo 2 requires C++23 (`std::expected`, `std::format`, ranges). Tested compile
 
 Every component is a plain aggregate returned by a free function:
 
-| Function                       | Returns                                                      | Header                     |
-|--------------------------------|--------------------------------------------------------------|----------------------------|
-| `hwinfo::computer()`           | `result<Computer>` (vendor, model, chassis, boot time)       | `hwinfo/computer.h`        |
-| `hwinfo::uptime()`             | `result<std::chrono::seconds>` (including time asleep)       | `hwinfo/computer.h`        |
-| `hwinfo::cpus()`               | `result<std::vector<Cpu>>` (one per socket)                  | `hwinfo/cpu.h`             |
-| `hwinfo::memory()`             | `result<Memory>` (total + installed modules)                 | `hwinfo/ram.h`             |
-| `hwinfo::memory_from_smbios()` | `result<Memory>` (modules from caller-supplied SMBIOS bytes) | `hwinfo/ram.h`             |
-| `hwinfo::gpus()`               | `result<std::vector<Gpu>>`                                   | `hwinfo/gpu.h`             |
-| `hwinfo::disks()`              | `result<std::vector<Disk>>`                                  | `hwinfo/disk.h`            |
-| `hwinfo::os()`                 | `result<Os>`                                                 | `hwinfo/os.h`              |
-| `hwinfo::virtualization()`     | `result<Virtualization>` (VM, container)                     | `hwinfo/virtualization.h`  |
-| `hwinfo::resource_limits()`    | `result<ResourceLimits>` (CPU quota, memory limit, affinity) | `hwinfo/resource_limits.h` |
-| `hwinfo::mainboard()`          | `result<Mainboard>`                                          | `hwinfo/mainboard.h`       |
-| `hwinfo::batteries()`          | `result<std::vector<Battery>>`                               | `hwinfo/battery.h`         |
-| `hwinfo::network_interfaces()` | `result<std::vector<NetworkInterface>>`                      | `hwinfo/network.h`         |
+| Function                        | Returns                                                      | Header                     |
+|---------------------------------|--------------------------------------------------------------|----------------------------|
+| `hwinfo::computer()`            | `result<Computer>` (vendor, model, chassis, boot time)       | `hwinfo/computer.h`        |
+| `hwinfo::uptime()`              | `result<std::chrono::seconds>` (including time asleep)       | `hwinfo/computer.h`        |
+| `hwinfo::cpus()`                | `result<std::vector<Cpu>>` (one per socket)                  | `hwinfo/cpu.h`             |
+| `hwinfo::cpu_vulnerabilities()` | `result<std::vector<CpuVulnerability>>`                      | `hwinfo/cpu.h`             |
+| `hwinfo::memory()`              | `result<Memory>` (total + installed modules)                 | `hwinfo/ram.h`             |
+| `hwinfo::memory_from_smbios()`  | `result<Memory>` (modules from caller-supplied SMBIOS bytes) | `hwinfo/ram.h`             |
+| `hwinfo::gpus()`                | `result<std::vector<Gpu>>`                                   | `hwinfo/gpu.h`             |
+| `hwinfo::disks()`               | `result<std::vector<Disk>>`                                  | `hwinfo/disk.h`            |
+| `hwinfo::mount_point_of(path)`  | `result<MountPoint>` (also tmpfs, NFS, overlay, ...)         | `hwinfo/disk.h`            |
+| `hwinfo::os()`                  | `result<Os>`                                                 | `hwinfo/os.h`              |
+| `hwinfo::virtualization()`      | `result<Virtualization>` (VM, container)                     | `hwinfo/virtualization.h`  |
+| `hwinfo::resource_limits()`     | `result<ResourceLimits>` (CPU quota, memory limit, affinity) | `hwinfo/resource_limits.h` |
+| `hwinfo::mainboard()`           | `result<Mainboard>`                                          | `hwinfo/mainboard.h`       |
+| `hwinfo::batteries()`           | `result<std::vector<Battery>>`                               | `hwinfo/battery.h`         |
+| `hwinfo::network_interfaces()`  | `result<std::vector<NetworkInterface>>`                      | `hwinfo/network.h`         |
 
 Values are regular types (copyable, comparable, formattable), which makes them easy to use with ranges:
 
@@ -272,6 +274,7 @@ Things to know:
 |                  | Feature flags                                                                 |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Utilization (`CpuSampler`)                                                    |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Current frequency                                                             |          ✔️          |                        Intel (nominal)                        |                      ✔️                      |
+|                  | Vulnerabilities (`cpu_vulnerabilities`)                                       |          ✔️          |                               ➖                               |        ✔️ (speculation control flags)        |
 | GPU              | Vendor, model, PCI id / address                                               |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Integrated / discrete, unified memory                                         |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Driver version                                                                |          ✔️          |                              ❌                               |                      ✔️                      |
@@ -280,6 +283,7 @@ Things to know:
 |                  | Utilization, VRAM used, temperature, power (`GpuSampler`)                     |  NVIDIA, Intel, AMD  |                      utilization, memory                      | ✔️ (utilization, memory); NVIDIA, Intel: all |
 | Memory (RAM)     | Total                                                                         |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Modules (vendor, model, serial, size, frequency)                              |         root         |                          Intel only                           |                      ✔️                      |
+|                  | Modules without root (size, type, label)                                      |     EDAC driver      |              Apple Silicon (vendor, size, type)               |                      ➖                       |
 |                  | Module type, form factor, rank, width, voltage; slots, max capacity           |         root         |                          Intel only                           |                      ✔️                      |
 |                  | Free / available                                                              |          ✔️          |                              ✔️                               |                      ✔️                      |
 | Computer         | Vendor, model, serial number                                                  |          ✔️          |                              ✔️                               |                      ✔️                      |
@@ -295,7 +299,9 @@ Things to know:
 | Disk             | Vendor, model, serial number                                                  |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Size, bus type                                                                |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Mount points, filesystem                                                      |          ✔️          |                              ✔️                               |                      ✔️                      |
-|                  | Volume, encryption                                                            | ✔️ (LUKS / dm-crypt) |                          volume only                          |                ✔️ (BitLocker)                |
+|                  | Volume, encryption                                                            | ✔️ (LUKS / dm-crypt) |                     ✔️ (DiskArbitration)                      |                ✔️ (BitLocker)                |
+|                  | Shared space (`space_id`): btrfs, ZFS pools, APFS containers                  |          ✔️          |                              ✔️                               |                      ✔️                      |
+|                  | Mount containing a path (`mount_point_of`)                                    |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Free space (`disk_space`)                                                     |          ✔️          |                              ✔️                               |                      ✔️                      |
 | Operating System | Name, version, kernel                                                         |          ✔️          |                              ✔️                               |                      ✔️                      |
 |                  | Family, marketing name                                                        |          ✔️          |                              ✔️                               |                      ✔️                      |

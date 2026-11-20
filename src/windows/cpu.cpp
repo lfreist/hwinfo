@@ -7,6 +7,7 @@
 
 #include <hwinfo/cpu.h>
 #include <windows.h>
+#include <winternl.h>
 
 #include <algorithm>
 #include <bit>
@@ -20,10 +21,16 @@
 #include <vector>
 
 #include "internal/core_types.h"
+#include "internal/cpuid.h"
 #include "internal/win_registry.h"
 #include "internal/windows_error.h"
 #include "internal/windows_power.h"
 #include "internal/windows_processors.h"
+#include "internal/windows_speculation.h"
+
+#ifdef _MSC_VER
+#pragma comment(lib, "ntdll.lib")
+#endif
 
 namespace hwinfo {
 
@@ -216,6 +223,50 @@ result<std::vector<Cpu>> cpus() {
     result.push_back(std::move(cpu));
   }
   return result;
+}
+
+namespace {
+
+constexpr auto system_kernel_va_shadow_information = static_cast<SYSTEM_INFORMATION_CLASS>(196);
+constexpr auto system_speculation_control_information = static_cast<SYSTEM_INFORMATION_CLASS>(201);
+
+internal::speculation::Vendor cpu_vendor() {
+#ifdef HWINFO_X86
+  switch (internal::cpuid(0).ebx) {
+    case 0x756e6547:  // "Genu"ineIntel
+      return internal::speculation::Vendor::intel;
+    case 0x68747541:  // "Auth"enticAMD
+    case 0x6f677948:  // "Hygo"nGenuine
+      return internal::speculation::Vendor::amd;
+    default:
+      break;
+  }
+#endif
+  return internal::speculation::Vendor::other;
+}
+
+}  // namespace
+
+result<std::vector<CpuVulnerability>> cpu_vulnerabilities() {
+  ULONG control[2]{};
+  ULONG length = 0;
+  const NTSTATUS status =
+      NtQuerySystemInformation(system_speculation_control_information, control, sizeof(control), &length);
+  if (status != 0) {
+    // STATUS_INVALID_INFO_CLASS / STATUS_NOT_IMPLEMENTED: Windows without the speculation control updates
+    const auto code = static_cast<unsigned long>(status);
+    return std::unexpected(error{code == 0xC0000003 || code == 0xC0000002 ? errc::not_supported : errc::platform_error,
+                                 std::format("NtQuerySystemInformation: NTSTATUS {:#010x}", code)});
+  }
+  internal::speculation::Flags flags{.control = control[0]};
+  if (length > sizeof(ULONG)) {
+    flags.control2 = control[1];
+  }
+  ULONG kva = 0;
+  if (NtQuerySystemInformation(system_kernel_va_shadow_information, &kva, sizeof(kva), nullptr) == 0) {
+    flags.kva_shadow = kva;
+  }
+  return internal::speculation::vulnerabilities(flags, cpu_vendor());
 }
 
 }  // namespace hwinfo
