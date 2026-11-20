@@ -151,11 +151,13 @@ inline std::optional<Hertz> mts_frequency(std::optional<std::uint32_t> mts) {
 
 // Modules, slots and maximum capacity from the physical memory arrays (type 16) and memory devices (type 17). Only
 // arrays used as system memory count; devices of other arrays (e.g. flash, video memory) are skipped, as are empty
-// slots (size 0). total is left empty. A type 16 or 17 structure that does not decode (too short) makes the result
-// std::nullopt if `strict`, and is skipped otherwise.
+// slots (size 0). modules stays std::nullopt if the table describes no system memory. total is left empty. A type 16 or
+// 17 structure that does not decode (too short) makes the result std::nullopt if `strict`, and is skipped otherwise.
 inline std::optional<Memory> decode_memory(const smbios::Table& table, bool strict) {
   constexpr std::uint8_t system_memory = 0x03;  // MemoryArray::use
   Memory memory;
+  std::vector<MemoryModule> modules;
+  bool described = false;  // whether the table describes system memory at all
   std::vector<std::uint16_t> other_arrays;
   for (const smbios::RawStructure s : table.structures() | smbios::of_type(smbios::MemoryArray::type_id)) {
     const auto array = smbios::MemoryArray::decode(s);
@@ -169,6 +171,7 @@ inline std::optional<Memory> decode_memory(const smbios::Table& table, bool stri
       other_arrays.push_back(s.handle());
       continue;
     }
+    described = true;
     memory.slots = memory.slots.value_or(0) + array->device_count;
     if (array->max_capacity_bytes) {
       memory.max_capacity = memory.max_capacity.value_or(Bytes{}) + Bytes{*array->max_capacity_bytes};
@@ -183,13 +186,18 @@ inline std::optional<Memory> decode_memory(const smbios::Table& table, bool stri
       continue;
     }
     const smbios::MemoryDevice& device = *decoded;
-    if (device.size_bytes == 0 || std::ranges::contains(other_arrays, device.array_handle)) {
+    if (std::ranges::contains(other_arrays, device.array_handle)) {
       continue;
     }
-    memory.modules.push_back(MemoryModule{
-        .index = static_cast<std::uint32_t>(memory.modules.size()),
+    described = true;
+    if (device.size_bytes == 0) {
+      continue;  // empty slot
+    }
+    modules.push_back(MemoryModule{
+        .index = static_cast<std::uint32_t>(modules.size()),
         .vendor = smbios_string(device.manufacturer),
-        .name = smbios_string(device.device_locator).or_else([&] { return smbios_string(device.bank_locator); }),
+        .name = smbios_string(device.device_locator),
+        .bank = smbios_string(device.bank_locator),
         .model = smbios_string(device.part_number),
         .serial_number = smbios_string(device.serial_number),
         .size = device.size_bytes.transform([](std::uint64_t bytes) { return Bytes{bytes}; }),
@@ -203,6 +211,9 @@ inline std::optional<Memory> decode_memory(const smbios::Table& table, bool stri
         .total_width = device.total_width_bits,
         .voltage_mv = device.configured_voltage_mv,
     });
+  }
+  if (described) {
+    memory.modules = std::move(modules);
   }
   return memory;
 }

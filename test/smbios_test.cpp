@@ -182,38 +182,42 @@ TEST(Smbios, MemoryInfo) {
   EXPECT_EQ(memory.total, hwinfo::Bytes{});
   EXPECT_EQ(memory.slots, 4u);  // the flash array does not count
   EXPECT_EQ(memory.max_capacity, 64_GiB);
-  ASSERT_EQ(memory.modules.size(), 2u);  // the empty slot and the flash device are skipped
+  ASSERT_TRUE(memory.modules);
+  const auto& modules = *memory.modules;
+  ASSERT_EQ(modules.size(), 2u);  // the empty slot and the flash device are skipped
 
-  EXPECT_EQ(memory.modules[0], (hwinfo::MemoryModule{
-                                   .index = 0,
-                                   .vendor = "Micron Technology",
-                                   .name = "DIMM 0",
-                                   .model = "MTC4C10163S1SC48BA1",
-                                   .serial_number = "33A83711",
-                                   .size = 8_GiB,
-                                   .frequency = 4400_MHz,
-                                   .max_frequency = 4800_MHz,
-                                   .type = "DDR5",
-                                   .form_factor = hwinfo::MemoryFormFactor::sodimm,
-                                   .rank = 1,
-                                   .data_width = 64,
-                                   .total_width = 64,
-                                   .voltage_mv = 1100,
-                               }));
+  EXPECT_EQ(modules[0], (hwinfo::MemoryModule{
+                            .index = 0,
+                            .vendor = "Micron Technology",
+                            .name = "DIMM 0",
+                            .bank = "BANK 0",
+                            .model = "MTC4C10163S1SC48BA1",
+                            .serial_number = "33A83711",
+                            .size = 8_GiB,
+                            .frequency = 4400_MHz,
+                            .max_frequency = 4800_MHz,
+                            .type = "DDR5",
+                            .form_factor = hwinfo::MemoryFormFactor::sodimm,
+                            .rank = 1,
+                            .data_width = 64,
+                            .total_width = 64,
+                            .voltage_mv = 1100,
+                        }));
 
   // Unknown size, type, rank, widths and voltage, placeholders and a missing configured speed
-  EXPECT_EQ(memory.modules[1], (hwinfo::MemoryModule{
-                                   .index = 1,
-                                   .vendor = std::nullopt,
-                                   .name = "BANK 2",
-                                   .model = std::nullopt,
-                                   .serial_number = std::nullopt,
-                                   .size = std::nullopt,
-                                   .frequency = 3200_MHz,
-                                   .max_frequency = 3200_MHz,
-                                   .type = std::nullopt,
-                                   .form_factor = hwinfo::MemoryFormFactor::soldered,
-                               }));
+  EXPECT_EQ(modules[1], (hwinfo::MemoryModule{
+                            .index = 1,
+                            .vendor = std::nullopt,
+                            .name = std::nullopt,  // "Not Specified"
+                            .bank = "BANK 2",
+                            .model = std::nullopt,
+                            .serial_number = std::nullopt,
+                            .size = std::nullopt,
+                            .frequency = 3200_MHz,
+                            .max_frequency = 3200_MHz,
+                            .type = std::nullopt,
+                            .form_factor = hwinfo::MemoryFormFactor::soldered,
+                        }));
 }
 
 TEST(Smbios, MemoryFormFactor) {
@@ -308,7 +312,8 @@ TEST(Smbios, MemoryFromBytes) {
   ASSERT_TRUE(v3.has_value()) << v3.error().message();
   EXPECT_EQ(*v3, expected);
   EXPECT_EQ(v3->total, hwinfo::Bytes{});
-  EXPECT_EQ(v3->modules.size(), 2u);
+  ASSERT_TRUE(v3->modules);
+  EXPECT_EQ(v3->modules->size(), 2u);
 
   // 3.x states a maximum length
   EXPECT_EQ(hwinfo::memory_from_smbios(entry_point_v3(0x1000), bytes), expected);
@@ -387,7 +392,7 @@ TEST(Smbios, MemoryFromBytesShortMemoryStructures) {
     // memory() stays best effort: the short structure is skipped
     const auto parsed = smbios::parse(bytes, smbios::Version{.major = 3, .minor = 0});
     ASSERT_TRUE(parsed.has_value());
-    EXPECT_EQ(internal::memory_info(*parsed).modules.size(), 1u);
+    EXPECT_EQ(internal::memory_info(*parsed).modules->size(), 1u);
   };
   check(17, {0x00, 0x10, 0xfe, 0xff});  // memory device below 0x15 bytes
   check(16, {0x03, 0x03});              // memory array below 0x0f bytes

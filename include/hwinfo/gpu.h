@@ -62,7 +62,7 @@ struct GpuApi {
  * KFD sysfs for AMD on Linux), preferring the vendor's own library. Fields stay empty when no source provides them.
  */
 struct Gpu {
-  std::uint32_t index = 0;
+  std::uint32_t index = 0;  // position in gpus(); see there for the order
   std::string vendor{};
   std::string name{};
   GpuType type = GpuType::unknown;
@@ -112,6 +112,12 @@ struct GpuQuery {
 };
 
 // All GPUs of the system.
+//
+// Order (guaranteed): GPUs with a PCI address come first, sorted ascending by `pci->address` ("dddd:bb:dd.f", fixed
+// width and lower case, so this is the numeric order of domain, bus, device and function). GPUs without a PCI address
+// (Apple Silicon, most ARM SoCs) follow in the order the OS enumerates them. `Gpu::index` is the position in this
+// list. Note that indices shift when a GPU appears or disappears (eGPU, failing driver), so prefer `pci->address` or
+// `uuid` as a persistent key.
 [[nodiscard]] HWINFO_API result<std::vector<Gpu>> gpus(const GpuQuery& query = {});
 
 constexpr std::string_view to_string(GpuType type) noexcept {

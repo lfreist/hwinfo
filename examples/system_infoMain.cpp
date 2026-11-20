@@ -154,9 +154,13 @@ int main() {
     field("total:", memory->total);
     field("slots:", memory->slots);
     field("max capacity:", memory->max_capacity);
-    for (const auto& module : memory->modules) {
+    if (!memory->modules) {
+      field("modules:", std::string("unknown"));
+    }
+    for (const auto& module : memory->modules.value_or(std::vector<hwinfo::MemoryModule>{})) {
       std::cout << std::format("Module {}", module.index) << '\n';
       field("name:", module.name);
+      field("bank:", module.bank);
       field("vendor:", module.vendor);
       field("model:", module.model);
       field("serial number:", module.serial_number);

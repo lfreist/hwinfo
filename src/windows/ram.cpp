@@ -41,7 +41,7 @@ std::optional<std::uint32_t> positive(std::optional<std::uint32_t> value) {
   return value.and_then([](std::uint32_t v) { return v > 0 ? std::optional(v) : std::nullopt; });
 }
 
-// SMBIOS as decoded by WMI. Fallback if the raw table cannot be read; empty if WMI is not available.
+// SMBIOS as decoded by WMI. Fallback if the raw table cannot be read; modules unknown if WMI is not available.
 Memory memory_from_wmi() {
   Memory memory;
   if (const auto arrays =
@@ -61,15 +61,17 @@ Memory memory_from_wmi() {
       {"Attributes", "BankLabel", "Capacity", "ConfiguredClockSpeed", "ConfiguredVoltage", "DataWidth", "DeviceLocator",
        "FormFactor", "Manufacturer", "PartNumber", "SerialNumber", "SMBIOSMemoryType", "Speed", "TotalWidth"});
   if (!rows) {
-    return memory;
+    return memory;  // modules unknown
   }
-  memory.modules.reserve(rows->size());
+  auto& modules = memory.modules.emplace();
+  modules.reserve(rows->size());
   for (const auto& row : *rows) {
     const auto speed = internal::mts_frequency(row.number<std::uint32_t>("Speed"));
-    memory.modules.push_back(MemoryModule{
-        .index = static_cast<std::uint32_t>(memory.modules.size()),
+    modules.push_back(MemoryModule{
+        .index = static_cast<std::uint32_t>(modules.size()),
         .vendor = row.string("Manufacturer"),
-        .name = row.string("DeviceLocator").or_else([&] { return row.string("BankLabel"); }),
+        .name = row.string("DeviceLocator"),
+        .bank = row.string("BankLabel"),
         .model = row.string("PartNumber"),
         .serial_number = row.string("SerialNumber"),
         .size = row.number<std::uint64_t>("Capacity").transform([](std::uint64_t bytes) { return Bytes{bytes}; }),

@@ -28,6 +28,7 @@ struct MemoryModule {
   std::uint32_t index = 0;
   std::optional<std::string> vendor{};
   std::optional<std::string> name{};  // position on the board, e.g. "DIMM A1", "Controller0-ChannelA-DIMM0"
+  std::optional<std::string> bank{};  // bank locator, e.g. "BANK 0", "P0 CHANNEL A" (SMBIOS type 17 / BankLabel)
   std::optional<std::string> model{};
   std::optional<std::string> serial_number{};
   std::optional<Bytes> size{};
@@ -44,8 +45,10 @@ struct MemoryModule {
 };
 
 struct Memory {
-  Bytes total{};                         // physical memory usable by the OS
-  std::vector<MemoryModule> modules{};   // installed modules; empty if module information is not available
+  Bytes total{};  // physical memory usable by the OS
+  // Installed modules: std::nullopt if module information is not available (e.g. SMBIOS is not readable without
+  // root on Linux), empty if it is available and no modules are installed.
+  std::optional<std::vector<MemoryModule>> modules{};
   std::optional<std::uint32_t> slots{};  // module positions on the board, including empty and soldered ones
   std::optional<Bytes> max_capacity{};   // maximum the board / memory controller supports
 
@@ -83,10 +86,10 @@ constexpr std::string_view to_string(MemoryFormFactor form_factor) noexcept {
 }
 
 inline std::string to_string(const Memory& memory) {
-  if (memory.modules.empty()) {
+  if (!memory.modules) {
     return std::format("{}", memory.total);
   }
-  return std::format("{} ({} modules)", memory.total, memory.modules.size());
+  return std::format("{} ({} modules)", memory.total, memory.modules->size());
 }
 
 }  // namespace hwinfo
