@@ -257,7 +257,9 @@ TEST(Smoke, Gpus) {
     return;
   }
   for (const auto& gpu : *gpus) {
-    EXPECT_FALSE(gpu.name.empty()) << std::format("{}, driver: {}", gpu, gpu.driver.value_or("none"));
+    // A PCI device that pci.ids does not name has no name (e.g. the VGA device 1d0f:1111 of Amazon EC2 instances,
+    // as on GitHub Actions runners); it is formatted by its ids, as lspci does
+    EXPECT_TRUE(!gpu.name.empty() || gpu.pci) << std::format("{}, driver: {}", gpu, gpu.driver.value_or("none"));
     EXPECT_FALSE(std::format("{} ({})", gpu, gpu.type).empty());
     if (gpu.unified_memory) {
       EXPECT_EQ(*gpu.unified_memory, gpu.type == hwinfo::GpuType::integrated);
